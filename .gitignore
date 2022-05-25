@@ -7,3 +7,4 @@ plib/*
 .DS_Store
 **/.DS_Store
 tools/*
+**/__pycache__
