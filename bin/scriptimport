@@ -1,0 +1,112 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import json
+import os
+import requests
+import argparse
+
+import initenv
+import Utils
+
+
+def importJsonInfo(params):
+    serverUser = params.get('user')
+    serverPass = params.get('password')
+    tenant = params.get('tenant')
+    url = params.get('baseUrl') + '/' + tenant + '/public/api/stream/autoexec/script/import/fromjson'
+    dataDir = params.get('destDir')
+    headers = {
+        'tenant': tenant,
+    }
+    try:
+        if dataDir != None and dataDir != '':
+            for root, dirs, files in os.walk(dataDir, topdown=False):
+                for name in files:
+                    if not name.endswith('.json'):
+                        path = os.path.join(root, name)
+                        dir = root.split('/')[-1].split('\\')[-1]
+                        #print(os.path.join(root, name))
+                        # print(root.split('/')[-1].split('\\')[-1])
+                        jsonList = []
+                        typeList = ['select', 'multiselect', 'radio', 'checkbox']
+                        jsonInfo = {}
+                        # 获取脚本描述.json文件
+                        with open(path + '.json', 'r', encoding='utf-8') as m:
+                            data = json.load(m)
+                            paramList = []
+                            # 输入参数
+                            optionList = data.get('option')
+                            for option in optionList:
+                                if option.get('type') in typeList:
+                                    # 错误给出提示
+                                    print(path + '.json文件中option参数type错误')
+                                    return
+                                param = {}
+                                param['key'] = option.get('opt')
+                                param['name'] = option.get('name')
+                                param['defaultValue'] = option.get('defaultValue')
+                                param['description'] = option.get('help')
+                                if option.get('required') == 'true':
+                                    param['isRequired'] = 1
+                                else:
+                                    param['isRequired'] = 0
+                                param['type'] = option.get('type')
+                                param['mode'] = 'input'
+                                paramList.append(param)
+
+                            # 输出参数
+                            outputList = data.get('output')
+                            for output in outputList:
+                                param = {}
+                                param['key'] = output.get('opt')
+                                param['name'] = output.get('name')
+                                param['description'] = output.get('help')
+                                param['isRequired'] = 1
+                                # test
+                                param['type'] = 'text'
+                                param['mode'] = 'output'
+                                paramList.append(param)
+
+                            jsonInfo['paramList'] = paramList
+                            jsonInfo['parser'] = data.get('interpreter')
+
+                            jsonInfo['name'] = data.get('opName')
+                            # 目录
+                            jsonInfo['catalogName'] = dir
+                            jsonInfo['execMode'] = data.get('opType')
+                            jsonInfo['riskName'] = data.get('riskName')
+                            jsonInfo['typeName'] = data.get('typeName')
+                            jsonInfo['description'] = data.get('description')
+
+                        lineList = []
+                        with open(path, 'r', encoding='utf-8') as m:
+                            for line in m:
+                                param = {}
+                                param['content'] = line
+                                lineList.append(param)
+                            jsonInfo['lineList'] = lineList
+
+                        jsonList.append(jsonInfo)
+                        r = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+    except Exception as reason:
+        print(path + '.json文件导入失败')
+
+
+def parseArgs():
+    parser = argparse.ArgumentParser(description='you should add those paramete')
+    parser.add_argument("--baseurl", default='', help="Automation web console address")
+    parser.add_argument("--tenant", default='', help="Tenant")
+    parser.add_argument("--user", default='', help="username")
+    parser.add_argument("--password", default='', help="passWord")
+    parser.add_argument("--dir", default='', help="Script's directory")
+    args = parser.parseArgs()
+
+    params = Utils.parseCmdArgs(args)
+
+    return params
+
+
+if __name__ == '__main__':
+    params = parseArgs()
+    importJsonInfo(params)

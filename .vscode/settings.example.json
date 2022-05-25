@@ -1,0 +1,7 @@
+{
+    "python.envFile": "/Users/wenhb/git/autoscripts/.vscode/.env",
+    "perl.perlInc": [
+        "."
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
+}

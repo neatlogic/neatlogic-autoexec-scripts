@@ -1,0 +1,127 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import base64
+import json
+import os
+import ijson
+import urllib.request
+import argparse
+
+import initenv
+import Utils
+
+
+def exportJsonInfo(params):
+    serverUser = params.get('user')
+    serverPass = params.get('password')
+    tenant = params.get('tenant')
+    pathStr = params.get('destDir')
+    url = params.get('baseUrl') + '/' + tenant + '/public/api/binary/autoexec/script/export'
+    # 获取json数据
+    authStr = serverUser + ":" + serverPass
+    Authorization = "Basic " + base64.b64encode(authStr.encode('utf8')).decode()
+    headers = {
+        'tenant': tenant,
+        'Authorization': Authorization,
+        'Content-Type': 'application/json; charset=utf-8'
+    }
+    request = urllib.request.Request(url, headers=headers)
+    f = urllib.request.urlopen(request)
+    objects = ijson.items(f, 'item')
+    while True:
+        try:
+            data = objects.__next__()
+            jsonInfo = {}
+            opName = data.get('name')
+            catalogPath = data.get('catalogPath')
+            jsonInfo['opName'] = opName
+            jsonInfo['opType'] = data.get('execMode')
+            jsonInfo['typeName'] = data.get('typeName')
+            jsonInfo['riskName'] = data.get('riskName')
+            jsonInfo['interpreter'] = data.get('parser')
+            jsonInfo['description'] = data.get('description')
+            option = []
+            output = []
+            paramList = data.get('paramList')
+            for param in paramList:
+                dataParam = {}
+                if param.get('mode') == 'input':
+                    dataParam['opt'] = param.get('key')
+                    dataParam['name'] = param.get('name')
+                    dataParam['help'] = param.get('description')
+                    dataParam['type'] = param.get('type')
+                    # 是否为常量
+                    dataParam['isConst'] = 'false'
+                    dataParam['defaultValue'] = param.get('defaultValue')
+                    if param.get('isRequired') == 1:
+                        dataParam['required'] = 'true'
+                    else:
+                        dataParam['required'] = 'false'
+                    # 校验正则表达式
+                    dataParam['validate'] = ''
+                    option.append(dataParam)
+
+                if param.get('mode') == 'output':
+                    dataParam['opt'] = param.get('key')
+                    dataParam['name'] = param.get('name')
+                    dataParam['help'] = param.get('description')
+                    dataParam['type'] = param.get('type')
+                    output.append(dataParam)
+
+            jsonInfo['option'] = option
+            jsonInfo['output'] = output
+            # 写入
+            if opName != None:
+                jsonPath = ''
+                if catalogPath != None and catalogPath != '':
+                    jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
+                    if not os.path.exists(pathStr + '/' + catalogPath):
+                        os.makedirs(pathStr+'/' + catalogPath)
+                else:
+                    jsonPath = pathStr + '/' + opName + '.json'
+                    if not os.path.exists(pathStr):
+                        os.makedirs(pathStr)
+                try:
+                    with open(jsonPath, 'w', encoding='utf-8') as m:
+                        m.write(json.dumps(jsonInfo, ensure_ascii=False))
+                except Exception as reason:
+                    print("脚本:%s导出失败" % opName)
+
+                lineList = data.get('lineList')
+                if opName != None:
+                    linePath = ''
+                    if catalogPath != None and catalogPath != '':
+                        linePath = pathStr + '/' + catalogPath + '/' + opName
+                    else:
+                        linePath = pathStr + '/' + opName
+                    try:
+                        with open(linePath, 'w', encoding='utf8') as m:
+                            for line in lineList:
+                                if line.__contains__('content'):
+                                    content = line.get('content')
+                                    m.write(content)
+                                    m.write('\n')
+                    except Exception as reason:
+                        print("脚本:%s导出失败" % opName)
+        except StopIteration as e:
+            break
+
+
+def parseArgs():
+    parser = argparse.ArgumentParser(description='you should add those paramete')
+    parser.add_argument("--baseurl", default='', help="Automation web console address")
+    parser.add_argument("--tenant", default='', help="Tenant")
+    parser.add_argument("--user", default='', help="username")
+    parser.add_argument("--password", default='', help="passWord")
+    parser.add_argument("--dir", default='', help="Script's directory")
+    args = parser.parseArgs()
+
+    params = Utils.parseCmdArgs(args)
+
+    return params
+
+
+if __name__ == '__main__':
+    params = parseArgs()
+    exportJsonInfo(params)
