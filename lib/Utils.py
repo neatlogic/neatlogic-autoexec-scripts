@@ -89,22 +89,21 @@ def parseCmdArgs(args):
             passKey = cfg.get('server', 'password.key')
             MY_KEY = 'c3H002LGZRrseEPc'
             if passKey.startswith('{ENCRYPTED}'):
-                passKey = Utils._rc4_decrypt_hex(MY_KEY, passKey[11:])
-                cfg.set('server', 'password.key', passKey)
+                passKey = _rc4_decrypt_hex(MY_KEY, passKey[11:])
             else:
                 hasNoEncrypted = True
 
             if password.startswith('{ENCRYPTED}'):
-                password = Utils._rc4_decrypt_hex(passKey, password[11:])
+                password = _rc4_decrypt_hex(passKey, password[11:])
             else:
                 hasNoEncrypted = True
 
             if hasNoEncrypted:
                 if not passKey.startswith('{ENCRYPTED}'):
-                    cfg.set('server', 'password.key', '{ENCRYPTED}' + Utils._rc4_encrypt_hex(MY_KEY, passKey))
+                    cfg.set('server', 'password.key', '{ENCRYPTED}' + _rc4_encrypt_hex(MY_KEY, passKey))
 
                 if not password.startswith('{ENCRYPTED}'):
-                    cfg.set('server', 'server.password', '{ENCRYPTED}' + Utils._rc4_encrypt_hex(passKey, password))
+                    cfg.set('server', 'server.password', '{ENCRYPTED}' + _rc4_encrypt_hex(passKey, password))
 
                 with FileLock(cfgPath):
                     fp = open(cfgPath, 'w')
