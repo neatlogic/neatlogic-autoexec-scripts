@@ -100,7 +100,7 @@ def parseArgs():
     parser.add_argument("--user", default='', help="username")
     parser.add_argument("--password", default='', help="passWord")
     parser.add_argument("--dir", default='', help="Script's directory")
-    args = parser.parseArgs()
+    args = parser.parse_args()
 
     params = Utils.parseCmdArgs(args)
 

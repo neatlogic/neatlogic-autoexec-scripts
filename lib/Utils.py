@@ -84,6 +84,8 @@ def parseCmdArgs(args):
         if user == '':
             user = cfg.get('server', 'server.username')
         if password == '':
+            hasNoEncrypted = False
+
             password = cfg.get('server', 'server.password')
 
             passKey = cfg.get('server', 'password.key')
