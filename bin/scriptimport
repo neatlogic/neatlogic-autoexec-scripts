@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
+import initenv
 import json
 import os
 import requests
 import argparse
 
-import initenv
 import Utils
 
 
 def importJsonInfo(params):
+    hasError = 0
     serverUser = params.get('user')
     serverPass = params.get('password')
     tenant = params.get('tenant')
@@ -19,14 +19,15 @@ def importJsonInfo(params):
     headers = {
         'tenant': tenant,
     }
-    try:
-        if dataDir != None and dataDir != '':
-            for root, dirs, files in os.walk(dataDir, topdown=False):
-                for name in files:
-                    if not name.endswith('.json'):
+
+    if dataDir != None and dataDir != '':
+        for root, dirs, files in os.walk(dataDir, topdown=False):
+            for name in files:
+                if not name.endswith('.json'):
+                    try:
                         path = os.path.join(root, name)
                         dir = root.split('/')[-1].split('\\')[-1]
-                        #print(os.path.join(root, name))
+                        # print(os.path.join(root, name))
                         # print(root.split('/')[-1].split('\\')[-1])
                         jsonList = []
                         typeList = ['select', 'multiselect', 'radio', 'checkbox']
@@ -88,9 +89,15 @@ def importJsonInfo(params):
                             jsonInfo['lineList'] = lineList
 
                         jsonList.append(jsonInfo)
-                        r = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
-    except Exception as reason:
-        print(path + '.json文件导入失败')
+                        try:
+                            r = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+                        except Exception as ex:
+                            hasError = hasError + 1
+                            print("ERROR: Request URL:%s failed, %s" % (url, str(ex)))
+                            return hasError
+                    except Exception as reason:
+                        hasError = hasError + 1
+                        print("ERROR: Import %s failed, %s" % (path, str(reason)))
 
 
 def parseArgs():
@@ -109,4 +116,5 @@ def parseArgs():
 
 if __name__ == '__main__':
     params = parseArgs()
-    importJsonInfo(params)
+    status = importJsonInfo(params)
+    exit(status)

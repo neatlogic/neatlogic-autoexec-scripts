@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 declare -a INS_SUC_PKGS
 declare -a INS_FAIL_PKGS
 
-PKGS=(requests ijson)
+PKGS=(requests filelock ijson)
 
 if [[ $# > 0 ]]; then
     PKGS=($*)
