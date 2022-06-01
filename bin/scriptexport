@@ -91,7 +91,7 @@ def exportJsonInfo(params):
                         os.makedirs(pathStr)
                 try:
                     with open(jsonPath, 'w', encoding='utf-8') as m:
-                        m.write(json.dumps(jsonInfo, ensure_ascii=False))
+                        m.write(json.dumps(jsonInfo, indent=4, ensure_ascii=False))
                 except Exception as reason:
                     hasError = hasError + 1
                     print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
