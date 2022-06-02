@@ -3,6 +3,7 @@
 import initenv
 import json
 import os
+import re
 import requests
 import argparse
 
@@ -14,7 +15,7 @@ def importJsonInfo(params):
     serverUser = params.get('user')
     serverPass = params.get('password')
     tenant = params.get('tenant')
-    url = params.get('baseUrl') + '/' + tenant + '/public/api/stream/autoexec/script/import/fromjson'
+    url = params.get('baseUrl') + '/public/api/stream/autoexec/script/import/fromjson'
     dataDir = params.get('destDir')
     headers = {
         'tenant': tenant,
@@ -99,9 +100,8 @@ def importJsonInfo(params):
                         lineList = []
                         with open(path, 'r', encoding='utf-8') as m:
                             for line in m:
-                                param = {}
-                                param['content'] = line
-                                lineList.append(param)
+                                line = re.sub('\\r?\\n$', '', line)
+                                lineList.append({'content':line})
                             jsonInfo['lineList'] = lineList
 
                         jsonList.append(jsonInfo)

@@ -18,7 +18,7 @@ def exportJsonInfo(params):
     serverPass = params.get('password')
     tenant = params.get('tenant')
     pathStr = params.get('destDir')
-    url = params.get('baseUrl') + '/' + tenant + '/public/api/binary/autoexec/script/export'
+    url = params.get('baseUrl') + '/public/api/binary/autoexec/script/export'
     # 获取json数据
     authStr = serverUser + ":" + serverPass
     Authorization = "Basic " + base64.b64encode(authStr.encode('utf8')).decode()
