@@ -81,6 +81,23 @@ def exportJsonInfo(params):
                         dataParam['required'] = 'false'
                     output.append(dataParam)
 
+            argumentParam = data.get('argument')
+            # 自由参数
+            if argumentParam != None:
+                argument = {}
+                argument['name'] = argumentParam.get('name')
+                argument['type'] = argumentParam.get('type')
+                argument['defaultValue'] = argumentParam.get('defaultValue')
+                argument['help'] = argumentParam.get('description')
+                argument['count'] = argumentParam.get('argumentCount')
+                argument['isConst'] = 'false'
+                argument['validate'] = ''
+                if argumentParam.get('isRequired') == 1:
+                    argument['required'] = 'true'
+                else:
+                    argument['required'] = 'false'
+                jsonInfo['argument'] = argument
+
             jsonInfo['option'] = option
             jsonInfo['output'] = output
             # 写入
