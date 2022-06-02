@@ -60,7 +60,7 @@ def exportJsonInfo(params):
                     dataParam['type'] = param.get('type')
                     # 是否为常量
                     dataParam['isConst'] = 'false'
-                    dataParam['config'] = param.get('config')
+                    dataParam['dataSource'] = param.get('config')
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
                         dataParam['required'] = 'true'
@@ -77,7 +77,6 @@ def exportJsonInfo(params):
                     dataParam['help'] = param.get('description')
                     dataParam['type'] = param.get('type')
                     dataParam['defaultValue'] = param.get('defaultValue')
-                    dataParam['config'] = param.get('config')
                     if param.get('isRequired') == 1:
                         dataParam['required'] = 'true'
                     else:

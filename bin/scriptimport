@@ -49,7 +49,7 @@ def importJsonInfo(params):
                                 else:
                                     param['isRequired'] = 0
                                 param['type'] = option.get('type')
-                                param['config'] = option.get('config')
+                                param['config'] = option.get('dataSource')
                                 param['mode'] = 'input'
                                 paramList.append(param)
 
@@ -67,7 +67,6 @@ def importJsonInfo(params):
                                 # test
                                 param['type'] = output.get('type')
                                 param['defaultValue'] = output.get('defaultValue')
-                                param['config'] = output.get('config')
                                 param['mode'] = 'output'
                                 paramList.append(param)
 
