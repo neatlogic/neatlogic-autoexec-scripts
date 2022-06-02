@@ -60,6 +60,7 @@ def exportJsonInfo(params):
                     dataParam['type'] = param.get('type')
                     # 是否为常量
                     dataParam['isConst'] = 'false'
+                    dataParam['config'] = param.get('config')
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
                         dataParam['required'] = 'true'
@@ -67,6 +68,7 @@ def exportJsonInfo(params):
                         dataParam['required'] = 'false'
                     # 校验正则表达式
                     dataParam['validate'] = ''
+                    # todo 参数映射模式&映射值
                     option.append(dataParam)
 
                 if param.get('mode') == 'output':
