@@ -48,6 +48,7 @@ def exportJsonInfo(params):
             jsonInfo['riskName'] = data.get('riskName')
             jsonInfo['interpreter'] = data.get('parser')
             jsonInfo['description'] = data.get('description')
+            # todo defaultProfile
             option = []
             output = []
             paramList = data.get('paramList')
@@ -59,7 +60,6 @@ def exportJsonInfo(params):
                     dataParam['help'] = param.get('description')
                     dataParam['type'] = param.get('type')
                     # 是否为常量
-                    dataParam['isConst'] = 'false'
                     dataParam['dataSource'] = param.get('config')
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
@@ -68,7 +68,7 @@ def exportJsonInfo(params):
                         dataParam['required'] = 'false'
                     # 校验正则表达式
                     dataParam['validate'] = ''
-                    # todo 参数映射模式&映射值
+                    # todo 全局参数
                     option.append(dataParam)
 
                 if param.get('mode') == 'output':
@@ -92,7 +92,6 @@ def exportJsonInfo(params):
                 argument['defaultValue'] = argumentParam.get('defaultValue')
                 argument['help'] = argumentParam.get('description')
                 argument['count'] = argumentParam.get('argumentCount')
-                argument['isConst'] = 'false'
                 argument['validate'] = ''
                 if argumentParam.get('isRequired') == 1:
                     argument['required'] = 'true'
