@@ -3,6 +3,7 @@
 import initenv
 import json
 import os
+import re
 import requests
 import argparse
 
@@ -14,7 +15,7 @@ def importJsonInfo(params):
     serverUser = params.get('user')
     serverPass = params.get('password')
     tenant = params.get('tenant')
-    url = params.get('baseUrl') + '/' + tenant + '/public/api/stream/autoexec/script/import/fromjson'
+    url = params.get('baseUrl') + '/public/api/stream/autoexec/script/import/fromjson'
     dataDir = params.get('destDir')
     headers = {
         'tenant': tenant,
@@ -30,19 +31,15 @@ def importJsonInfo(params):
                         # print(os.path.join(root, name))
                         # print(root.split('/')[-1].split('\\')[-1])
                         jsonList = []
-                        typeList = ['select', 'multiselect', 'radio', 'checkbox']
                         jsonInfo = {}
                         # 获取脚本描述.json文件
                         with open(path + '.json', 'r', encoding='utf-8') as m:
                             data = json.load(m)
+                            # todo defaultProfile
                             paramList = []
                             # 输入参数
                             optionList = data.get('option')
                             for option in optionList:
-                                if option.get('type') in typeList:
-                                    # 错误给出提示
-                                    print(path + '.json文件中option参数type错误')
-                                    return
                                 param = {}
                                 param['key'] = option.get('opt')
                                 param['name'] = option.get('name')
@@ -53,7 +50,9 @@ def importJsonInfo(params):
                                 else:
                                     param['isRequired'] = 0
                                 param['type'] = option.get('type')
+                                param['config'] = option.get('dataSource')
                                 param['mode'] = 'input'
+                                # todo 全局参数
                                 paramList.append(param)
 
                             # 输出参数
@@ -63,11 +62,29 @@ def importJsonInfo(params):
                                 param['key'] = output.get('opt')
                                 param['name'] = output.get('name')
                                 param['description'] = output.get('help')
-                                param['isRequired'] = 1
-                                # test
-                                param['type'] = 'text'
+                                if output.get('required') == 'true':
+                                    param['isRequired'] = 1
+                                else:
+                                    param['isRequired'] = 0
+                                param['type'] = output.get('type')
+                                param['defaultValue'] = output.get('defaultValue')
                                 param['mode'] = 'output'
                                 paramList.append(param)
+
+                            # 自由参数
+                            argumentParam = data.get('argument')
+                            if argumentParam != None:
+                                argument = {}
+                                argument['name'] = argumentParam.get('name')
+                                argument['type'] = argumentParam.get('type')
+                                argument['defaultValue'] = argumentParam.get('defaultValue')
+                                argument['argumentCount'] = argumentParam.get('count')
+                                argument['description'] = argumentParam.get('help')
+                                if argumentParam.get('required') == 'true':
+                                    argument['isRequired'] = 1
+                                else:
+                                    argument['isRequired'] = 0
+                                jsonInfo['argument'] = argument
 
                             jsonInfo['paramList'] = paramList
                             jsonInfo['parser'] = data.get('interpreter')
@@ -83,9 +100,8 @@ def importJsonInfo(params):
                         lineList = []
                         with open(path, 'r', encoding='utf-8') as m:
                             for line in m:
-                                param = {}
-                                param['content'] = line
-                                lineList.append(param)
+                                line = re.sub('\\r?\\n$', '', line)
+                                lineList.append({'content':line})
                             jsonInfo['lineList'] = lineList
 
                         jsonList.append(jsonInfo)

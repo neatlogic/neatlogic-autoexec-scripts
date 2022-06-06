@@ -18,7 +18,7 @@ def exportJsonInfo(params):
     serverPass = params.get('password')
     tenant = params.get('tenant')
     pathStr = params.get('destDir')
-    url = params.get('baseUrl') + '/' + tenant + '/public/api/binary/autoexec/script/export'
+    url = params.get('baseUrl') + '/public/api/binary/autoexec/script/export'
     # 获取json数据
     authStr = serverUser + ":" + serverPass
     Authorization = "Basic " + base64.b64encode(authStr.encode('utf8')).decode()
@@ -48,6 +48,7 @@ def exportJsonInfo(params):
             jsonInfo['riskName'] = data.get('riskName')
             jsonInfo['interpreter'] = data.get('parser')
             jsonInfo['description'] = data.get('description')
+            # todo defaultProfile
             option = []
             output = []
             paramList = data.get('paramList')
@@ -58,8 +59,7 @@ def exportJsonInfo(params):
                     dataParam['name'] = param.get('name')
                     dataParam['help'] = param.get('description')
                     dataParam['type'] = param.get('type')
-                    # 是否为常量
-                    dataParam['isConst'] = 'false'
+                    dataParam['dataSource'] = param.get('config')
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
                         dataParam['required'] = 'true'
@@ -67,6 +67,7 @@ def exportJsonInfo(params):
                         dataParam['required'] = 'false'
                     # 校验正则表达式
                     dataParam['validate'] = ''
+                    # todo 全局参数
                     option.append(dataParam)
 
                 if param.get('mode') == 'output':
@@ -74,7 +75,28 @@ def exportJsonInfo(params):
                     dataParam['name'] = param.get('name')
                     dataParam['help'] = param.get('description')
                     dataParam['type'] = param.get('type')
+                    dataParam['defaultValue'] = param.get('defaultValue')
+                    if param.get('isRequired') == 1:
+                        dataParam['required'] = 'true'
+                    else:
+                        dataParam['required'] = 'false'
                     output.append(dataParam)
+
+            argumentParam = data.get('argument')
+            # 自由参数
+            if argumentParam != None:
+                argument = {}
+                argument['name'] = argumentParam.get('name')
+                argument['type'] = argumentParam.get('type')
+                argument['defaultValue'] = argumentParam.get('defaultValue')
+                argument['help'] = argumentParam.get('description')
+                argument['count'] = argumentParam.get('argumentCount')
+                argument['validate'] = ''
+                if argumentParam.get('isRequired') == 1:
+                    argument['required'] = 'true'
+                else:
+                    argument['required'] = 'false'
+                jsonInfo['argument'] = argument
 
             jsonInfo['option'] = option
             jsonInfo['output'] = output
@@ -109,7 +131,7 @@ def exportJsonInfo(params):
                                 if line.__contains__('content'):
                                     content = line.get('content')
                                     m.write(content)
-                                    m.write('\n')
+                                m.write('\n')
                     except Exception as reason:
                         hasError = hasError + 1
                         print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
