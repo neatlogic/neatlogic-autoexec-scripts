@@ -59,7 +59,6 @@ def exportJsonInfo(params):
                     dataParam['name'] = param.get('name')
                     dataParam['help'] = param.get('description')
                     dataParam['type'] = param.get('type')
-                    # 是否为常量
                     dataParam['dataSource'] = param.get('config')
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
