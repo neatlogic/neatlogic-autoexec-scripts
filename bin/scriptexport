@@ -5,6 +5,7 @@ import initenv
 import base64
 import json
 import os
+import os.path
 import ijson
 import urllib.request
 import argparse
@@ -42,7 +43,7 @@ def exportJsonInfo(params):
             jsonInfo = {}
             opName = data.get('name')
             catalogPath = data.get('catalogPath')
-            jsonInfo['opName'] = opName
+            #jsonInfo['opName'] = opName
             jsonInfo['opType'] = data.get('execMode')
             jsonInfo['typeName'] = data.get('typeName')
             jsonInfo['riskName'] = data.get('riskName')
@@ -102,13 +103,17 @@ def exportJsonInfo(params):
             jsonInfo['output'] = output
             # 写入
             if opName != None:
+                opJsonName = opName + '.json'
                 jsonPath = ''
                 if catalogPath != None and catalogPath != '':
-                    jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
-                    if not os.path.exists(pathStr + '/' + catalogPath):
-                        os.makedirs(pathStr+'/' + catalogPath)
+                    catalogFullDir = os.path.join(pathStr, catalogPath)
+                    #jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
+                    jsonPath = os.path.join(catalogFullDir, opJsonName)
+                    if not os.path.exists(catalogFullDir):
+                        os.makedirs(catalogFullDir)
                 else:
-                    jsonPath = pathStr + '/' + opName + '.json'
+                    #jsonPath = pathStr + '/' + opName + '.json'
+                    jsonPath = os.path.join(pathStr, opJsonName)
                     if not os.path.exists(pathStr):
                         os.makedirs(pathStr)
                 try:
@@ -120,18 +125,23 @@ def exportJsonInfo(params):
 
                 lineList = data.get('lineList')
                 if opName != None:
-                    linePath = ''
+                    scriptFilePath = None
                     if catalogPath != None and catalogPath != '':
-                        linePath = pathStr + '/' + catalogPath + '/' + opName
+                        #scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
+                        scriptFilePath = os.path.join(pathStr, catalogPath, opName)
                     else:
-                        linePath = pathStr + '/' + opName
+                        #scriptFilePath = pathStr + '/' + opName
+                        scriptFilePath = os.path.join(pathStr, opName)
+
                     try:
-                        with open(linePath, 'w', encoding='utf8') as m:
+                        with open(scriptFilePath, 'w', encoding='utf8') as scriptFile:
+                            print("INFO: Try to export {}".format(opName))
                             for line in lineList:
                                 if line.__contains__('content'):
                                     content = line.get('content')
-                                    m.write(content)
-                                m.write('\n')
+                                    scriptFile.write(content)
+                                scriptFile.write('\n')
+                            print("INFO: {} exported to {}.\n".format(opName, scriptFilePath))
                     except Exception as reason:
                         hasError = hasError + 1
                         print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))

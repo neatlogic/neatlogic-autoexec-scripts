@@ -1,0 +1,10 @@
+{
+    "opName": "autolog-nodel",
+    "opType": "runner",
+    "typeName": "TEST",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "",
+    "option": [],
+    "output": []
+}

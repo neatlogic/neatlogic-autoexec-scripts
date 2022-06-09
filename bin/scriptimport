@@ -3,6 +3,7 @@
 import initenv
 import json
 import os
+import os.path
 import re
 import requests
 import argparse
@@ -23,18 +24,20 @@ def importJsonInfo(params):
 
     if dataDir != None and dataDir != '':
         for root, dirs, files in os.walk(dataDir, topdown=False):
-            for name in files:
-                if not name.endswith('.json'):
+            for opName in files:
+                if not opName.endswith('.json'):
                     try:
-                        path = os.path.join(root, name)
-                        dir = root.split('/')[-1].split('\\')[-1]
-                        # print(os.path.join(root, name))
-                        # print(root.split('/')[-1].split('\\')[-1])
+                        scriptPath = os.path.join(root, opName)
+                        catalogName = os.path.basename(root)
                         jsonList = []
                         jsonInfo = {}
                         # 获取脚本描述.json文件
-                        with open(path + '.json', 'r', encoding='utf-8') as m:
-                            data = json.load(m)
+                        if not os.path.exists(scriptPath + '.json'):
+                            continue
+
+                        with open(scriptPath + '.json', 'r', encoding='utf-8') as scriptJsonFile:
+                            print("INFO: Try to import {}".format(scriptPath))
+                            data = json.load(scriptJsonFile)
                             # todo defaultProfile
                             paramList = []
                             # 输入参数
@@ -89,31 +92,33 @@ def importJsonInfo(params):
                             jsonInfo['paramList'] = paramList
                             jsonInfo['parser'] = data.get('interpreter')
 
-                            jsonInfo['name'] = data.get('opName')
+                            jsonInfo['name'] = opName
                             # 目录
-                            jsonInfo['catalogName'] = dir
+                            jsonInfo['catalogName'] = catalogName
                             jsonInfo['execMode'] = data.get('opType')
                             jsonInfo['riskName'] = data.get('riskName')
                             jsonInfo['typeName'] = data.get('typeName')
                             jsonInfo['description'] = data.get('description')
 
                         lineList = []
-                        with open(path, 'r', encoding='utf-8') as m:
-                            for line in m:
+                        with open(scriptPath, 'r', encoding='utf-8') as scriptFile:
+                            for line in scriptFile:
                                 line = re.sub('\\r?\\n$', '', line)
-                                lineList.append({'content':line})
+                                lineList.append({'content': line})
                             jsonInfo['lineList'] = lineList
 
                         jsonList.append(jsonInfo)
                         try:
-                            r = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+                            res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+
+                            print("INFO: {} imported.\n".format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
                             print("ERROR: Request URL:%s failed, %s" % (url, str(ex)))
                             return hasError
                     except Exception as reason:
                         hasError = hasError + 1
-                        print("ERROR: Import %s failed, %s" % (path, str(reason)))
+                        print("ERROR: Import %s failed, %s" % (scriptPath, str(reason)))
 
 
 def parseArgs():
