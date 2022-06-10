@@ -8,7 +8,7 @@ import time
 import argparse
 
 binPaths = os.path.split(os.path.realpath(__file__))
-libPath = os.path.realpath(binPaths[0]+'/../lib')
+libPath = os.path.realpath(binPaths[0]+'/lib')
 sys.path.append(libPath)
 
 
@@ -64,4 +64,3 @@ if __name__ == "__main__":
     out['outjson'] = '{"key1":"value1", "key2":"value2"}'
     out['outcsv'] = '"name","sex","age"\n"张三“,"男“,"30"\n"李四","女“,"35"}'
     AutoExecUtils.saveOutput(out)
-

@@ -99,14 +99,12 @@ echo "Do some jobs."
 echo "======Save output to output file"
 outtext="This the outText"
 outfile="testfile.txt"
-
-if [ ! -z "$OUTPUT_PATH" ]; then
-    cat <<EOF >"$OUTPUT_PATH"
+#SAVE output to output.json
+cat <<EOF >"output.json"
 {
     "outtext":"$outtext",
-    'outfile":"$outfile"
+    "outfile":"$outfile"
 }
 EOF
-fi
-##########################################
 
+##########################################

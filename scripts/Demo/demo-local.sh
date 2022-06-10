@@ -104,9 +104,8 @@ if [ ! -z "$OUTPUT_PATH" ]; then
     cat <<EOF >"$OUTPUT_PATH"
 {
     "outtext":"$outtext",
-    'outfile":"$outfile"
+    "outfile":"$outfile"
 }
 EOF
 fi
 ##########################################
-
