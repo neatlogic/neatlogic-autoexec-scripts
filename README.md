@@ -12,6 +12,9 @@ cd autoscripts
 ```
 cd autoscripts/media
 ./ins-modules.sh
+
+###或者手工pip3安装
+pip3 install requests filelock ijson
 ```
 ### 升级python3第三方库
 ```
