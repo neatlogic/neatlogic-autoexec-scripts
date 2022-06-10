@@ -157,15 +157,5 @@
             "help": "password输出测试",
             "type": "password"
         }
-    ],
-    "argument": {
-        "name": "自由参数",
-        "help": "自由参数测试",
-        "type": "text",
-        "count": 0,
-        "isConst": "false",
-        "defaultValue": "",
-        "required": "true",
-        "validate": ""
-    }
+    ]
 }
