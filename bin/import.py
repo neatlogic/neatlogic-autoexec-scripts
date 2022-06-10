@@ -41,7 +41,7 @@ def importJsonInfo(params):
                             try:
                                 data = json.load(scriptJsonFile)
                             except Exception as ex:
-                                print("ERROR: Open json file %s failed, there is possible format error: %s" % (scriptPath + ".json", str(ex)))
+                                print("ERROR: Load json file %s failed, there is possible format error: %s" % (scriptPath + ".json", str(ex)))
                             # todo defaultProfile
                             paramList = []
                             # 输入参数
