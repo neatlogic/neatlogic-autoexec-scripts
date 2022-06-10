@@ -5,7 +5,7 @@ import os
 import time
 import argparse
 
-from lib import AutoExecUtils
+import AutoExecUtils
 
 
 def usage():
