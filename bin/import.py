@@ -41,7 +41,7 @@ def importJsonInfo(params):
                             try:
                                 data = json.load(scriptJsonFile)
                             except Exception as ex:
-                                print("ERROR: Open json failed, there is possible format error: %s" % str(ex))
+                                print("ERROR: Open json file %s failed, there is possible format error: %s" % (scriptPath + ".json", str(ex)))
                             # todo defaultProfile
                             paramList = []
                             # 输入参数
@@ -120,7 +120,7 @@ def importJsonInfo(params):
                                 jsonInfo['lineList'] = lineList
                             jsonList.append(jsonInfo)
                         except Exception as ex:
-                            print("ERROR: Open script failed, error: %s" % str(ex))
+                            print("ERROR: Open script file %s failed, error: %s" % (scriptPath, str(ex)))
                         try:
                             res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
                             content = res.json()
