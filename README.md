@@ -30,3 +30,12 @@ cd autoscripts/media
 cd autoscripts
 source bin/setenv.sh
 ```
+
+### 脚本导入导出
+```
+#导出脚本到scripts目录下
+python3 bin/export.py
+
+#导入脚本到系统
+python3 bin/import.py
+```
