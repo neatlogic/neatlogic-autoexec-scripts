@@ -6,16 +6,7 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "在远程target OS执行工具的Demo",
-    "arg": {
-        "count": "0",
-        "type": "text",
-        "defaultValue": "",
-        "help": "",
-        "isConst": "false",
-        "required": "true"
-    },
-    "option": [
-        {
+    "option": [{
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
@@ -41,8 +32,7 @@
             "required": "true",
             "validate": "",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -62,8 +52,7 @@
             "required": "true",
             "validate": "",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -137,8 +126,7 @@
             "defaultValue": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "outtext",
             "name": "普通输出1",
             "help": "普通输出测试",
@@ -169,5 +157,15 @@
             "help": "password输出测试",
             "type": "password"
         }
-    ]
+    ],
+    "argument": {
+        "name": "自由参数",
+        "help": "自由参数测试",
+        "type": "text",
+        "count": 0,
+        "isConst": "false",
+        "defaultValue": "",
+        "required": "true",
+        "validate": ""
+    }
 }
