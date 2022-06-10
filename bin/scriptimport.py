@@ -3,6 +3,7 @@
 import initenv
 import json
 import os
+import traceback
 import os.path
 import re
 import requests
@@ -37,6 +38,7 @@ def importJsonInfo(params):
 
                         with open(scriptPath + '.json', 'r', encoding='utf-8') as scriptJsonFile:
                             print("INFO: Try to import {}".format(scriptPath))
+                            # todo 异常捕获
                             data = json.load(scriptJsonFile)
                             # todo defaultProfile
                             paramList = []
@@ -53,7 +55,14 @@ def importJsonInfo(params):
                                 else:
                                     param['isRequired'] = 0
                                 param['type'] = option.get('type')
-                                param['config'] = option.get('dataSource')
+                                dataSource = option.get('dataSource')
+                                if dataSource != None:
+                                    dataType = dataSource.pop('dataType', None)
+                                    if dataType != None and dataType != '':
+                                        dataSource['dataSource'] = dataType
+                                    else:
+                                        dataSource['dataSource'] = 'static'
+                                    param['config'] = dataSource
                                 param['mode'] = 'input'
                                 # todo 全局参数
                                 paramList.append(param)
@@ -110,6 +119,13 @@ def importJsonInfo(params):
                         jsonList.append(jsonInfo)
                         try:
                             res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+                            content = res.json()
+                            result = content.get('Return')
+                            for item in result:
+                                print("ERROR：{}".format(item['item']))
+                                faultMessages = item['faultMessages']
+                                for message in faultMessages:
+                                    print(message)
 
                             print("INFO: {} imported.\n".format(scriptPath))
                         except Exception as ex:
@@ -118,7 +134,8 @@ def importJsonInfo(params):
                             return hasError
                     except Exception as reason:
                         hasError = hasError + 1
-                        print("ERROR: Import %s failed, %s" % (scriptPath, str(reason)))
+                        print("ERROR: Import %s failed, Unknown error %s" % (scriptPath, str(reason)))
+                        print(traceback.format_exc())
 
 
 def parseArgs():
