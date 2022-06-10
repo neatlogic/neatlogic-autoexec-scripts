@@ -62,8 +62,6 @@ def importJsonInfo(params):
                                         dataSource['dataSource'] = 'static'
                                     if 'dataType' in dataSource:
                                         del dataSource['dataType']
-                                    else:
-                                        dataSource['dataSource'] = 'static'
                                     param['config'] = dataSource
                                 param['mode'] = 'input'
                                 # todo 全局参数
