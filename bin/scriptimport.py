@@ -110,6 +110,14 @@ def importJsonInfo(params):
                         jsonList.append(jsonInfo)
                         try:
                             res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+                            content = res.json()
+                            result = content.get('Return')
+                            for item in result:
+                                print("ERROR：")
+                                print(item['item'])
+                                faultMessages = item['faultMessages']
+                                for message in faultMessages:
+                                    print(message)
 
                             print("INFO: {} imported.\n".format(scriptPath))
                         except Exception as ex:
