@@ -53,7 +53,14 @@ def importJsonInfo(params):
                                 else:
                                     param['isRequired'] = 0
                                 param['type'] = option.get('type')
-                                param['config'] = option.get('dataSource')
+                                dataSource = option.get('dataSource')
+                                if dataSource != None:
+                                    dataType = dataSource.get('dataType')
+                                    if dataType != None:
+                                        dataSource['dataSource'] = dataType
+                                    if 'dataType' in dataSource:
+                                        del dataSource['dataType']
+                                    param['config'] = dataSource
                                 param['mode'] = 'input'
                                 # todo 全局参数
                                 paramList.append(param)
