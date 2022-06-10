@@ -13,7 +13,7 @@
             "type": "text",
             "required": "true",
             "validate": "",
-            "defaultValue": "测试1"
+            "defaultValue": "test1"
         },
         {
             "opt": "tjson",
