@@ -38,8 +38,11 @@ def importJsonInfo(params):
 
                         with open(scriptPath + '.json', 'r', encoding='utf-8') as scriptJsonFile:
                             print("INFO: Try to import {}".format(scriptPath))
-                            # todo 异常捕获
-                            data = json.load(scriptJsonFile)
+                            try:
+                                data = json.load(scriptJsonFile)
+                            except Exception as ex:
+                                print("ERROR: json load failed.")
+                                print(traceback.format_exc())
                             # todo defaultProfile
                             paramList = []
                             # 输入参数
@@ -110,13 +113,16 @@ def importJsonInfo(params):
                             jsonInfo['description'] = data.get('description')
 
                         lineList = []
-                        with open(scriptPath, 'r', encoding='utf-8') as scriptFile:
-                            for line in scriptFile:
-                                line = re.sub('\\r?\\n$', '', line)
-                                lineList.append({'content': line})
-                            jsonInfo['lineList'] = lineList
-
-                        jsonList.append(jsonInfo)
+                        try:
+                            with open(scriptPath, 'r', encoding='utf-8') as scriptFile:
+                                for line in scriptFile:
+                                    line = re.sub('\\r?\\n$', '', line)
+                                    lineList.append({'content': line})
+                                jsonInfo['lineList'] = lineList
+                            jsonList.append(jsonInfo)
+                        except Exception as ex:
+                            print("ERROR: read script line failed.")
+                            print(traceback.format_exc())
                         try:
                             res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
                             content = res.json()
@@ -130,7 +136,8 @@ def importJsonInfo(params):
                             print("INFO: {} imported.\n".format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
-                            print("ERROR: Request URL:%s failed, %s" % (url, str(ex)))
+                            print("ERROR: Request URL:%s failed." % url)
+                            print(traceback.format_exc())
                             return hasError
                     except Exception as reason:
                         hasError = hasError + 1
