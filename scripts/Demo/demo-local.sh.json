@@ -3,11 +3,10 @@
     "opType": "runner",
     "typeName": "BASIC",
     "riskName": "LOW",
-    "interpreter": "perl",
+    "interpreter": "bash",
     "defaultProfile": null,
     "description": "在runner执行工具的Demo",
-    "option": [
-        {
+    "option": [{
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
@@ -33,8 +32,7 @@
             "required": "true",
             "validate": "",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -54,8 +52,7 @@
             "required": "true",
             "validate": "",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -129,8 +126,7 @@
             "defaultValue": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "outtext",
             "name": "普通输出1",
             "help": "普通输出测试",

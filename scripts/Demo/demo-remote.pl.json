@@ -22,7 +22,7 @@
             "type": "json",
             "required": "true",
             "validate": "",
-            "defaultValue": "测试1"
+            "defaultValue": "{\"name\":\"Remote\"}"
         },
         {
             "opt": "tselect",

@@ -3,7 +3,7 @@
     "opType": "target",
     "typeName": "BASIC",
     "riskName": "LOW",
-    "interpreter": "perl",
+    "interpreter": "bash",
     "defaultProfile": null,
     "description": "在远程target OS执行工具的Demo",
     "option": [{
@@ -22,7 +22,7 @@
             "type": "json",
             "required": "true",
             "validate": "",
-            "defaultValue": "测试1"
+            "defaultValue": "{\"name\":\"Remote\"}"
         },
         {
             "opt": "tselect",
