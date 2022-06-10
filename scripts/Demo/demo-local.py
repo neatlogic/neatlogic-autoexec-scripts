@@ -1,11 +1,11 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
-import AutoExecUtils
 import os
-import sys
 import time
 import argparse
+
+from lib import AutoExecUtils
 
 
 def usage():

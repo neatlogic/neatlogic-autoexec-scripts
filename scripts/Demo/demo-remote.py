@@ -1,15 +1,11 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
-import AutoExecUtils
 import os
-import sys
 import time
 import argparse
 
-binPaths = os.path.split(os.path.realpath(__file__))
-libPath = os.path.realpath(binPaths[0]+'/lib')
-sys.path.append(libPath)
+from lib import AutoExecUtils
 
 
 def usage():
