@@ -1,6 +1,6 @@
 {
     "opDesc": "演示LocalRemote",
-    "opType": "localremote",
+    "opType": "runner_target",
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "perl",

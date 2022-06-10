@@ -1,6 +1,6 @@
 {
     "opDesc": "演示Local",
-    "opType": "local",
+    "opType": "runner",
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "perl",
