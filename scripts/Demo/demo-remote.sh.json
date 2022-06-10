@@ -14,12 +14,13 @@
         "isConst": "false",
         "required": "true"
     },
-    "option": [{
+    "option": [
+        {
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
             "type": "text",
-            "required": "false",
+            "required": "true",
             "validate": "",
             "defaultValue": "测试1"
         },
@@ -28,7 +29,7 @@
             "name": "json输入",
             "help": "json输入测试",
             "type": "json",
-            "required": "false",
+            "required": "true",
             "validate": "",
             "defaultValue": "测试1"
         },
@@ -37,51 +38,48 @@
             "name": "单选输入",
             "help": "单选输入测试",
             "type": "select",
-            "required": "false",
+            "required": "true",
             "validate": "",
-            "defaultValue": "sel1",
-            "dataSource": [{
-                    "text": "选择1",
-                    "value": "sel1"
-                },
-                {
-                    "text": "选择2",
-                    "value": "sel2"
-                }
-            ]
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "选择1",
+                        "value": "sel1"
+                    },
+                    {
+                        "text": "选择2",
+                        "value": "sel2"
+                    }
+                ]
+            },
+            "defaultValue": "sel1"
         },
         {
             "opt": "tmultiselect",
             "name": "多选输入",
             "help": "多选输入测试",
             "type": "multiselect",
-            "required": "false",
+            "required": "true",
             "validate": "",
-            "defaultValue": [{
-                    "text": "选择1",
-                    "value": "sel1"
-                },
-                {
-                    "text": "选择2",
-                    "value": "sel2"
-                },
-                {
-                    "text": "选择3",
-                    "value": "sel3"
-                }
-            ],
-            "dataSource": [{
-                    "text": "选择1",
-                    "value": "sel1"
-                },
-                {
-                    "text": "选择2",
-                    "value": "sel2"
-                },
-                {
-                    "text": "选择3",
-                    "value": "sel3"
-                }
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "选择1",
+                        "value": "sel1"
+                    },
+                    {
+                        "text": "选择2",
+                        "value": "sel2"
+                    },
+                    {
+                        "text": "选择3",
+                        "value": "sel3"
+                    }
+                ]
+            },
+            "defaultValue": [
+                "sel1",
+                "sel2"
             ]
         },
         {
@@ -139,7 +137,8 @@
             "defaultValue": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "outtext",
             "name": "普通输出1",
             "help": "普通输出测试",
