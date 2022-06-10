@@ -1,6 +1,6 @@
 {
     "opDesc": "演示Remote",
-    "opType": "remote",
+    "opType": "target",
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "perl",
