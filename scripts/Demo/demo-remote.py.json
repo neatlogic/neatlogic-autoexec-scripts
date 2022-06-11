@@ -1,38 +1,46 @@
 {
-    "opDesc": "演示Remote",
     "opType": "target",
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "python",
-    "defaultProfile": null,
     "description": "在远程target OS执行工具的Demo",
-    "option": [{
+    "option": [
+        {
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
             "type": "text",
+            "dataSource": {
+                "isRequired": true,
+                "type": "text"
+            },
+            "defaultValue": "test1",
             "required": "true",
-            "validate": "",
-            "defaultValue": "test1"
+            "validate": ""
         },
         {
             "opt": "tjson",
             "name": "json输入",
             "help": "json输入测试",
             "type": "json",
+            "dataSource": {
+                "isRequired": true,
+                "type": "json"
+            },
+            "defaultValue": {
+                "name": "Remote"
+            },
             "required": "true",
-            "validate": "",
-            "defaultValue": "{\"name\":\"Remote\"}"
+            "validate": ""
         },
         {
             "opt": "tselect",
             "name": "单选输入",
             "help": "单选输入测试",
             "type": "select",
-            "required": "true",
-            "validate": "",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -40,19 +48,21 @@
                         "text": "选择2",
                         "value": "sel2"
                     }
-                ]
+                ],
+                "dataType": "static"
             },
-            "defaultValue": "sel1"
+            "defaultValue": "sel1",
+            "required": "true",
+            "validate": ""
         },
         {
             "opt": "tmultiselect",
             "name": "多选输入",
             "help": "多选输入测试",
             "type": "multiselect",
-            "required": "true",
-            "validate": "",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -64,98 +74,135 @@
                         "text": "选择3",
                         "value": "sel3"
                     }
-                ]
+                ],
+                "dataType": "static"
             },
             "defaultValue": [
                 "sel1",
                 "sel2"
-            ]
+            ],
+            "required": "true",
+            "validate": ""
         },
         {
             "opt": "tpassword",
             "name": "密码输入",
             "help": "密码输入测试",
             "type": "password",
+            "dataSource": {
+                "isRequired": false,
+                "type": "password"
+            },
+            "defaultValue": "",
             "required": "false",
-            "validate": "",
-            "defaultValue": ""
+            "validate": ""
         },
         {
             "opt": "tfile",
             "name": "文件输入",
             "help": "文件输入测试",
             "type": "file",
+            "dataSource": {
+                "isRequired": false,
+                "type": "file"
+            },
+            "defaultValue": null,
             "required": "false",
-            "validate": "",
-            "defaultValue": ""
+            "validate": ""
         },
         {
             "opt": "tnode",
             "name": "节点参数",
             "help": "节点输入测试",
             "type": "node",
+            "dataSource": {
+                "isRequired": false,
+                "type": "node"
+            },
+            "defaultValue": null,
             "required": "false",
-            "validate": "",
-            "defaultValue": ""
+            "validate": ""
         },
         {
             "opt": "tdate",
             "name": "日期输入",
             "help": "日期输入测试",
             "type": "date",
+            "dataSource": {
+                "isRequired": false,
+                "type": "date"
+            },
+            "defaultValue": "",
             "required": "false",
-            "validate": "",
-            "defaultValue": ""
+            "validate": ""
         },
         {
             "opt": "ttime",
             "name": "时间输入",
             "help": "时间输入测试",
             "type": "time",
+            "dataSource": {
+                "isRequired": false,
+                "type": "time"
+            },
+            "defaultValue": "",
             "required": "false",
-            "validate": "",
-            "defaultValue": ""
+            "validate": ""
         },
         {
             "opt": "tdatetime",
             "name": "日期时间输入",
             "help": "日期时间输入测试",
             "type": "datetime",
+            "dataSource": {
+                "isRequired": false,
+                "type": "datetime"
+            },
+            "defaultValue": "",
             "required": "false",
-            "validate": "",
-            "defaultValue": ""
+            "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "outtext",
             "name": "普通输出1",
             "help": "普通输出测试",
-            "type": "text"
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
         },
         {
             "opt": "outfile",
             "name": "文件输出",
-            "defaultValue": "test.txt",
             "help": "文件输出测试",
-            "type": "file"
+            "type": "file",
+            "defaultValue": "test.txt",
+            "required": "false"
         },
         {
             "opt": "outjson",
             "name": "json输出",
             "help": "json输出测试",
-            "type": "json"
+            "type": "json",
+            "defaultValue": null,
+            "required": "false"
         },
         {
             "opt": "outcsv",
             "name": "csv输出",
             "help": "csv输出测试",
-            "type": "text"
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
         },
         {
             "opt": "outpassword",
             "name": "password输出",
             "help": "password输出测试",
-            "type": "password"
+            "type": "password",
+            "defaultValue": null,
+            "required": "false"
         }
     ]
 }

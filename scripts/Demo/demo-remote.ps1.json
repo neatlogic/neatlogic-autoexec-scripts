@@ -1,9 +1,18 @@
 {
-    "opType": "runner_target",
+    "opType": "target",
     "typeName": "BASIC",
     "riskName": "LOW",
-    "interpreter": "perl",
-    "description": "在runner远程执行工具的Demo",
+    "interpreter": "powershell",
+    "description": "在远程target OS执行工具的Demo",
+    "argument": {
+        "name": "自由参数",
+        "type": "text",
+        "defaultValue": "",
+        "help": "自由参数测试",
+        "count": 0,
+        "validate": "",
+        "required": "true"
+    },
     "option": [
         {
             "opt": "tinput",
@@ -14,7 +23,7 @@
                 "isRequired": true,
                 "type": "text"
             },
-            "defaultValue": "测试Local-Remote",
+            "defaultValue": "测试1",
             "required": "true",
             "validate": ""
         },
@@ -27,9 +36,10 @@
                 "isRequired": true,
                 "type": "json"
             },
-            "defaultValue": {
-                "name": "测试Local-Remote"
-            },
+            "defaultValue": [
+                "val1",
+                "val2"
+            ],
             "required": "true",
             "validate": ""
         },
@@ -39,6 +49,7 @@
             "help": "单选输入测试",
             "type": "select",
             "dataSource": {
+                "defaultValue": "sel1",
                 "dataList": [
                     {
                         "text": "选择1",
@@ -49,6 +60,7 @@
                         "value": "sel2"
                     }
                 ],
+                "type": "select",
                 "dataType": "static"
             },
             "defaultValue": "sel1",
@@ -61,6 +73,10 @@
             "help": "多选输入测试",
             "type": "multiselect",
             "dataSource": {
+                "defaultValue": [
+                    "sel1",
+                    "sel2"
+                ],
                 "dataList": [
                     {
                         "text": "选择1",
@@ -75,6 +91,7 @@
                         "value": "sel3"
                     }
                 ],
+                "type": "multiselect",
                 "dataType": "static"
             },
             "defaultValue": [
@@ -106,7 +123,7 @@
                 "isRequired": false,
                 "type": "file"
             },
-            "defaultValue": null,
+            "defaultValue": {},
             "required": "false",
             "validate": ""
         },
@@ -119,7 +136,7 @@
                 "isRequired": false,
                 "type": "node"
             },
-            "defaultValue": null,
+            "defaultValue": [],
             "required": "false",
             "validate": ""
         },
@@ -177,7 +194,7 @@
             "name": "文件输出",
             "help": "文件输出测试",
             "type": "file",
-            "defaultValue": null,
+            "defaultValue": "test.txt",
             "required": "false"
         },
         {

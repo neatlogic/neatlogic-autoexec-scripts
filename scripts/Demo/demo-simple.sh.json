@@ -1,0 +1,18 @@
+{
+    "opType": "target",
+    "typeName": "TEMP",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "简单Shell脚本",
+    "argument": {
+        "name": "参数",
+        "type": "text",
+        "defaultValue": "2022-01-01",
+        "help": "日期  数量",
+        "count": 2,
+        "validate": "",
+        "required": "true"
+    },
+    "option": [],
+    "output": []
+}
