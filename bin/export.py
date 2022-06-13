@@ -72,7 +72,7 @@ def exportJsonInfo(params):
                             dataSource = config.pop('dataSource', None)
                             if dataSource != None:
                                 config['dataType'] = dataSource
-                            dataParam['dataSource'] = config
+                        dataParam['dataSource'] = config
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
                         dataParam['required'] = 'true'
