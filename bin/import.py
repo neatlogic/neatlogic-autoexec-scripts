@@ -154,7 +154,7 @@ def importJsonInfo(params):
                         print("ERROR: Import %s failed, Unknown error %s" % (scriptPath, str(reason)))
                         print(traceback.format_exc())
         if len(newScriptList) > 0:
-            print("INFO: new scripts: {}".format(','.join(newScriptList)))
+            print("INFO: New scripts: {}".format(','.join(newScriptList)))
         if len(updatedScriptList) > 0:
             print("INFO: Update base information or generate new version scripts: {}".format(','.join(updatedScriptList)))
 
