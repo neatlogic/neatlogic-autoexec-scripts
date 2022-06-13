@@ -19,10 +19,6 @@
             "name": "普通输入",
             "help": "普通输入测试",
             "type": "text",
-            "dataSource": {
-                "isRequired": true,
-                "type": "text"
-            },
             "defaultValue": "测试1",
             "required": "true",
             "validate": ""
@@ -32,10 +28,6 @@
             "name": "json输入",
             "help": "json输入测试",
             "type": "json",
-            "dataSource": {
-                "isRequired": true,
-                "type": "json"
-            },
             "defaultValue": [
                 "val1",
                 "val2"
@@ -49,7 +41,6 @@
             "help": "单选输入测试",
             "type": "select",
             "dataSource": {
-                "defaultValue": "sel1",
                 "dataList": [
                     {
                         "text": "选择1",
@@ -60,7 +51,6 @@
                         "value": "sel2"
                     }
                 ],
-                "type": "select",
                 "dataType": "static"
             },
             "defaultValue": "sel1",
@@ -73,10 +63,6 @@
             "help": "多选输入测试",
             "type": "multiselect",
             "dataSource": {
-                "defaultValue": [
-                    "sel1",
-                    "sel2"
-                ],
                 "dataList": [
                     {
                         "text": "选择1",
@@ -91,7 +77,6 @@
                         "value": "sel3"
                     }
                 ],
-                "type": "multiselect",
                 "dataType": "static"
             },
             "defaultValue": [
@@ -106,10 +91,6 @@
             "name": "密码输入",
             "help": "密码输入测试",
             "type": "password",
-            "dataSource": {
-                "isRequired": false,
-                "type": "password"
-            },
             "defaultValue": "",
             "required": "false",
             "validate": ""
@@ -119,10 +100,6 @@
             "name": "文件输入",
             "help": "文件输入测试",
             "type": "file",
-            "dataSource": {
-                "isRequired": false,
-                "type": "file"
-            },
             "defaultValue": {},
             "required": "false",
             "validate": ""
@@ -132,10 +109,6 @@
             "name": "节点参数",
             "help": "节点输入测试",
             "type": "node",
-            "dataSource": {
-                "isRequired": false,
-                "type": "node"
-            },
             "defaultValue": [],
             "required": "false",
             "validate": ""
@@ -145,10 +118,6 @@
             "name": "日期输入",
             "help": "日期输入测试",
             "type": "date",
-            "dataSource": {
-                "isRequired": false,
-                "type": "date"
-            },
             "defaultValue": "",
             "required": "false",
             "validate": ""
@@ -158,10 +127,6 @@
             "name": "时间输入",
             "help": "时间输入测试",
             "type": "time",
-            "dataSource": {
-                "isRequired": false,
-                "type": "time"
-            },
             "defaultValue": "",
             "required": "false",
             "validate": ""
@@ -171,10 +136,6 @@
             "name": "日期时间输入",
             "help": "日期时间输入测试",
             "type": "datetime",
-            "dataSource": {
-                "isRequired": false,
-                "type": "datetime"
-            },
             "defaultValue": "",
             "required": "false",
             "validate": ""
