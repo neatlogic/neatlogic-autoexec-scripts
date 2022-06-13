@@ -15,6 +15,8 @@ import Utils
 
 def exportJsonInfo(params):
     hasError = 0
+    # 需要数据源的表单类型
+    needDataSourceTypeList = ['select', 'multiselect', 'radio', 'checkbox']
     serverUser = params.get('user')
     serverPass = params.get('password')
     tenant = params.get('tenant')
@@ -60,12 +62,17 @@ def exportJsonInfo(params):
                     dataParam['name'] = param.get('name')
                     dataParam['help'] = param.get('description')
                     dataParam['type'] = param.get('type')
-                    config = param.get('config')
-                    if config != None:
-                        dataSource = config.pop("dataSource", None)
-                        if dataSource != None:
-                            config['dataType'] = dataSource
-                    dataParam['dataSource'] = config
+                    if param.get('type') in needDataSourceTypeList:
+                        config = param.get('config')
+                        if config != None:
+                            # 去掉多余的字段
+                            config.pop('type', None)
+                            config.pop('defaultValue', None)
+                            config.pop('isRequired', None)
+                            dataSource = config.pop('dataSource', None)
+                            if dataSource != None:
+                                config['dataType'] = dataSource
+                            dataParam['dataSource'] = config
                     dataParam['defaultValue'] = param.get('defaultValue')
                     if param.get('isRequired') == 1:
                         dataParam['required'] = 'true'
