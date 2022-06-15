@@ -156,7 +156,7 @@ def importJsonInfo(params):
         if len(newScriptList) > 0:
             print("INFO: New scripts: {}".format(','.join(newScriptList)))
         if len(updatedScriptList) > 0:
-            print("INFO: Update base information or generate new version scripts: {}".format(','.join(updatedScriptList)))
+            print("INFO: Update basic information or generate new version scripts: {}".format(','.join(updatedScriptList)))
 
 def parseArgs():
     parser = argparse.ArgumentParser(description='you should add those paramete')
