@@ -128,20 +128,21 @@ def importJsonInfo(params):
                             faultArray = result.get('faultArray')
                             newScriptArray = result.get('newScriptArray')
                             updatedScriptArray = result.get('updatedScriptArray')
-                            for item in faultArray:
-                                print("ERROR：{}".format(item['item']))
-                                faultMessages = item['faultMessages']
-                                for message in faultMessages:
-                                    print(message)
-                            resultMessage = 'INFO: Import has been done.'
-                            if faultArray == None or len(faultArray) == 0:
+                            if faultArray != None and len(faultArray) > 0:
+                                print("ERROR：Import failed for {}, errors:".format(scriptPath))
+                                for item in faultArray:
+                                    faultMessages = item['faultMessages']
+                                    for message in faultMessages:
+                                        print(message)
+                            else:
+                                resultMessage = 'INFO: Import has been done. '
                                 if newScriptArray != None and len(newScriptArray) > 0:
                                     resultMessage = resultMessage + 'Add a new script {}.'
                                 elif updatedScriptArray != None and len(updatedScriptArray) > 0:
                                     resultMessage = resultMessage + 'Update script {}.'
                                 else:
                                     resultMessage = resultMessage + 'Nothing to do for {}.'
-                            print(resultMessage.format(scriptPath))
+                                print(resultMessage.format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
                             print("ERROR: Request URL:%s failed, %s" % (url, str(ex)))
