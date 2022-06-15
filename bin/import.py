@@ -126,9 +126,7 @@ def importJsonInfo(params):
                             content = res.json()
                             result = content.get('Return')
                             faultArray = result.get('faultArray')
-                            # 新脚本
                             newScriptArray = result.get('newScriptArray')
-                            # 更新了基本信息或生成了新版本的脚本
                             updatedScriptArray = result.get('updatedScriptArray')
                             for item in faultArray:
                                 print("ERROR：{}".format(item['item']))
