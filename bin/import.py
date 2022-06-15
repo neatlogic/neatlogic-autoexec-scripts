@@ -133,14 +133,15 @@ def importJsonInfo(params):
                                 faultMessages = item['faultMessages']
                                 for message in faultMessages:
                                     print(message)
+                            resultMessage = 'INFO: Import has been done.'
                             if faultArray == None or len(faultArray) == 0:
                                 if newScriptArray != None and len(newScriptArray) > 0:
-                                    print("INFO: Add a new script {}.".format(scriptPath))
+                                    resultMessage = resultMessage + 'Add a new script {}.'
                                 elif updatedScriptArray != None and len(updatedScriptArray) > 0:
-                                    print("INFO: Update script {}.".format(scriptPath))
+                                    resultMessage = resultMessage + 'Update script {}.'
                                 else:
-                                    print("INFO: There is nothing to be done.")
-                            print("INFO: {} imported.\n".format(scriptPath))
+                                    resultMessage = resultMessage + 'Nothing to do for {}.'
+                            print(resultMessage.format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
                             print("ERROR: Request URL:%s failed, %s" % (url, str(ex)))
