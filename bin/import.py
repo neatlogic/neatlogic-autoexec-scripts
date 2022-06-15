@@ -24,10 +24,6 @@ def importJsonInfo(params):
     }
 
     if dataDir != None and dataDir != '':
-        # 新脚本
-        newScriptList = set()
-        # 更新了基本信息或生成了新版本的脚本
-        updatedScriptList = set()
         for root, dirs, files in os.walk(dataDir, topdown=False):
             for opName in files:
                 if not opName.endswith('.json'):
@@ -141,9 +137,9 @@ def importJsonInfo(params):
                                     print(message)
                             if faultArray == None or len(faultArray) == 0:
                                 if newScriptArray != None and len(newScriptArray) > 0:
-                                     newScriptList.add(newScriptArray[0])
+                                    print("INFO: Add a new script {}.".format(scriptPath))
                                 if updatedScriptArray != None and len(updatedScriptArray) > 0:
-                                    updatedScriptList.add(updatedScriptArray[0])
+                                    print("INFO: Update script {}.".format(scriptPath))
                             print("INFO: {} imported.\n".format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
@@ -153,10 +149,6 @@ def importJsonInfo(params):
                         hasError = hasError + 1
                         print("ERROR: Import %s failed, Unknown error %s" % (scriptPath, str(reason)))
                         print(traceback.format_exc())
-        if len(newScriptList) > 0:
-            print("INFO: New scripts: {}".format(','.join(newScriptList)))
-        if len(updatedScriptList) > 0:
-            print("INFO: Update basic information or generate new version scripts: {}".format(','.join(updatedScriptList)))
 
 def parseArgs():
     parser = argparse.ArgumentParser(description='you should add those paramete')
