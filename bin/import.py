@@ -129,19 +129,19 @@ def importJsonInfo(params):
                             newScriptArray = result.get('newScriptArray')
                             updatedScriptArray = result.get('updatedScriptArray')
                             if faultArray != None and len(faultArray) > 0:
-                                print("ERROR：Import failed for {}, errors:".format(scriptPath))
+                                print("ERROR: Import {} failed:".format(scriptPath))
                                 item = faultArray[0]
                                 faultMessages = item['faultMessages']
                                 for message in faultMessages:
-                                    print(message)
+                                    print("\t", message)
                             else:
-                                resultMessage = 'INFO: Import has been done. '
+                                resultMessage = None
                                 if newScriptArray != None and len(newScriptArray) > 0:
-                                    resultMessage = resultMessage + 'Add a new script {}.'
+                                    resultMessage = 'INFO: {} added.'
                                 elif updatedScriptArray != None and len(updatedScriptArray) > 0:
-                                    resultMessage = resultMessage + 'Update script {}.'
+                                    resultMessage = 'INFO: {} updated.'
                                 else:
-                                    resultMessage = resultMessage + 'Nothing to do for {}.'
+                                    resultMessage = 'INFO: {} not changed.'
                                 print(resultMessage.format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
@@ -151,6 +151,7 @@ def importJsonInfo(params):
                         hasError = hasError + 1
                         print("ERROR: Import %s failed, Unknown error %s" % (scriptPath, str(reason)))
                         print(traceback.format_exc())
+
 
 def parseArgs():
     parser = argparse.ArgumentParser(description='you should add those paramete')
