@@ -6,9 +6,15 @@ Function usage()
 	Wscript.Echo("/tinput: Option value")
 	Wscript.Echo("/tjson: Json string")
 	Wscript.Echo("")
-	Wscript.Echo("Example:cscript install.vbs /tinput:TestValue1 /tjson:""{\"test\":7878}""")
+	Wscript.Echo("Example:cscript install.vbs /tinput:TestValue1 /tjson:""{""test"":7878}""")
 	WScript.Quit(1)
 End Function
+
+'Anonymouse arguments begins at 0
+'arg0 = WScript.Arguments(0)
+'arg1 = WScript.Arguments(1)
+
+'Named arguments
 
 Dim colArgs
 Set colArgs = WScript.Arguments.Named

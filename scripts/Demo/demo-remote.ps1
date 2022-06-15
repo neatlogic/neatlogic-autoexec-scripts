@@ -1,19 +1,33 @@
+Param(
+	[string]$tinput="", 
+	[string]$tjson="", 
+	[int]$count=100
+	)
+#Param arguments define must at the begin of the script file
+
 function usage(){
-    log("Usage: --tinput TextValue --json JsonString")
-    log("       --tinput TextValue")
-    log("       --json JsonString")
+    write-host("Usage: --tinput TextValue --json JsonString")
+    write-host("       --tinput TextValue")
+    write-host("       --json JsonString")
 }
 
-function main(){
-    Param($tinput)
-    Param($tjson)
-
-    log("Get option tinput:$tinput")
-    log("Get option tinput:$tjson")
-
-    Out-File -FilePath ".\output.json" "{"
-    Out-File -FilePath ".\output.json" -Append "`"outtext`":`"Test value`""
-    Out-File -FilePath ".\output.json" -Append "{"
+If ($tinput -eq "")
+{
+	usage
 }
 
-exit(main)
+write-host("Get option tinput:$tinput")
+write-host("Get option tjson:$tjson")
+write-host("Get option tjson:$count")
+
+#Get arguments by array $args, $args[0], $args[1]
+write-host("There are a total of $($args.count) arguments")
+for ( $i = 0; $i -lt $args.count; $i++ ) 
+{
+    write-host("Argument  $i is $($args[$i])")
+} 
+
+"{" | Out-File -FilePath ".\output.json" 
+"`"outtext`":`"Test value`"" | Out-File -FilePath ".\output.json" -Append
+"}" | Out-File -FilePath ".\output.json" -Append
+

@@ -7,11 +7,11 @@
     "argument": {
         "name": "自由参数",
         "type": "text",
-        "defaultValue": "",
+        "defaultValue": "100",
         "help": "自由参数测试",
-        "count": 0,
+        "count": 1,
         "validate": "",
-        "required": "true"
+        "required": "false"
     },
     "option": [{
             "opt": "tinput",
