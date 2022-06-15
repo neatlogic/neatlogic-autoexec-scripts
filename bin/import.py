@@ -130,10 +130,10 @@ def importJsonInfo(params):
                             updatedScriptArray = result.get('updatedScriptArray')
                             if faultArray != None and len(faultArray) > 0:
                                 print("ERROR：Import failed for {}, errors:".format(scriptPath))
-                                for item in faultArray:
-                                    faultMessages = item['faultMessages']
-                                    for message in faultMessages:
-                                        print(message)
+                                item = faultArray[0]
+                                faultMessages = item['faultMessages']
+                                for message in faultMessages:
+                                    print(message)
                             else:
                                 resultMessage = 'INFO: Import has been done. '
                                 if newScriptArray != None and len(newScriptArray) > 0:
