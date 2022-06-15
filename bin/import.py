@@ -46,7 +46,6 @@ def importJsonInfo(params):
                                 data = json.load(scriptJsonFile)
                             except Exception as ex:
                                 print("ERROR: Load json file %s failed, there is possible format error: %s" % (scriptPath + ".json", str(ex)))
-                            # todo defaultProfile
                             paramList = []
                             # 输入参数
                             optionList = data.get('option')
@@ -113,6 +112,7 @@ def importJsonInfo(params):
                             jsonInfo['execMode'] = data.get('opType')
                             jsonInfo['riskName'] = data.get('riskName')
                             jsonInfo['typeName'] = data.get('typeName')
+                            jsonInfo['defaultProfileName'] = data.get('defaultProfile')
                             jsonInfo['description'] = data.get('description')
 
                         lineList = []
