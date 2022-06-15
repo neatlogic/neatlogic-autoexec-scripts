@@ -42,7 +42,6 @@ def importJsonInfo(params):
                                 data = json.load(scriptJsonFile)
                             except Exception as ex:
                                 print("ERROR: Load json file %s failed, there is possible format error: %s" % (scriptPath + ".json", str(ex)))
-                            # todo defaultProfile
                             paramList = []
                             # 输入参数
                             optionList = data.get('option')
@@ -109,6 +108,7 @@ def importJsonInfo(params):
                             jsonInfo['execMode'] = data.get('opType')
                             jsonInfo['riskName'] = data.get('riskName')
                             jsonInfo['typeName'] = data.get('typeName')
+                            jsonInfo['defaultProfileName'] = data.get('defaultProfile')
                             jsonInfo['description'] = data.get('description')
 
                         lineList = []
@@ -125,13 +125,24 @@ def importJsonInfo(params):
                             res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
                             content = res.json()
                             result = content.get('Return')
-                            for item in result:
-                                print("ERROR：{}".format(item['item']))
+                            faultArray = result.get('faultArray')
+                            newScriptArray = result.get('newScriptArray')
+                            updatedScriptArray = result.get('updatedScriptArray')
+                            if faultArray != None and len(faultArray) > 0:
+                                print("ERROR：Import failed for {}, errors:".format(scriptPath))
+                                item = faultArray[0]
                                 faultMessages = item['faultMessages']
                                 for message in faultMessages:
                                     print(message)
-
-                            print("INFO: {} imported.\n".format(scriptPath))
+                            else:
+                                resultMessage = 'INFO: Import has been done. '
+                                if newScriptArray != None and len(newScriptArray) > 0:
+                                    resultMessage = resultMessage + 'Add a new script {}.'
+                                elif updatedScriptArray != None and len(updatedScriptArray) > 0:
+                                    resultMessage = resultMessage + 'Update script {}.'
+                                else:
+                                    resultMessage = resultMessage + 'Nothing to do for {}.'
+                                print(resultMessage.format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1
                             print("ERROR: Request URL:%s failed, %s" % (url, str(ex)))
@@ -140,7 +151,6 @@ def importJsonInfo(params):
                         hasError = hasError + 1
                         print("ERROR: Import %s failed, Unknown error %s" % (scriptPath, str(reason)))
                         print(traceback.format_exc())
-
 
 def parseArgs():
     parser = argparse.ArgumentParser(description='you should add those paramete')

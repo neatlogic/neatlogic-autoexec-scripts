@@ -50,8 +50,8 @@ def exportJsonInfo(params):
             jsonInfo['typeName'] = data.get('typeName')
             jsonInfo['riskName'] = data.get('riskName')
             jsonInfo['interpreter'] = data.get('parser')
+            jsonInfo['defaultProfile'] = data.get('defaultProfileName')
             jsonInfo['description'] = data.get('description')
-            # todo defaultProfile
             option = []
             output = []
             paramList = data.get('paramList')
