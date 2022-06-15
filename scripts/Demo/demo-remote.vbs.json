@@ -2,7 +2,7 @@
     "opType": "target",
     "typeName": "BASIC",
     "riskName": "LOW",
-    "interpreter": "powershell",
+    "interpreter": "vbscript",
     "description": "在远程target OS执行工具的Demo",
     "argument": {
         "name": "自由参数",
