@@ -79,6 +79,8 @@ def parseCmdArgs(args):
         cfg = configparser.ConfigParser()
         cfg.optionxform = str
         cfg.read(cfgPath)
+        if tenant == '':
+            tenant = cfg.get('server', 'tenant')
         if baseUrl == '':
             baseUrl = cfg.get('server', 'server.baseurl')
         if user == '':
