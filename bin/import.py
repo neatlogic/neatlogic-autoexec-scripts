@@ -137,11 +137,11 @@ def importJsonInfo(params):
                             else:
                                 resultMessage = None
                                 if newScriptArray != None and len(newScriptArray) > 0:
-                                    resultMessage = 'INFO: {} added.'
+                                    resultMessage = 'INFO: {} added.\n'
                                 elif updatedScriptArray != None and len(updatedScriptArray) > 0:
-                                    resultMessage = 'INFO: {} updated.'
+                                    resultMessage = 'INFO: {} updated.\n'
                                 else:
-                                    resultMessage = 'INFO: {} not changed.'
+                                    resultMessage = 'INFO: {} not changed.\n'
                                 print(resultMessage.format(scriptPath))
                         except Exception as ex:
                             hasError = hasError + 1

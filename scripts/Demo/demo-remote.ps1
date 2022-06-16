@@ -27,7 +27,6 @@ for ( $i = 0; $i -lt $args.count; $i++ )
     write-host("Argument  $i is $($args[$i])")
 } 
 
-"{" | Out-File -FilePath ".\output.json" 
-"`"outtext`":`"Test value`"" | Out-File -FilePath ".\output.json" -Append
-"}" | Out-File -FilePath ".\output.json" -Append
-
+$outputData = "{`"outtext`":`"Test value`"}"
+$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+[System.IO.File]::WriteAllLines(".\output.json", $outputData, $Utf8NoBomEncoding)
