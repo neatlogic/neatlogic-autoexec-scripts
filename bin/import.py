@@ -3,6 +3,9 @@
 import initenv
 import json
 import os
+import base64
+import hmac
+from hashlib import sha256
 import traceback
 import os.path
 import re
@@ -12,15 +15,27 @@ import argparse
 import Utils
 
 
+def signRequest(username, password, headers, apiUri, postBody=None):
+    signContent = username + '#' + apiUri + '#'
+    if postBody is not None and postBody != '':
+        signContent = signContent + base64.b64encode(postBody.encode('utf-8')).decode('utf-8')
+
+    digest = 'Hmac ' + hmac.new(password.encode('utf-8'), signContent.encode('utf-8'), digestmod=sha256).hexdigest()
+    headers['AuthType'] = 'hmac'
+    headers['x-access-key'] = username
+    headers['Authorization'] = digest
+
+
 def importJsonInfo(params):
     hasError = 0
     serverUser = params.get('user')
     serverPass = params.get('password')
     tenant = params.get('tenant')
-    url = params.get('baseUrl') + '/public/api/stream/autoexec/script/import/fromjson'
+    url = params.get('baseUrl') + '/api/stream/autoexec/script/import/fromjson'
     dataDir = params.get('destDir')
     headers = {
-        'tenant': tenant,
+        'Tenant': tenant,
+        'Content-Type': 'application/json; charset=utf-8'
     }
 
     if dataDir != None and dataDir != '':
@@ -122,8 +137,12 @@ def importJsonInfo(params):
                         except Exception as ex:
                             print("ERROR: Open script file %s failed, error: %s" % (scriptPath, str(ex)))
                         try:
-                            res = requests.post(url, headers=headers, data=json.dumps(jsonList), auth=(serverUser, serverPass))
+                            postBody = json.dumps(jsonList, ensure_ascii=False)
+                            signRequest(serverUser, serverPass, headers, url, postBody)
+                            res = requests.post(url, headers=headers, data=postBody.encode('utf-8'))
                             content = res.json()
+                            if content.get('Status') != 'OK':
+                                raise Exception("Http request faield, %s" % json.dumps(content, ensure_ascii=False))
                             result = content.get('Return')
                             faultArray = result.get('faultArray')
                             newScriptArray = result.get('newScriptArray')

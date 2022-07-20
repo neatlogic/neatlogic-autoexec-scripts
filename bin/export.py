@@ -3,6 +3,8 @@
 
 import initenv
 import base64
+import hmac
+from hashlib import sha256
 import json
 import os
 import os.path
@@ -13,6 +15,17 @@ import argparse
 import Utils
 
 
+def signRequest(username, password, headers, apiUri, postBody=None):
+    signContent = username + '#' + apiUri + '#'
+    if postBody is not None and postBody != '':
+        signContent = signContent + base64.b64encode(postBody.encode('utf-8')).decode('utf-8')
+
+    digest = 'Hmac ' + hmac.new(password.encode('utf-8'), signContent.encode('utf-8'), digestmod=sha256).hexdigest()
+    headers['AuthType'] = 'hmac'
+    headers['x-access-key'] = username
+    headers['Authorization'] = digest
+
+
 def exportJsonInfo(params):
     hasError = 0
     # 需要数据源的表单类型
@@ -21,15 +34,13 @@ def exportJsonInfo(params):
     serverPass = params.get('password')
     tenant = params.get('tenant')
     pathStr = params.get('destDir')
-    url = params.get('baseUrl') + '/public/api/binary/autoexec/script/export'
+    url = params.get('baseUrl') + '/api/binary/autoexec/script/export/forautoexec'
     # 获取json数据
-    authStr = serverUser + ":" + serverPass
-    Authorization = "Basic " + base64.b64encode(authStr.encode('utf8')).decode()
     headers = {
-        'tenant': tenant,
-        'Authorization': Authorization,
+        'Tenant': tenant,
         'Content-Type': 'application/json; charset=utf-8'
     }
+    signRequest(serverUser, serverPass, headers, url)
     request = urllib.request.Request(url, headers=headers)
     try:
         f = urllib.request.urlopen(request)

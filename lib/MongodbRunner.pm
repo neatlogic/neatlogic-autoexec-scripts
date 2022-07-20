@@ -31,7 +31,7 @@ sub new {
     my $db_password = $cfg->val( 'autoexec', 'db.password' );
 
     if ( $db_password =~ /\{ENCRYPTED\}/ ) {
-        my $MY_KEY = 'c3H002LGZRrseEPc';
+        my $MY_KEY = 't6AbbuAlA4lCZBGco6K8o78eLbYeeXsS';
         $pass_key = _rc4_decrypt_hex( $MY_KEY, $pass_key );
     }
 

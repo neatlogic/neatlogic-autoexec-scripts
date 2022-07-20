@@ -91,7 +91,7 @@ def parseCmdArgs(args):
             password = cfg.get('server', 'server.password')
 
             passKey = cfg.get('server', 'password.key')
-            MY_KEY = 'c3H002LGZRrseEPc'
+            MY_KEY = 't6AbbuAlA4lCZBGco6K8o78eLbYeeXsS'
             if passKey.startswith('{ENCRYPTED}'):
                 passKey = _rc4_decrypt_hex(MY_KEY, passKey[11:])
             else:
