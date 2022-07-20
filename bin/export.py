@@ -34,13 +34,14 @@ def exportJsonInfo(params):
     serverPass = params.get('password')
     tenant = params.get('tenant')
     pathStr = params.get('destDir')
-    url = params.get('baseUrl') + '/api/binary/autoexec/script/export/forautoexec'
+    uri = '/codedriver/api/binary/autoexec/script/export/forautoexec'
+    url = params.get('baseUrl') + uri
     # 获取json数据
     headers = {
         'Tenant': tenant,
         'Content-Type': 'application/json; charset=utf-8'
     }
-    signRequest(serverUser, serverPass, headers, url)
+    signRequest(serverUser, serverPass, headers, uri)
     request = urllib.request.Request(url, headers=headers)
     try:
         f = urllib.request.urlopen(request)

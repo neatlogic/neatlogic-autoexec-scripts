@@ -31,7 +31,8 @@ def importJsonInfo(params):
     serverUser = params.get('user')
     serverPass = params.get('password')
     tenant = params.get('tenant')
-    url = params.get('baseUrl') + '/api/stream/autoexec/script/import/fromjson'
+    uri = '/codedriver/api/stream/autoexec/script/import/fromjson'
+    url = params.get('baseUrl') + uri
     dataDir = params.get('destDir')
     headers = {
         'Tenant': tenant,
@@ -138,7 +139,7 @@ def importJsonInfo(params):
                             print("ERROR: Open script file %s failed, error: %s" % (scriptPath, str(ex)))
                         try:
                             postBody = json.dumps(jsonList, ensure_ascii=False)
-                            signRequest(serverUser, serverPass, headers, url, postBody)
+                            signRequest(serverUser, serverPass, headers, uri, postBody)
                             res = requests.post(url, headers=headers, data=postBody.encode('utf-8'))
                             content = res.json()
                             if content.get('Status') != 'OK':
