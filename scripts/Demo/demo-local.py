@@ -27,6 +27,7 @@ if __name__ == "__main__":
     parser.add_argument('--tdate', default='', help='XXXXXXX')
     parser.add_argument('--ttime', default='', help='XXXXXXX')
     parser.add_argument('--tdatetime', default='', help='XXXXXXX')
+    parser.add_argument('otherargs', nargs=argparse.REMAINDER, help="Other free arguments without name")
 
     args = parser.parse_args()
 
