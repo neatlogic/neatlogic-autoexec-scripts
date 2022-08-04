@@ -93,7 +93,7 @@ echo "tdatetime: $tdatetime"
 #Do some job
 ###########################################
 echo "Do some jobs."
-
+echo "This a output file example." >testfile.txt
 #Save output
 ###########################################
 echo "======Save output to output file"
