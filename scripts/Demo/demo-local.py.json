@@ -4,8 +4,7 @@
     "riskName": "LOW",
     "interpreter": "python",
     "description": "在runner执行工具的Demo",
-    "option": [
-        {
+    "option": [{
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
@@ -31,8 +30,7 @@
             "help": "单选输入测试",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -53,8 +51,7 @@
             "help": "多选输入测试",
             "type": "multiselect",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -131,8 +128,7 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "outtext",
             "name": "普通输出1",
             "help": "普通输出测试",
@@ -144,7 +140,7 @@
             "opt": "outfile",
             "name": "文件输出",
             "help": "文件输出测试",
-            "type": "file",
+            "type": "filepath",
             "defaultValue": null,
             "required": "false"
         },
