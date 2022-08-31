@@ -1,0 +1,479 @@
+#!/bin/bash
+usage() {
+    pname=$(basename $0)
+    echo "Usage:"
+    echo "$pname [--syslogsrv SysLogServerHost]"
+    echo ""
+    echo "--syslogsrv: Syslog server Ip Address"
+    echo ""
+    echo "Example:$pname --syslogsrv 10.10.10.10"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            syslogsrv)
+                SYSLOG_SRV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+parseOpts "$@"
+ps -p1 | grep systemd >/dev/null && SYS_INIT_TYPE="systemd" || SYS_INIT_TYPE="sysvinit"
+
+echo "修改->/etc/pam.d/common-password"
+cat >/etc/pam.d/common-password <<EOF
+password requisite pam_cracklib.so dcredit=-1 lcredit=-1 ocredit=-1 use_authtok
+EOF
+
+echo "修改->/etc/login.defs"
+sed -i 's/PASS_MAX_DAYS.*99999/PASS_MAX_DAYS 90/g' /etc/login.defs
+sed -i 's/PASS_MIN_DAYS.*0/PASS_MIN_DAYS 6/g' /etc/login.defs
+sed -i 's/PASS_WARN_AGE.*7/ s/$/\nPASS_MIN_LEN 6/' /etc/login.defs
+sed -i 's/PASS_WARN_AGE.*7/PASS_WARN_AGE 30/g' /etc/login.defs
+
+echo "修改UMASK为207"
+sed -i 's/UMASK.*022/UMASK 027/g' /etc/login.defs
+
+echo "空密码检查->/etc/shadow"
+users=$(awk -F: '($2 == "!"){print $1}' /etc/shadow)
+if [ -z $users ]; then
+    echo "不存在空密码的用户."
+else
+    echo "空密码的用户："
+    echo "$users"
+fi
+
+echo "UID为0的用户检查->/etc/passwd"
+us=$(awk -F: '($3 == 0){print $1}' /etc/passwd | grep -v "^root$")
+if [ -z $us ]; then
+    echo "不存在非root用户的UID是0."
+else
+    echo "以下用户的UID为0："
+    echo $us
+fi
+
+echo "调整文件权限->/tmp, /etc/rc.d/rc*.d, /etc/security, /etc/shadow, /etc/passwd ..."
+chmod 750 /tmp
+chmod 600 /etc/xinetd.conf
+chmod 750 /etc/rc.d/rc0.d
+chmod 750 /etc/rc.d/rc1.d
+chmod 750 /etc/rc.d/rc2.d
+chmod 750 /etc/rc.d/rc3.d
+chmod 750 /etc/rc.d/rc4.d
+chmod 750 /etc/rc.d/rc5.d
+chmod 750 /etc/rc.d/rc6.d
+chmod 750 /etc
+chmod 600 /etc/security
+chmod 400 /etc/shadow
+chmod 644 /etc/passwd
+if [ -f /etc/grub.conf ]; then
+    ls -l /etc/grub.conf | awk '{print $1}' | grep l
+    if [ $? -ne 0 ]; then
+        chmod 600 /etc/grub.conf
+    fi
+fi
+if [ -f /boot/grub/grub.conf ]; then
+    chmod 600 /boot/grub/grub.conf
+fi
+if [ -f /etc/lilo.conf ]; then
+    chmod 600 /etc/lilo.conf
+fi
+chmod 644 /etc/services
+chmod 644 /etc/group
+
+echo "修改Default Profile的UMASK为027"
+echo "umask 027" >>/etc/bash.bashrc
+sed -i 's/#umask.*022/umask 027/g' /etc/profile
+sed -i 's/umask.*022/umask 027/g' /etc/csh.login
+
+echo "重要文件属性保护->/etc/password,/etc/shadow,/etc/group"
+chattr +i /etc/passwd
+chattr +i /etc/shadow
+chattr +i /etc/group
+
+echo "SSH登录警告信息设置"
+grep "^Banner" /etc/ssh/sshd_config
+if [ $? -ne 0 ]; then
+    touch /etc/ssh_banner
+    chown bin:bin /etc/ssh_banner
+    chmod 644 /etc/ssh_banner
+    echo "Authorized only.All activity will be monitored and reported" >/etc/ssh_banner
+    sed -i 's|#Banner none|Banner /etc/ssh_banner|g' /etc/ssh/sshd_config
+    /etc/init.d/sshd restart
+fi
+
+echo "禁用用户登录记录"
+last >/dev/null
+if [ $? -ne 0 ]; then
+    echo "ERROR: 调用last命令失败"
+fi
+
+echo "打开cron日志记录功能"
+if [ -f /var/log/cron ]; then
+    touch /var/log/cron
+    chmod 755 /var/log/cron
+fi
+cat >>/etc/syslog-ng/syslog-ng.conf <<EOF
+filter f_cron {facility(cron);};
+destination cron {file ("/var/log/cron");};
+log {source(src);filter(f_cron);destination(cron);};
+EOF
+
+if [ ! -z "$SYSLOG_SRV" ]; then
+    echo "syslog远程日志设置"
+    num=$(grep -n "(logserver)" /etc/syslog-ng/syslog-ng.conf | cut -d ":" -f 1)
+    sed -i "$(($num + 1))i destination logserver {udp("$SYSLOG_SRV" port(514));};\nlog { source(src);destination(logserver);};" /etc/syslog-ng/syslog-ng.conf
+fi
+
+echo "设置日志文件other用户不可写"
+chmod 775 /var/log/mail
+chmod 775 /var/log/boot.log
+chmod 755 /var/log/localmessages
+chmod 755 /var/log/secure
+chmod 755 /var/log/messages
+chmod 755 /var/log/cron
+chmod 755 /var/log/spooler
+chmod 755 /var/log/maillog
+
+echo "打开su命令使用记录"
+touch　/var/log/secure
+cat >>/etc/syslog-ng/syslog-ng.conf <<EOF
+filter f_secure { facility(authpriv);};
+destination priverr { file("/var/log/secure");};
+log { source(src); filter(f_secure); destination(priverr);};
+EOF
+/etc/init.d/syslog restart
+
+#echo "记录用户对设备的操作"
+#zypper in -y acct
+#touch /var/log/pacct
+#accton /var/log/pacct
+#/etc/init.d/acct start
+#chkconfig acct on
+#lastcomm root -f /var/log/pacct >/dev/null
+
+echo "检查安全事件日志配置"
+if [ -f /var/adm/msgs ]; then
+    touch /var/adm/msgs
+    chmod 666 /var/adm/msgs
+fi
+cat >>/etc/syslog-ng/syslog-ng.conf <<EOF
+filter f_msgs { level(err) or facility(kern) and level(debug) or facility(daemon) and level(notice);};
+destination msgs {file("/var/adm/msgs");};
+log { source(src); filter(f_msgs); destination(msgs);};
+EOF
+/etc/init.d/syslog restart
+
+echo "禁止匿名登录FTP"
+num=$(grep -n "^ftp:" /etc/passwd | cut -d ":" -f 1)
+sed -i "$num d" /etc/passwd
+
+echo "禁止root登录ftp"
+grep "^root$" /etc/ftpusers || echo "root" >>/etc/ftpusers
+
+echo "openssh安全配置"
+if [ -f /etc/ssh/sshd_config ]; then
+    sed -i "s/#Protocol\s*2/Protocol 2/g" /etc/ssh/sshd_config
+    sed -i "s/#PermitRootLogin\s*yes/PermitRootLogin no/g" /etc/ssh/sshd_config
+fi
+
+echo "禁止wheel组之外的用户su为root"
+sed -i "2i auth  sufficient pam_rootok.so\nauth required pam_wheel.so group=wheel" /etc/pam.d/su
+
+ehco "删除潜在危险文件"
+for dir1 in $(find / -maxdepth 3 -name .netrc 2>/dev/bull); do
+    dir1name=$(dirname $dir1)
+    cd dir1name
+    mv .netrc .netrc.bak
+done
+for dir2 in $(find / -maxdepth 3 -name hosts.equiv 2>/dev/bull); do
+    dir2name=$(dirname $dir2)
+    cd dir2name
+    mv hosts.equiv hosts.equiv.bak
+done
+for dir3 in $(find / -maxdepth 3 -name .rhosts 2>/dev/bull); do
+    dir3name=$(dirname $dir3)
+    cd dir3name
+    mv .rhosts .rhosts.bak
+done
+
+echo "关闭不必要的服务和端口"
+if [ "$SYS_INIT_TYPE" = "sysvinit" ]; then
+    chkconfig sendmail off
+    chkconfig daytime off
+    chkconfig printer off
+    chkconfig ypbind off
+    chkconfig kshell off
+    chkconfig lpd off
+    chkconfig tftp off
+    chkconfig time off
+    chkconfig time-udp off
+    chkconfig ntalk off
+    chkconfig bootps off
+    chkconfig chargen off
+    chkconfig chargen-udp off
+    chkconfig nfs off
+    chkconfig ident off
+    chkconfig nfslock off
+    chkconfig echo off
+    chkconfig echo-udp off
+    chkconfig discard off
+    chkconfig discard-udp off
+    chkconfig klogin off
+else
+    systemctl disable sendmail
+    systemctl disable daytime
+    systemctl disable printer
+    systemctl disable ypbind
+    systemctl disable kshell
+    systemctl disable lpd
+    systemctl disable tftp
+    systemctl disable time
+    systemctl disable time-udp
+    systemctl disable ntalk
+    systemctl disable bootps
+    systemctl disable chargen
+    systemctl disable chargen-udp
+    systemctl disable nfs
+    systemctl disable ident
+    systemctl disable nfslock
+    systemctl disable echo
+    systemctl disable echo-udp
+    systemctl disable discard
+    systemctl disable discard-udp
+    systemctl disable klogin
+fi
+
+echo "命令行界面超时退出"
+grep　"TMOUT" /etc/profile || echo "export TMOUT=600" >>/etc/profile
+
+echo "禁用ctrl alt delete组合件"
+sed -i "/ca::ctrlaltdel.*/ s/^/#/" /etc/inittab.bak
+
+echo "Core dump设置"
+sed -i "s/#\*\s*soft\s*core\s*0/\* soft core 0\n\* hard core 0/g" /etc/security/limits.conf
+
+echo "检查系统内核参数配置"
+cp -p /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts.bak
+sysctl -w net.ipv4.icmp_echo_ignore_broadcasts="1"
+#[ `cat /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts` -ne 1 ] && sed -i 's/0/1/g' /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+
+cp -p /proc/sys/net/ipv4/conf/all/send_redirects /proc/sys/net/ipv4/conf/all/send_redirects.bak
+sysctl -w net.ipv4.conf.all.send_redirects="0"
+#[ `cat /proc/sys/net/ipv4/conf/all/send_redirects` -ne 0 ] && sed -i 's/1/0/g' /proc/sys/net/ipv4/conf/all/send_redirects
+cp -p /proc/sys/net/ipv4/conf/all/accept_source_route /proc/sys/net/ipv4/conf/all/accept_source_route.bak
+sysctl -w net.ipv4.conf.all.accept_source_route="0"
+cp -p /proc/sys/net/ipv4/ip_forward /proc/sys/net/ipv4/ip_forward.bak
+sysctl -w net.ipv4.ip_forward="0"
+
+echo "配置用户所需最小权限"
+chmod 644 /etc/group
+chmod 644 /etc/passwd
+chmod 600 /etc/shadow
+
+echo "密码重复使用次数"
+sed -i '/password.*/ s/$/ remember=5/' /etc/pam.d/common-password.bak
+
+echo "历史命令设置"
+sed　-i 's/HISTSIZE=1000/HISTSIZE=5/g' /etc/profile
+echo "HISTFILESIZE=5" >>/etc/profile
+
+echo "更改/usr/bin拥有者属性"
+for onefile in $(find /usr/bin/ -type f \( -perm -04000 -o -perm -02000 \)); do
+    chmod a-s $onefile
+done
+
+echo "限制ftp用户上传文件所具权限"
+for ftpfile in $(cat /etc/syslog-ng/syslog-ng.conf 2>/dev/null | grep -v "^[[:space:]]*#" | grep "^destination" | grep file | cut -d\" -f2); do
+    chmod 640 $ftpfile
+done
+
+echo "系统磁盘分区使用率"
+usep=$(df -alh | grep '\s/$' | awk '{print $5}' | awk -F % '{print $1}')
+[ $usep -gt 80 ] && echo "磁盘使用率过80% 请扩容"
+
+echo "设置SSH登录成功后banner"
+[ -f /etc/motd ] || touch /etc/motd
+echo "Login success,All activity will be monitored and reported" >/etc/motd
+
+echo "telent banner 设置"
+echo "Authorized users only.All activity may be monitored and reported" >/etc/issue
+echo "Authorized users only.All activity may be monitored and reported" >/etc/issue.net
+/etc/init.d/xinetd restart
+
+echo "别名文件配置"
+sed -i '/games:\s*root/ s/^/#/' /etc/aliases
+sed -i '/ingres:\s*root/ s/^/#/' /etc/aliases
+sed -i '/system:\s*root/ s/^/#/' /etc/aliases
+sed -i '/toor:\s*root/ s/^/#/' /etc/aliases
+sed -i '/uucp:\s*root/ s/^/#/' /etc/aliases
+sed -i '/manager:\s*root/ s/^/#/' /etc/aliases
+sed -i '/dumper:\s*root/ s/^/#/' /etc/aliases
+sed -i '/operator:\s*root/ s/^/#/' /etc/aliases
+sed -i '/decode:\s*root/ s/^/#/' /etc/aliases
+sed -i '/root:\s*marc/ s/^/#/' /etc/aliases
+/usr/bin/newaliases
+
+echo "删除无关账号"
+users=adm,lp,mail,uucp,operator,games,gopher,ftp,nobody,nobody4,noaccess,listen,webservd,rpm,dbus,avahi,mailnull,smmsp,nscd,vcsa,rpc,rpcuser,nfs,sshd,pcap,ntp,haldaemon,distcache,apache,webalizer,squid,xfs,gdm,sabayon,named
+for user in $(echo $users | tr "," "\n"); do
+    grep "^$user:" /etc/passwd >/dev/null && usrmod -L $user
+done
+
+echo "账号认证失败次数限制"
+echo "auth required pam_tally.so deny=5 unlock_time=600 no_lock_time" >>/etc/pam.d/common-auth
+echo "account required pam_tally.so" >>/etc/pam.d/common-account
+num=$(grep -n "^auth\s" /etc/pam.d/sshd | awk 'END {print}' | cut -d ":" -f 1)
+sed -i "$(($num + 1))i auth required pam_tally.so deny=5 unlock_time=600 no_lock_time" /etc/pam.d/sshd
+num2=$(grep -n "^account\s" /etc/pam.d/sshd | awk 'END {print}' | cut -d ":" -f 1)
+sed -i "$(($num2 + 1))i account required pam_tally.so" /etc/pam.d/sshd
+
+echo "设置suid sgid权限"
+for sfile in $(find /usr/bin/chage /usr/bin/gpasswd /usr/bin/wall /usr/bin/chfn /usr/bin/chsh /usr/bin/newgrp /usr/bin/write /usr/sbin/usernetctl /usr/sbin/traceroute /bin/mount /bin/umount /bin/ping /sbin/netreport -type f -perm +6000 2>/dev/null); do
+    chmod 755 $sfile
+done
+
+echo "禁用不必要服务"
+sers="chargen-dgram daytime-stream echo-streamklogin tcpmux-server chargen-stream discard-dgram eklogin krb5-telnet tftp cvs discard-stream ekrb5-telnet kshell time-dgram daytime-dgram echo-dgram gssftp rsync time-stream"
+for serse in $(echo $sers | tr " " "\n"); do
+    /etc/init.d/$serse stop 2>/dev/null
+done
+
+echo "限制远程登录ip范围"
+echo "all:all" >>/etc/hosts.deny
+/etc/init.d/xinetd restart
+echo "all:192.168.4.44:allow" >>/etc/hosts.allow
+echo "sshd:192.168.1.:allow" >>/etc/hosts.allow
+/etc/init.d/xinetd restart
+
+echo "关闭数据包转发"
+sysctl -w net.ipv4.ip_forward=0
+
+echo "关闭ip伪装和绑定多ip功能"
+sed -i 's/multi\s*on/multi off/g' /etc/host.conf
+echo "nospoof on" >>/etc/host.conf
+
+echo "定时屏幕自动锁定"
+gconftool-2 --direct \
+    --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory \
+    --type bool \
+    --set /apps/gnome-screensaver/lock_enabled true
+
+gconftool-2 --direct \
+    --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory \
+    --type string \
+    --set /apps/gnome-screensaver/mode blank-only
+
+gconftool-2 --direct \
+    --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory \
+    --type int \
+    --set /apps/gnome-screensaver/idle_delay 15
+
+gconftool-2 --direct \
+    --config-source xml:readwrite:/etc/gconf/gconf.xml.mandatory \
+    --type bool \
+    --set /apps/gnome-screensaver/idle_activation_enabled true
+
+echo "root用户path环境变量"
+sed -i 's/\.*//g' $(grep "PATH=" -rl /etc/profile)
+
+echo "设置ftp用户上传文件所具权限及限制访问目录 Banner设置"
+if [ -f /etc/vsftpd.conf ]; then
+    grep "^chroot_local_user=YES" /etc/vsftpd.conf || echo "chroot_local_user=YES" >>/etc/vsftpd.conf
+    echo 'ftpd_banner=” Authorized users only. All activity will be monitored and reported.”' >>/etc/vsftpd.conf
+    cat <<EOF >>/etc/vsftpd
+write_enable=YES
+ls_resource_enable=YES
+local_umask=022
+anon_umask=022
+EOF
+    /etc/init.d/vsftpd restart
+fi
+if [ -f /etc/vsftpd/vsftpd.conf ]; then
+    grep "^chroot_local_user=YES" /etc/vsftpd/vsftpd.conf || echo "chroot_local_user=YES" >>/etc/vsftpd/vsftpd.conf
+    echo 'ftpd_banner=” Authorized users only. All activity will be monitored and reported.”' >>/etc/vsftpd/vsftpd.conf
+    cat <<EOF >>/etc/vsftpd/vsftpd.conf
+write_enable=YES
+ls_resource_enable=YES
+local_umask=022
+anon_umask=022
+EOF
+    /etc/init.d/vsftpd restart
+fi
+[ -f /etc/pure-ftpd/pure-ftpd.conf ] && grep "^Umask 177:077" /etc/pure-ftpd/pure-ftpd.conf || echo "Umask 177:077" >>/etc/pure-ftpd/pure-ftpd.conf
+if [ -f /etc/pure-ftpd/pure-ftpd.conf ]; then
+    grep "^FortunesFile /usr/share/fortune/zippy" /etc/pure-ftpd/pure-ftpd.conf || echo "FortunesFile /usr/share/fortune/zippy" >>/etc/pure-ftpd/pure-ftpd.conf
+    grep "^ChrootEveryone yes" /etc/pure-ftpd/pure-ftpd.conf || echo "ChrootEveryone yes" >>/etc/pure-ftpd/pure-ftpd.conf
+    grep "^AllowUserFXP no" /etc/pure-ftpd/pure-ftpd.conf || echo "AllowUserFXP no" >>/etc/pure-ftpd/pure-ftpd.conf
+    grep "^AllowAnonymousFXP no" /etc/pure-ftpd/pure-ftpd.conf || echo "AllowAnonymousFXP no" >>/etc/pure-ftpd/pure-ftpd.conf
+    [ -f /usr/share/fortune/zippy ] || touch /usr/share/fortune/zippy
+    echo 'ftpd_banner=” Authorized users only. All activity will be monitored and reported.”' >>/usr/share/fortune/zippy
+fi
+
+echo "设置系统引导管理器密码"
+resu=$(grep -i loader_type /etc/sysconfig/bootloader | awk -F = '{print$2}')
+coun=$(grep -n timeout /boot/grub/menu.lst | awk -F : '{print$1}')
+((coun++))
+[ "$resu" = \"grub\" ] && (! grep password /boot/grub/menu.lst) && sed -i "${coun}i password --md5 \$1\$PzNYQ0\$f4Tl9k/SQrQHPy3RKU11t1" /boot/grub/menu.lst
+
+echo "ntp设置"
+ntpcount=$(grep -n "^server" /etc/ntp.conf | awk -F : '{print$1}')
+((ntpcount++))
+sed -i "${ntpcount}i server 166.3.96.193" /etc/ntp.conf
+/etc/init.d/ntp start
+
+echo "对系统账号进行登录限制"
+arr=(daemon bin sys adm lp uucp nuucp smmsp)
+for ((i = 0; i < ${#arr[@]}; i++)); do
+    grep "^${arr[i]}:" /etc/shadow.bak && arrcount=$(grep -n "^${arr[i]}:" /etc/shadow.bak | awk -F : '{print$1}') && sed -i "${arrcount}s/\!\{0,1\}\*/\!\!/" /etc/shadow.bak
+done
+
+echo "禁用telent"
+telcount=$(grep -n "telnet\s*23\/tcp" /etc/services | awk -F : '{print$1}')
+sed -i "${telcount}s/^/#/" /etc/services
+
+echo "禁止root用户远程登录"
+chmod 660 /etc/sudoers
+sudoacc=$(grep -n "root\s*ALL" /etc/sudoers | awk -F ":" '{print $1}')
+((sudoacc++))
+sed -i "${sudoacc}iwrcb ALL=(ALL)  NOPASSWD:ALL" /etc/sudoers
+echo "Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin" >>/etc/sudoers
+chmod 440 /etc/sudoers
+
+grep "auth\s*required\s*pam_securetty.so" /etc/pam.d/login
+if [ $? -ne 0 ]; then
+    echo "auth required pam_securetty.so" >>/etc/pam.d/login
+fi
+grep "PermitRootLogin\s*no" /etc/ssh/sshd_config
+if [ $? -ne 0 ]; then
+    sed -i "s/#PermitRootLogin\s*yes/PermitRootLogin no" /etc/ssh/sshd_config
+fi
+
+echo "重启SSH服务"
+if [ "$SYS_INIT_TYPE" = "sysvinit" ]; then
+    service sshd restart
+else
+    systemctl restart sshd
+fi
