@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --action <action>  --path <path> --file <file> --home <install home> --user <install user>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            action)
+                action="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            path)
+                path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            file)
+                file="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            home)
+                home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            user)
+                user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+parseOpts "$@"
+
+function uninstall() 
+{
+    filename=$(basename -s .tar.gz "$file")
+    if [ ! -d "$home/$filename" ] ; then 
+       getname
+    fi
+
+    cd $home 
+    if [ -n "$filename" ] ; then
+       rm -rf "$filename"
+    fi
+ 
+    yum -y remove java*
+    java -version
+    result=0 
+    if [ $? != 0 ] ; then
+        echo "jdk uninstall success."
+    else 
+        echo "jdk uninstall failed."
+        result=1
+    fi
+    return $result   
+}
+
+function getname()
+{
+   for dir in `ls $home`
+   do
+    if [[ "$dir" == "jdk"* && -d "$dir" ]] ; then 
+	  filename="$dir"
+	  break 
+    fi 
+   done 
+}
+
+function install()
+{
+    if [ -d $home ]; then
+        mkdir -p $home
+    fi
+
+    if [[ "$user"!="root" ]] ;then 
+       echo "Add group $user and user $user."
+       groupadd $user 
+       useradd $user -g $user
+    fi
+ 
+    if [  -n $file  ] ; then 
+    	file=`echo $(basename $path)`
+        cp -r $path $home
+    else 
+        cp -r $file $home
+    fi
+    
+    cd $home && tar -xvf $file > /dev/null
+    if [ $? != 0 ] ; then
+       echo "ERROR:: unpack $file failed."
+       exit 1;
+    else
+       echo "INFO:: unpack $file succeed."
+    fi
+
+    #修改用户.base_profile 
+    filename=$(basename -s .tar.gz "$file")
+    if [ ! -d "$home/$filename" ] ; then 
+       getname
+    fi
+    JAVA_HOME="$home/$filename"
+    JRE_HOME="$home/$filename/jre"
+cat <<EOF >> "$profile"
+JAVA_HOME=\$JAVA_HOME
+JRE_HOME=\$JRE_HOME
+PATH=\$JAVA_HOME/bin/:\$PATH
+export JAVA_HOME JRE_HOME PATH
+EOF
+    source $profile
+    
+    java -version
+    if [ $? != 0 ] ;then
+       echo "ERROR:: install Jdk $filename failed."
+       exit 1
+    else
+       echo "INFO:: install Jdk $filename succeed."
+       exit 0
+    fi
+}
+
+if [[ ! -n "$file"  && ! -n "$path" ]] ; then
+    usage
+fi 
+
+if [[ ! -n "$action" || ! -n "$home" ]] ; then 
+   usage
+fi 
+
+if [ ! -n "$user" ]; then 
+   user='root'
+fi 
+
+if [[ "$user"!="root" ]] ; then
+   profile="/home/$user/.bash_profile"
+else
+   profile="/root/.bash_profile"
+fi  
+
+if [ $action == 'uninstall' ] ;then
+   ret=uninstall
+   exit $ret
+elif [ $action == 'reinstall' ] ; then 
+    ret=uninstall 
+    if [ $ret == 0 ] ;then
+        install
+    fi
+else 
+    install 
+fi 
