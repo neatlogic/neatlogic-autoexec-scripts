@@ -1,0 +1,151 @@
+#!/bin/bash
+
+usage(){
+    pname=$(basename $0)
+    echo "Usage:"
+    echo "$pname --rootpwd <root password> --mycnf <mysql config file> --inspkg <install rpm pkg>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            rootpwd)
+                rootpwd="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            mycnf)
+                mycnf="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            inspkg)
+                inspkg="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option -- ${OPTARG}" > &2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if ["$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+parseOpts "$@"
+
+function install()
+{
+    id mysql
+    if [ $? != 0 ]
+    then
+        echo "INFO: Add user mysql"
+        useradd mysql
+    fi
+
+    if [ -e "/home/mysql/data" ]
+    then
+        rm -rf /home/mysql/data
+        exitIfFailed "remove /home/mysql/data"
+    fi
+    mkdir /home/mysql/data
+    exitIfFailed "create /home/mysql/data"
+
+    if [ -e "/home/mysql/log" ]
+    then
+        rm -rf /home/mysql/log
+        exitIfFailed "remove /home/mysql/log"
+    fi
+    mkdir /home/mysql/log
+    exitIfFailed "create /home/mysql/log"
+    chown -R mysql:mysql /home/mysql
+    exitIfFailed "chown -R mysql:mysql /home/mysql"
+
+    curl -s -o my.cnf $mycnf
+    exitIfFailed "download my.cnf"
+    cp my.cnf /etc/my.cnf
+    exitIfFailed "cp my.cnf /etc/my.cnf"
+    rm -f my.cnf
+
+    curl -s -o inspkg.tgz $inspkg
+    exitIfFailed "download inspkg.tgz"
+    
+    tar -xvzf inspgk.tgz
+    exitIfFailed "unzip inspkg.tgz"
+
+    rpm -Uvh *.rpm
+    exitIfFailed "MySQL rpms install"
+    rm -f *.rpm
+
+    echo "INFO: Begin to init mysql db"
+    /usr/bin/mysql_install_db
+    exitIfFailed "init mysql database"
+
+    service mysql start
+    exitIfFailed "service mysql start"
+
+    #mysql 脚本运行，注意密码处理
+    echo "INFO: modify mysql user password and create new users."
+    mysql_secret=$(awk '/password/{print $NF}' /root/.mysql_secret)
+mysql --connect-expired-password -uroot -p$mysql_secret <<EOF
+set password=password('$rootpwd');
+use mysql;
+select host,user,password from user;
+update user set host='%' where user='root' and host='localhost';
+flush privileges;
+EOF
+    
+    exitIfFailed "modify mysql password"
+
+    chkconfig mysql on
+    mysqlExists=`chkconfig --list | grep mysql`
+    if [ -z "$mysqlExists" ]
+    then
+        echo "ERROR: mysql service not exists, install failed."
+        exit 1;
+    fi
+
+}
+
+function checkInstalled()
+{
+    mysqlPids=`ps -efww |grep mysql |grep -v grep|awk '{print $2}'`
+    if [ ! -z "$mysqlPids" ]
+    then
+        echo "INFO: mysql have already installed ."
+        exit 0
+    fi
+}
+
+
+
+function exitIfFailed()
+{
+	if [ $? != 0 ]
+	then
+		echo "ERROR: $1 failed."
+		exit 1;
+	else 
+		echo "INFO: $1 succeed."
+	fi
+}
+
+if [[ ! -n "$rootpwd" || ! -n "$mycnf" || ! -n "$inspkg" ]] ; then
+    usage
+fi 
+
+checkInstalled
+
+install
