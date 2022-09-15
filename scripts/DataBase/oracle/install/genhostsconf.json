@@ -42,7 +42,7 @@
         },
         {
             "opt": "scaniplist",
-            "name": "SCAN IP列表",
+            "name": "ScanIP列表",
             "help": "SCAN IP列表, 一个IP一行, 一到三个IP",
             "type": "textarea",
             "defaultValue": "",
