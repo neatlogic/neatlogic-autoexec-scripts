@@ -122,6 +122,9 @@ if __name__ == "__main__":
     pubIpConf = ()
     privIpConf = ()
     vipConf = ()
+    clusterNodes = ()
+    networkInterfaceList = ()
+
     idx = 1
     for node in nodes:
         pubIp = None
@@ -132,12 +135,18 @@ if __name__ == "__main__":
             ip = nodeIpInfo.get('IP')
             prefixLen = nodeIpInfo.get('NetMask')
 
+            thisNet = ipaddress.ip_network('%s/%s' % (ip, prefixLen))
+
             if ipaddress.ip_address(ip) in pubNet:
                 if pubIp is None:
                     pubIp = ip
+                    networkInterfaceList.append('%s:%s:1' % (nicName, thisNet.network_address))
             elif ipaddress.ip_address(ip) in privNet:
                 if privIp is None:
                     privIp = ip
+                    networkInterfaceList.append('%s:%s:5' % (nicName, thisNet.network_address))
+            else:
+                networkInterfaceList.append('%s:%s:3' % (nicName, thisNet.network_address))
 
         if pubIp is None:
             hasError = 1
@@ -145,6 +154,7 @@ if __name__ == "__main__":
         else:
             pubIpConf.append("%s\t%s%s" % (pubIp, racName, idx))
             vipConf.append("%s\t%s-vip%s" % (vipList[idx], racName, idx))
+            clusterNodes.append('%s%s:%s-vip%s' % (racName, idx, racName, idx))
 
         if privIp is None:
             hasError = 1
@@ -161,7 +171,11 @@ if __name__ == "__main__":
     hostConfTxt = "\n".join(pubIpConf) + "\n".join(vipConf) + "\n".join(privIpConf) + "\n".join(scanIpConf)
 
     out = {}
-    out['hostConfTxt'] = hostConfTxt
+    out['hostsConfTxt'] = hostConfTxt
+    out['clusterNodes'] = ','.join(clusterNodes)
+    out['networkInterfaceList'] = ','.join(networkInterfaceList)
+    out['scanName'] = racName + '-scan'
+
     AutoExecUtils.saveOutput(out)
 
     sys.exit(hasError)

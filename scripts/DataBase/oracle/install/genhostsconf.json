@@ -60,10 +60,32 @@
         }
     ],
     "output": [{
-        "opt": "hostsConfTxt",
-        "name": "hosts配置内容",
-        "help": "/etc/hosts配置内容",
-        "type": "text",
-        "defaultValue": ""
-    }]
+            "opt": "hostsConfTxt",
+            "name": "hosts配置内容",
+            "help": "/etc/hosts配置内容",
+            "type": "text",
+            "defaultValue": ""
+        },
+        {
+            "opt": "clusterNodes",
+            "name": "集群节点名配置",
+            "help": "集群节点名配置，用于Grid的静默安装配置",
+            "type": "text",
+            "defaultValue": ""
+        },
+        {
+            "opt": "networkInterfaceList",
+            "name": "节点网卡配置",
+            "help": "节点网卡配置，用于Grid的静默安装配置",
+            "type": "text",
+            "defaultValue": ""
+        },
+        {
+            "opt": "scanName",
+            "name": "SCAN名",
+            "help": "SCAN名，用于Grid的静默安装配置",
+            "type": "text",
+            "defaultValue": ""
+        }
+    ]
 }
