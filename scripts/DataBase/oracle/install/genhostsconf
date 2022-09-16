@@ -169,6 +169,8 @@ if __name__ == "__main__":
         scanIpConf.append("%s\t%s-scan" % (scanIp, racName))
 
     hostConfTxt = "\n".join(pubIpConf) + "\n".join(vipConf) + "\n".join(privIpConf) + "\n".join(scanIpConf)
+    hostConfTxt = "::1         localhost localhost.localdomain localhost6 localhost6.localdomain6\n" + hostConfTxt
+    hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
 
     out = {}
     out['hostsConfTxt'] = hostConfTxt
