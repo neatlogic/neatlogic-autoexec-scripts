@@ -49,47 +49,6 @@ dependRpmInstall() {
     #yum install -y libstdc++-devel;
 }
 
-configUdevRule() {
-
-    if [ "$storage" == "HW" -o "$storage" == "hw" ]; then
-        configUdevRule1
-    elif [ "$storage" == "HDS" -o "$storage" == "hds" ]; then
-        configUdevRule2
-    else
-        echo "WRONG INPUT"
-    fi
-}
-
-configUdevRule1() {
-    if [ -f /etc/udev/rules.d/99-asm.rules ]; then
-        rm -f /etc/udev/rules.d/99-asm.rules
-        start_udev
-    fi
-
-    for i in $(cat /proc/partitions | awk {'print $4'} | grep sd | grep [a-z] | grep -v -w "sda" | grep -v -e "sda[0-9]"); do
-        echo "KERNEL==\"sd*\", SUBSYSTEM==\"block\",PROGRAM==\"/sbin/scsi_id --whitelisted --replace-whitespace --device=/dev/\$name\", RESULT==\"$(scsi_id -g -u \/dev\/$i)\", NAME=\"asmdisks/asm-disk-$i\", OWNER=\"grid\", GROUP=\"asmadmin\", MODE=\"0660\",ATTR{queue/scheduler}=\"deadline\"" >>/etc/udev/rules.d/99-asm.rules
-    done
-
-    start_udev
-    start_udev
-    echo "Huawei storage for udev config complete"
-}
-
-configUdevRule2() {
-
-    if [ -f /etc/udev/rules.d/99-asm.rules ]; then
-        rm -f /etc/udev/rules.d/99-asm.rules
-        start_udev
-    fi
-    for i in $(cat /proc/partitions | awk {'print $4'} | grep sddlm | grep [a-z]$ | grep -v -w "sda"); do
-        echo "KERNEL==\"sddlm*\", SUBSYSTEM==\"block\",PROGRAM==\"/sbin/scsi_id --whitelisted --replace-whitespace --device=/dev/\$name\", RESULT==\"$(scsi_id -g -u \/dev\/$i)\", NAME=\"asmdisks/asm-disk-$i\", OWNER=\"grid\", GROUP=\"asmadmin\", MODE=\"0660\",ATTR{queue/scheduler}=\"deadline\"" >>/etc/udev/rules.d/99-asm.rules
-    done
-
-    start_udev
-    start_udev
-    echo "HDS storage for udev config complete"
-}
-
 configNTP() {
     sed -i '/^OPTIONS/'d /etc/sysconfig/ntpd
     echo 'OPTIONS="-x -u ntp:ntp -p /var/run/ntpd.pid -g"' >>/etc/sysconfig/ntpd
@@ -115,10 +74,6 @@ configNetworking() {
 
 disableTransHugepage() {
     sed -i 's/rhgb quiet$/& transparent_hugepage=never/' /boot/grub/grub.conf
-
-}
-
-disableTransHugepage2() {
     if [ -f /etc/rc.local.bak ]; then
         echo '/etc/rc.local.bak exists'
         mv /etc/rc.local.bak /etc/rc.local
@@ -205,9 +160,6 @@ main() {
     echo "-----------------Depenndency package install--------------------------"
     dependRpmInstall
 
-    echo "-----------------Config udev------------------------------"
-    configUdevRule
-
     echo "-----------------Config Lang------------------------------"
     configI18nLANG
 
@@ -222,7 +174,6 @@ main() {
 
     echo "-----------------disableTransHugepage----------------"
     disableTransHugepage
-    disableTransHugepage2
 
     echo "-----------------config fstab----------------------------"
     configShmDev

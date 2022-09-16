@@ -12,30 +12,6 @@ function DO_CMD() {
     fi
 }
 
-function DO_CMD_CONT() {
-    echo Exec ommand: $@
-    $@
-
-    if [ $? != 0 ]; then
-        echo ERROR: Execute failed.
-        HAS_ERROR=1
-    else
-        echo FIND: Execute success.
-    fi
-}
-
-function DO_CMD_IGNOR() {
-    echo Exec ommand: $@
-    $@
-
-    if [ $? != 0 ]; then
-        echo WARN: Execute failed.
-        HAS_WARN=1
-    else
-        echo FIND: Execute success.
-    fi
-}
-
 INVENTORY_DIR=$1
 
 DO_CMD $ENVENTORY_DIR/orainstRoot.sh

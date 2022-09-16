@@ -4,8 +4,9 @@ function DO_CMD() {
     $@
 
     if [ $? != 0 ]; then
+        HAS_ERROR=$?
         echo ERROR: Execute failed.
-        exit $?
+        exit $HAS_ERROR
     else
         echo FIND: Execute success.
     fi
