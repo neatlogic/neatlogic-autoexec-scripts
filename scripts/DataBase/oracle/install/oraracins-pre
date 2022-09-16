@@ -1,0 +1,239 @@
+#!/bin/bash
+
+createOraDir() {
+    mkdir -p /oracle/app/oracle
+    mkdir -p /oracle/app/oracle/cfgtoollogs
+    mkdir -p /oracle/app/oracle/product/12.1.0/db_1
+    chown -R oracle:oinstall /oracle/app/oracle
+    chmod -R 775 /oracle/app/oracle
+
+    mkdir -p /oracle/app/oraInventory
+    chown -R grid:oinstall /oracle/app/oraInventory
+    chmod -R 775 /oracle/app/oraInventory
+
+    mkdir -p /oracle/app/grid
+    mkdir -p /oracle/app/12.1.0/grid
+    chown -R grid:oinstall /oracle/app/grid
+    chown -R grid:oinstall /oracle/app/12.1.0/grid
+    chmod -R 775 /oracle/app/grid
+    chmod -R 775 /oracle/app/12.1.0/grid
+}
+
+disableNetworkManager() {
+    service NetworkManager stop
+    chkconfig NetworkManager off
+}
+
+disableIptables() {
+    service iptables stop
+    chkconfig iptables off
+}
+
+configYumLocalRepo() {
+    rm -f /etc/yum.repos.d/*
+    touch /etc/yum.repos.d/local.repo
+    echo '[local]' >>/etc/yum.repos.d/local.repo
+    echo 'name=local' >>/etc/yum.repos.d/local.repo
+    echo 'baseurl=file:///mnt' >>/etc/yum.repos.d/local.repo
+    echo 'gpgcheck=0' >>/etc/yum.repos.d/local.repo
+    echo 'enabled=1' >>/etc/yum.repos.d/local.repo
+    mount -o loop -t iso9660 /software/rhel-server-6.9-x86_64-dvd.iso /mnt
+    yum clean all
+    yum makecache
+    sed -i '/^multilib_policy/'d /etc/yum.conf
+    echo "multilib_policy=all" >>/etc/yum.conf
+}
+
+dependRpmInstall() {
+    yum install -y openssh pam libXaw unixODBC nscd binutils compat-libcap1 compat-libstdc++-33 gcc gcc-c++ glibc glibc-devel ksh libgcc libstdc++ libaio libaio-devel libXext libXtst libX11 libXau libxcb libXi make sysstat nfs-utils
+    #yum install -y libstdc++-devel;
+}
+
+configUdevRule() {
+
+    if [ "$storage" == "HW" -o "$storage" == "hw" ]; then
+        configUdevRule1
+    elif [ "$storage" == "HDS" -o "$storage" == "hds" ]; then
+        configUdevRule2
+    else
+        echo "WRONG INPUT"
+    fi
+}
+
+configUdevRule1() {
+    if [ -f /etc/udev/rules.d/99-asm.rules ]; then
+        rm -f /etc/udev/rules.d/99-asm.rules
+        start_udev
+    fi
+
+    for i in $(cat /proc/partitions | awk {'print $4'} | grep sd | grep [a-z] | grep -v -w "sda" | grep -v -e "sda[0-9]"); do
+        echo "KERNEL==\"sd*\", SUBSYSTEM==\"block\",PROGRAM==\"/sbin/scsi_id --whitelisted --replace-whitespace --device=/dev/\$name\", RESULT==\"$(scsi_id -g -u \/dev\/$i)\", NAME=\"asmdisks/asm-disk-$i\", OWNER=\"grid\", GROUP=\"asmadmin\", MODE=\"0660\",ATTR{queue/scheduler}=\"deadline\"" >>/etc/udev/rules.d/99-asm.rules
+    done
+
+    start_udev
+    start_udev
+    echo "Huawei storage for udev config complete"
+}
+
+configUdevRule2() {
+
+    if [ -f /etc/udev/rules.d/99-asm.rules ]; then
+        rm -f /etc/udev/rules.d/99-asm.rules
+        start_udev
+    fi
+    for i in $(cat /proc/partitions | awk {'print $4'} | grep sddlm | grep [a-z]$ | grep -v -w "sda"); do
+        echo "KERNEL==\"sddlm*\", SUBSYSTEM==\"block\",PROGRAM==\"/sbin/scsi_id --whitelisted --replace-whitespace --device=/dev/\$name\", RESULT==\"$(scsi_id -g -u \/dev\/$i)\", NAME=\"asmdisks/asm-disk-$i\", OWNER=\"grid\", GROUP=\"asmadmin\", MODE=\"0660\",ATTR{queue/scheduler}=\"deadline\"" >>/etc/udev/rules.d/99-asm.rules
+    done
+
+    start_udev
+    start_udev
+    echo "HDS storage for udev config complete"
+}
+
+configNTP() {
+    sed -i '/^OPTIONS/'d /etc/sysconfig/ntpd
+    echo 'OPTIONS="-x -u ntp:ntp -p /var/run/ntpd.pid -g"' >>/etc/sysconfig/ntpd
+    service ntpd restart
+}
+
+configI18nLANG() {
+    sed -i '/^LANG/'d /etc/sysconfig/i18n
+    echo 'LANG=en_US.UTF-8' >>/etc/sysconfig/i18n
+}
+
+configSshd() {
+    sed -i '/^LoginGraceTime/'d /etc/ssh/sshd_config
+    echo 'LoginGraceTime 0' >>/etc/ssh/sshd_config
+}
+
+configNetworking() {
+    sed -i '/^NETWORKING/'d /etc/sysconfig/network
+    sed -i '/^NOZEROCONF/'d /etc/sysconfig/network
+    echo 'NETWORKING=yes' >>/etc/sysconfig/network
+    echo 'NOZEROCONF=yes' >>/etc/sysconfig/network
+}
+
+disableTransHugepage() {
+    sed -i 's/rhgb quiet$/& transparent_hugepage=never/' /boot/grub/grub.conf
+
+}
+
+disableTransHugepage2() {
+    if [ -f /etc/rc.local.bak ]; then
+        echo '/etc/rc.local.bak exists'
+        mv /etc/rc.local.bak /etc/rc.local
+    fi
+    cp /etc/rc.local /etc/rc.local.bak
+    cat >>/etc/rc.local <<EOF
+if test -f /sys/kernel/mm/redhat_transparent_hugepage/enabled; then
+   echo never > /sys/kernel/mm/redhat_transparent_hugepage/enabled
+fi
+if test -f /sys/kernel/mm/redhat_transparent_hugepage/defrag; then
+   echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag
+fi
+EOF
+}
+
+configShmDev() {
+    if [ -f /etc/fstab.bak ]; then
+        echo '/etc/fstab.bak exists'
+        mv /etc/fstab.bak /etc/fstab
+    fi
+    cp /etc/fstab /etc/fstab.bak
+    sed -i '/\/dev\/shm/s/defaults/rw,exec/' /etc/fstab
+    mount -o remount /dev/shm
+}
+
+configUserUlimit() {
+    if [ -f /etc/profile.bak ]; then
+        echo '/etc/profile.bak exists'
+        mv /etc/profile.bak /etc/profile
+    fi
+    cp /etc/profile /etc/profile.bak
+    cat >>/etc/profile <<EOF
+if [ \$USER = "oracle" ] || [ \$USER = "grid" ]; then
+if [ \$SHELL = "/bin/ksh" ]; then
+ulimit -p 16384
+ulimit -n 65536
+else
+ulimit -u 16384 -n 65536
+fi
+umask 022
+fi
+EOF
+    source /etc/profile
+}
+
+enableNscd() {
+    chkconfig --level 35 nscd on
+    service nscd start
+    service nscd restart
+}
+
+disableSELinux() {
+    sed -i '/^SELINUX/'d /etc/selinux/config
+    echo "SELINUX=disabled" >>/etc/selinux/config
+}
+
+prepareMedia() {
+    #unzip Oracle install media
+}
+
+installCvuqdisk() {
+    #single node:rpm -ivh /software/grid/rpm/cvuqdisk-1.0.9-1.rpm
+    export CVUQDISK_GRP=oinstall
+    rpm -ivh /software/grid/rpm/cvuqdisk-1.0.9-1.rpm
+
+    #rac:
+    export CVUQDISK_GRP=oinstall
+    rpm -ivh /software/cvuqdisk-1.0.9-1.rpm
+}
+
+main() {
+    echo "-----------------Turning NetworkManager off-----------------"
+    disableNetworkManager
+
+    echo "-----------------Stop iptables----------------------------"
+    disableIptables
+
+    echo "-----------------Disable selinux--------------------------"
+    disableSELinux
+
+    echo "-----------------Config yum local repo-----------------------"
+    configYumLocalRepo
+
+    echo "-----------------Depenndency package install--------------------------"
+    dependRpmInstall
+
+    echo "-----------------Config udev------------------------------"
+    configUdevRule
+
+    echo "-----------------Config Lang------------------------------"
+    configI18nLANG
+
+    echo "-----------------Config sshd------------------------------"
+    configSshd
+
+    echo "-----------------Config ntp--------------------------------"
+    configNTP
+
+    echo "-----------------Config networking-------------------------"
+    configNetworking
+
+    echo "-----------------disableTransHugepage----------------"
+    disableTransHugepage
+    disableTransHugepage2
+
+    echo "-----------------config fstab----------------------------"
+    configShmDev
+
+    echo "-----------------config profile--------------------------"
+    configUserUlimit
+
+    echo "-----------------Config nscd------------------------------"
+    enableNscd
+}
+
+storage=$3
+
+main

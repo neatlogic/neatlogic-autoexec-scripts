@@ -1,6 +1,42 @@
 #!/usr/bin/env bash
 #显示帮助信息
 #####################################
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        echo ERROR: Execute failed.
+        exit $?
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function DO_CMD_CONT() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        echo ERROR: Execute failed.
+        HAS_ERROR=1
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function DO_CMD_IGNOR() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        echo WARN: Execute failed.
+        HAS_WARN=1
+    else
+        echo FIND: Execute success.
+    fi
+}
+
 usage() {
     pname=$(basename $0)
     echo "$pname --tinput <tinput> --tjson <tjson> --tselect <tselect> --tmultiselect <tmultiselect> --tpassword <tpassword> --tfile <tfile> --tnode <node id> --tdate <tdate>
@@ -94,6 +130,8 @@ echo "tdatetime: $tdatetime"
 ###########################################
 echo "Do some jobs."
 echo "This a output file example." >testfile.txt
+DO_CMD ls -l /tmp
+
 #Save output
 ###########################################
 echo "======Save output to output file"

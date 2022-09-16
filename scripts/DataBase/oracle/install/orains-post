@@ -1,0 +1,14 @@
+#!/bin/bash
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        echo ERROR: Execute failed.
+        exit $?
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+DO_CMD $ORACLE_HOME/root.sh
