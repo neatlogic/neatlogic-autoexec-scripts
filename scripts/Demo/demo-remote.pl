@@ -25,17 +25,17 @@ sub main {
 
     GetOptions(
         'help'           => \$ishelp,
-        'node:s'         => \$node,
-        'tinput:s'       => \$tinput,
-        'tjson:s'        => \$tjson,
-        'tselect:s'      => \$tselect,
-        'tmultiselect:s' => \$tmultiselect,
-        'tpassword:s'    => \$tpassword,
-        'tfile:s'        => \$tfile,
-        'tnode:s'        => \$tnode,
-        'tdate:s'        => \$tdate,
-        'ttime:s'        => \$ttime,
-        'tdatetime:s'    => \$tdatetime
+        'node=s'         => \$node,
+        'tinput=s'       => \$tinput,
+        'tjson=s'        => \$tjson,
+        'tselect=s'      => \$tselect,
+        'tmultiselect=s' => \$tmultiselect,
+        'tpassword=s'    => \$tpassword,
+        'tfile=s'        => \$tfile,
+        'tnode=s'        => \$tnode,
+        'tdate=s'        => \$tdate,
+        'ttime=s'        => \$ttime,
+        'tdatetime=s'    => \$tdatetime
     );
 
     my $hasOptErr = 0;
@@ -99,5 +99,4 @@ sub main {
 }
 
 exit main();
-
 
