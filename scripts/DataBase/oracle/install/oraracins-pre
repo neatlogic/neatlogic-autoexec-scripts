@@ -1,58 +1,96 @@
 #!/bin/bash
 
-createOraDir() {
-    mkdir -p /oracle/app/oracle
-    mkdir -p /oracle/app/oracle/cfgtoollogs
-    mkdir -p /oracle/app/oracle/product/12.1.0/db_1
-    chown -R oracle:oinstall /oracle/app/oracle
-    chmod -R 775 /oracle/app/oracle
-
-    mkdir -p /oracle/app/oraInventory
-    chown -R grid:oinstall /oracle/app/oraInventory
-    chmod -R 775 /oracle/app/oraInventory
-
-    mkdir -p /oracle/app/grid
-    mkdir -p /oracle/app/12.1.0/grid
-    chown -R grid:oinstall /oracle/app/grid
-    chown -R grid:oinstall /oracle/app/12.1.0/grid
-    chmod -R 775 /oracle/app/grid
-    chmod -R 775 /oracle/app/12.1.0/grid
-}
-
 disableNetworkManager() {
-    service NetworkManager stop
-    chkconfig NetworkManager off
+    if [ "$INIT_TYPE" = 'systemd' ];then
+        systemctl stop NetworkManager
+        systemctl disable NetworkManager
+    else
+        service NetworkManager stop
+        chkconfig NetworkManager off
+    fi
 }
 
 disableIptables() {
-    service iptables stop
-    chkconfig iptables off
+    if [ "$INIT_TYPE" = 'systemd' ];then
+        systemctl stop firewalld
+        systemctl disable firewalld
+    else
+        service iptables stop
+        chkconfig iptables off
+    fi
 }
 
-configYumLocalRepo() {
-    rm -f /etc/yum.repos.d/*
-    touch /etc/yum.repos.d/local.repo
-    echo '[local]' >>/etc/yum.repos.d/local.repo
-    echo 'name=local' >>/etc/yum.repos.d/local.repo
-    echo 'baseurl=file:///mnt' >>/etc/yum.repos.d/local.repo
-    echo 'gpgcheck=0' >>/etc/yum.repos.d/local.repo
-    echo 'enabled=1' >>/etc/yum.repos.d/local.repo
-    mount -o loop -t iso9660 /software/rhel-server-6.9-x86_64-dvd.iso /mnt
-    yum clean all
-    yum makecache
-    sed -i '/^multilib_policy/'d /etc/yum.conf
-    echo "multilib_policy=all" >>/etc/yum.conf
+disableAvahi(){
+    if [[ -f "/etc/systemd/system/dbus-org.freedesktop.Avahi.service" ]]; then
+        systemctl stop avahi-dnsconfd
+        systemctl stop avahi-daemon
+        systemctl disable avahi-dnsconfd
+        systemctl disable avahi-daemon
+    fi
 }
 
 dependRpmInstall() {
-    yum install -y openssh pam libXaw unixODBC nscd binutils compat-libcap1 compat-libstdc++-33 gcc gcc-c++ glibc glibc-devel ksh libgcc libstdc++ libaio libaio-devel libXext libXtst libX11 libXau libxcb libXi make sysstat nfs-utils
-    #yum install -y libstdc++-devel;
+    yum install -y openssh \
+    pam \
+    libXaw \
+    unixODBC \
+    nscd \
+    binutils \
+    compat-libcap1 \
+    compat-libstdc++-33 \
+    gcc \
+    gcc-c++ \
+    glibc \
+    glibc-devel \
+    ksh \
+    libgcc \
+    libstdc++ \
+    libaio \
+    libaio-devel \
+    libXext \
+    libXtst \
+    libX11 \
+    libXau \
+    libxcb \
+    libXi \
+    make \
+    sysstat \
+    nfs-utils
+}
+
+tuningShmConf(){
+    memTotal=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    totalMemory=$((memTotal / 2048))
+    shmall=$((memTotal / 4))
+    if [ $shmall -lt 2097152 ]; then
+        shmall=2097152
+    fi
+    shmmax=$((memTotal * 1024 - 1))
+    if [ "$shmmax" -lt 4294967295 ]; then
+        shmmax=4294967295
+    fi
+    
+    sed -i '/^\s*kernel.shmall/'d /etc/sysctl.conf
+    echo "kernel.shmall = $shmall" >> /etc/sysctl.conf
+    
+    sed -i '/^\s*kernel.shmmax/'d /etc/sysctl.conf
+    echo "kernel.shmmax = $shmmax" >> /etc/sysctl.conf
+    
+    sysctl -p
 }
 
 configNTP() {
-    sed -i '/^OPTIONS/'d /etc/sysconfig/ntpd
+    sed -i '/^\s*OPTIONS/'d /etc/sysconfig/ntpd
+    sed -i '/^\s*SYNC_HWCLOCK/'d /etc/sysconfig/ntpd
+    
     echo 'OPTIONS="-x -u ntp:ntp -p /var/run/ntpd.pid -g"' >>/etc/sysconfig/ntpd
-    service ntpd restart
+    echo 'SYNC_HWCLOCK=yes' >>/etc/sysconfig/ntpd
+
+    if [ "$INIT_TYPE" = 'systemd' ];then
+        systemctl restart ntpd
+    else
+        service ntpd restart
+    fi
 }
 
 configI18nLANG() {
@@ -61,128 +99,90 @@ configI18nLANG() {
 }
 
 configSshd() {
-    sed -i '/^LoginGraceTime/'d /etc/ssh/sshd_config
+    sed -i '/^\s*LoginGraceTime/'d /etc/ssh/sshd_config
     echo 'LoginGraceTime 0' >>/etc/ssh/sshd_config
 }
 
 configNetworking() {
-    sed -i '/^NETWORKING/'d /etc/sysconfig/network
-    sed -i '/^NOZEROCONF/'d /etc/sysconfig/network
+    sed -i '/^\s*NETWORKING/'d /etc/sysconfig/network
+    sed -i '/^\s*NOZEROCONF/'d /etc/sysconfig/network
     echo 'NETWORKING=yes' >>/etc/sysconfig/network
     echo 'NOZEROCONF=yes' >>/etc/sysconfig/network
 }
 
 disableTransHugepage() {
-    sed -i 's/rhgb quiet$/& transparent_hugepage=never/' /boot/grub/grub.conf
-    if [ -f /etc/rc.local.bak ]; then
-        echo '/etc/rc.local.bak exists'
-        mv /etc/rc.local.bak /etc/rc.local
+    sed -i '/GRUB_CMDLINE_LINUX/'s'/quiet/quiet transparent_hugepage=never numa=off/' /etc/default/grub
+    
+    if [ -f /sys/kernel/mm/redhat_transparent_hugepage/enabled ]; then
+        echo never > /sys/kernel/mm/redhat_transparent_hugepage/enabled
     fi
-    cp /etc/rc.local /etc/rc.local.bak
-    cat >>/etc/rc.local <<EOF
-if test -f /sys/kernel/mm/redhat_transparent_hugepage/enabled; then
-   echo never > /sys/kernel/mm/redhat_transparent_hugepage/enabled
-fi
-if test -f /sys/kernel/mm/redhat_transparent_hugepage/defrag; then
-   echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag
-fi
-EOF
+    if [ -f /sys/kernel/mm/redhat_transparent_hugepage/defrag ]; then
+        echo never > /sys/kernel/mm/redhat_transparent_hugepage/defrag
+    fi
 }
 
 configShmDev() {
-    if [ -f /etc/fstab.bak ]; then
-        echo '/etc/fstab.bak exists'
-        mv /etc/fstab.bak /etc/fstab
-    fi
-    cp /etc/fstab /etc/fstab.bak
-    sed -i '/\/dev\/shm/s/defaults/rw,exec/' /etc/fstab
+    sed -i '/^\s*\/dev\/shm\s/'s'/defaults/rw,exec/' /etc/fstab
     mount -o remount /dev/shm
-}
-
-configUserUlimit() {
-    if [ -f /etc/profile.bak ]; then
-        echo '/etc/profile.bak exists'
-        mv /etc/profile.bak /etc/profile
-    fi
-    cp /etc/profile /etc/profile.bak
-    cat >>/etc/profile <<EOF
-if [ \$USER = "oracle" ] || [ \$USER = "grid" ]; then
-if [ \$SHELL = "/bin/ksh" ]; then
-ulimit -p 16384
-ulimit -n 65536
-else
-ulimit -u 16384 -n 65536
-fi
-umask 022
-fi
-EOF
-    source /etc/profile
 }
 
 enableNscd() {
     chkconfig --level 35 nscd on
-    service nscd start
-    service nscd restart
+    if [ "$INIT_TYPE" = 'systemd' ];then
+        systemctl restart nscd
+    else
+        service nscd restart
+    fi
 }
 
 disableSELinux() {
     sed -i '/^SELINUX/'d /etc/selinux/config
     echo "SELINUX=disabled" >>/etc/selinux/config
+    setenforce 0
 }
 
-prepareMedia() {
-    #unzip Oracle install media
-}
-
-installCvuqdisk() {
-    #single node:rpm -ivh /software/grid/rpm/cvuqdisk-1.0.9-1.rpm
-    export CVUQDISK_GRP=oinstall
-    rpm -ivh /software/grid/rpm/cvuqdisk-1.0.9-1.rpm
-
-    #rac:
-    export CVUQDISK_GRP=oinstall
-    rpm -ivh /software/cvuqdisk-1.0.9-1.rpm
-}
 
 main() {
-    echo "-----------------Turning NetworkManager off-----------------"
+    ps -p1 | grep systemd >/dev/null && INIT_TYPE="systemd" || INIT_TYPE="sysvinit"
+    
+    echo "--Turning NetworkManager off-------------"
     disableNetworkManager
-
-    echo "-----------------Stop iptables----------------------------"
+    
+    echo "--Stop iptables--------------------------"
     disableIptables
-
-    echo "-----------------Disable selinux--------------------------"
+    
+    echo "--Disable selinux------------------------"
     disableSELinux
-
-    echo "-----------------Config yum local repo-----------------------"
+    
+    echo "--Config yum local repo------------------"
     configYumLocalRepo
-
-    echo "-----------------Depenndency package install--------------------------"
+    
+    echo "--Depenndency package install------------"
     dependRpmInstall
-
-    echo "-----------------Config Lang------------------------------"
+    
+    echo "--Config Lang----------------------------"
     configI18nLANG
-
-    echo "-----------------Config sshd------------------------------"
+    
+    echo "--Config sshd----------------------------"
     configSshd
-
-    echo "-----------------Config ntp--------------------------------"
+    
+    echo "--Config ntp-----------------------------"
     configNTP
-
-    echo "-----------------Config networking-------------------------"
+    
+    echo "--Config networking----------------------"
     configNetworking
-
-    echo "-----------------disableTransHugepage----------------"
+    
+    echo "--disableTransHugepage-------------------"
     disableTransHugepage
-
-    echo "-----------------config fstab----------------------------"
+    
+    echo "--config fstab---------------------------"
     configShmDev
-
-    echo "-----------------config profile--------------------------"
-    configUserUlimit
-
-    echo "-----------------Config nscd------------------------------"
+    
+    echo "--Config nscd----------------------------"
     enableNscd
+    
+    echo "--Tunning shm config in sysctl.conf------"
+    tuningShmConf
 }
 
 storage=$3

@@ -14,7 +14,7 @@ function DO_CMD() {
 
 INVENTORY_DIR=$1
 
-DO_CMD $ENVENTORY_DIR/orainstRoot.sh
+DO_CMD $INVENTORY_DIR/orainstRoot.sh
 DO_CMD $ORACLE_HOME/root.sh
 
 exit $HAS_ERROR
