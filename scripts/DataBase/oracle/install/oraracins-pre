@@ -1,4 +1,7 @@
 #!/bin/bash
+#不包括/etc/sysctl.conf、/etc/security/limit.conf、/etc/hosts、 $HOME/.bash_profile, .ssh/authorized_keys, udev/rules.d关于asmdisk的配置
+#不包括Oracle、grid用户和组的配置、配置yum源
+#上述的处理需要使用自动化的基础工具来完成
 
 disableNetworkManager() {
     if [ "$INIT_TYPE" = 'systemd' ];then

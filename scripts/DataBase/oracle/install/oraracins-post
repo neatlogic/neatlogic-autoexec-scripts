@@ -12,7 +12,7 @@ function DO_CMD() {
     fi
 }
 
-INVENTORY_DIR=$1
+INVENTORY_DIR=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
 
 DO_CMD $INVENTORY_DIR/orainstRoot.sh
 DO_CMD $ORACLE_HOME/root.sh
