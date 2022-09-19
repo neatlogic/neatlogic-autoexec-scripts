@@ -136,9 +136,9 @@ if __name__ == "__main__":
         privIp = None
 
         for nodeIpInfo in nodesIpInfo.get(node):
-            nicName = nodeIpInfo.get('NIC')
-            ip = nodeIpInfo.get('IP')
-            prefixLen = nodeIpInfo.get('NetMask')
+            nicName = nodeIpInfo.get('nic')
+            ip = nodeIpInfo.get('ip')
+            prefixLen = nodeIpInfo.get('netmask')
 
             thisNet = ipaddress.ip_network('%s/%s' % (ip, prefixLen))
 
