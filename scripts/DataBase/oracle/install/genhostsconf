@@ -1,7 +1,6 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
-from msilib.schema import PublishComponent
 import os
 import sys
 import re
@@ -54,10 +53,10 @@ if __name__ == "__main__":
     racName = args.racname
 
     pubNetTxt = args.pubnet
-    pubNet = ipaddress.ip_network(pubNetTxt)
+    pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
 
     privNetTxt = args.privnet
-    privNet = ipaddress.ip_network(privNetTxt)
+    privNet = ipaddress.ip_network(privNetTxt, strict=False)
 
     # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
     nodesIpInfo = json.loads(args.nodesipinfo)
@@ -66,11 +65,11 @@ if __name__ == "__main__":
     nodesCount = len(nodes)
 
     # vip 地址参数分析和排序
-    vipList = ()
+    vipList = []
     vipListTxt = args.viplist
-    vipListTxt = vipListTxt.replace('\\n', '\n')
     spaceReg = re.compile(r"\s+")
     vipListTxt = spaceReg.sub('', vipListTxt)
+    vipListTxt = vipListTxt.replace('\\n', '\n')
     splitReg = re.compile(r",|\n")
     vipList = splitReg.split(vipListTxt)
     vipList.sort()
@@ -78,13 +77,13 @@ if __name__ == "__main__":
     vipsCount = len(vipList)
 
     # scan ip 地址参数分析和排序
-    scanIpList = ()
+    scanIpList = []
     scanIpListTxt = args.scaniplist
-    scanIpListTxt = scanIpListTxt.replace('\\n', '\n')
     spaceReg = re.compile(r"\s+")
     scanIpListTxt = spaceReg.sub('', scanIpListTxt)
+    scanIpListTxt = scanIpListTxt.replace('\\n', '\n')
     splitReg = re.compile(r",|\n")
-    scanIpListTxt = splitReg.split(vipListTxt)
+    scanIpList = splitReg.split(scanIpListTxt)
     scanIpList.sort()
 
     hasError = 0
@@ -120,13 +119,13 @@ if __name__ == "__main__":
     privNicNameMap = {}
     notusedNicNameMap = {}
 
-    pubIpConf = ()
-    privIpConf = ()
-    vipConf = ()
-    clusterNodes = ()
-    networkInterfaceList = ()
+    pubIpConf = []
+    privIpConf = []
+    vipConf = []
+    clusterNodes = []
+    networkInterfaceList = []
 
-    idx = 1
+    idx = 0
     for node in nodes:
         pubIp = None
         privIp = None
@@ -136,7 +135,7 @@ if __name__ == "__main__":
             ip = nodeIpInfo.get('ip')
             prefixLen = nodeIpInfo.get('netmask')
 
-            thisNet = ipaddress.ip_network('%s/%s' % (ip, prefixLen))
+            thisNet = ipaddress.ip_network('%s/%s' % (ip, prefixLen), strict=False)
 
             if ipaddress.ip_address(ip) in pubNet:
                 if pubIp is None:
@@ -169,11 +168,11 @@ if __name__ == "__main__":
     if len(pubNicNameMap) > 1:
         hasError = 1
         nicNames = list(pubNicNameMap.keys())
-        print("ERROR: Public Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (pubNetTxt, nicNames.join(',')))
+        print("ERROR: Public Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (pubNetTxt, ','.join(nicNames)))
     if len(privNicNameMap) > 1:
         hasError = 1
-        nicNames = list(pubNicNameMap.keys())
-        print("ERROR: Private Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (privNetTxt, nicNames.join(',')))
+        nicNames = list(privNicNameMap.keys())
+        print("ERROR: Private Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (privNetTxt, ','.join(nicNames)))
 
     # 拼接Oracle静默安装需要的配置oracle.install.crs.config.networkInterfaceList
     for nicName in pubNicNameMap.keys():
@@ -186,7 +185,7 @@ if __name__ == "__main__":
         netAddr = notusedNicNameMap[nicName]
         networkInterfaceList.append('%s:%s:3' % (nicName, netAddr))
 
-    scanIpConf = ()
+    scanIpConf = []
     for scanIp in scanIpList:
         scanIpConf.append("%s\t%s-scan" % (scanIp, racName))
 
