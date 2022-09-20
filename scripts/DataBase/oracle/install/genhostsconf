@@ -68,13 +68,11 @@ if __name__ == "__main__":
     # vip 地址参数分析和排序
     vipList = ()
     vipListTxt = args.viplist
+    vipListTxt = vipListTxt.replace('\\n', '\n')
     spaceReg = re.compile(r"\s+")
     vipListTxt = spaceReg.sub('', vipListTxt)
-    if vipListTxt.startswith('{'):
-        vipListJson = json.loads(vipListTxt)
-        vipList = vipListJson.get('content').split("\n")
-    else:
-        vipList = vipListTxt.split(',')
+    splitReg = re.compile(r",|\n")
+    vipList = splitReg.split(vipListTxt)
     vipList.sort()
 
     vipsCount = len(vipList)
@@ -82,13 +80,11 @@ if __name__ == "__main__":
     # scan ip 地址参数分析和排序
     scanIpList = ()
     scanIpListTxt = args.scaniplist
+    scanIpListTxt = scanIpListTxt.replace('\\n', '\n')
     spaceReg = re.compile(r"\s+")
     scanIpListTxt = spaceReg.sub('', scanIpListTxt)
-    if scanIpListTxt.startswith('{'):
-        scanIpListJson = json.loads(scanIpListTxt)
-        scanIpList = scanIpListJson.get('content').split("\n")
-    else:
-        scanIpList = scanIpListTxt.split(',')
+    splitReg = re.compile(r",|\n")
+    scanIpListTxt = splitReg.split(vipListTxt)
     scanIpList.sort()
 
     hasError = 0

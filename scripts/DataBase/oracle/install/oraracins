@@ -1,4 +1,15 @@
 #!/bin/bash
+#参数：Grid用户，组，Oracle用户组
+#UNIX_GROUP_NAME
+#INVENTORY_LOCATION
+#ORACLE_BASE
+#OSDBA_GROUP=dba
+#OSOPER_GROUP=oper
+#OSBACKUPDBA_GROUP=backupdba
+#OSDGDBA_GROUP=dgdba
+#OSKMDBA_GROUP=kmdba
+#OSRACDBA_GROUP=racdba
+#CLUSTER_NODES=rac1,rac2
 
 configOracleUlimit() {
     grep 'ulimit -n 65536' /etc/profile >/dev/null

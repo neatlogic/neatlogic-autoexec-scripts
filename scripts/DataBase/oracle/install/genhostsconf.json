@@ -63,7 +63,7 @@
             "opt": "hostsConfTxt",
             "name": "hosts配置内容",
             "help": "/etc/hosts配置内容",
-            "type": "text",
+            "type": "textarea",
             "defaultValue": ""
         },
         {
