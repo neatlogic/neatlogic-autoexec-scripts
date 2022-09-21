@@ -1,0 +1,27 @@
+{
+	"opType": "target",
+	"typeName": "INSTALL",
+	"riskName": "LOW",
+	"interpreter": "bash",
+	"description": "Unix安装JDK",
+	"argument": null,
+	"option": [{
+			"opt": "file_path",
+			"name": "安装文件路径",
+			"help": "存放jdk安装tar.gz包路径，如：/tmp/VMwareTools-10.3.22-15902021.tar.gz",
+			"type": "text",
+			"required": "false",
+			"validate": "",
+			"defaultValue": ""
+		}, {
+			"opt": "file",
+			"name": "安装包文件",
+			"help": "jdk安装tar.gz包，如：VMwareTools-10.3.22-15902021.tar.gz",
+			"type": "file",
+			"required": "false",
+			"validate": "",
+			"defaultValue": ""
+		}
+	],
+	"output": []
+}

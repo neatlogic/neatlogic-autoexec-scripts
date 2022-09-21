@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --file_path <file path> --file <file>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            file_path)
+                file_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            file)
+                file="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+function getname()
+{
+    pwd = `pwd`
+    for dir in `ls $pwd`
+    do
+        if [[ "$dir" == "vmware-tools-"* && -d "$dir" ]] ; then 
+            file_dir="$dir"
+            break 
+        fi 
+    done 
+}
+
+if [[ ! -n "$file"  && ! -n "$file_path" ]] ; then
+    usage
+fi 
+
+pid=`ps -ef | grep vmtoolsd |grep -v grep |awk '{print $2}'`
+if [[ -n "$pid" ]] ; then
+    echo "os already installed vmtools."
+    exit 0
+fi
+if [[ ! -n "$file" ]] ; then
+    cp -r $file_path .
+    file=`echo $(basename "$file_path")`
+fi
+
+tar -zxvf $file
+getname
+current_path=`pwd`
+cd "$file_dir"
+
+cat > answer << __ANSWER__
+yes
+/usr/bin
+/etc
+/etc/init.d
+/usr/sbin
+/usr/lib/vmware-tools
+yes
+/usr/share/doc/vmware-tools
+yes
+yes
+no
+no
+yes
+no
+__ANSWER__
+
+./vmware-install.pl < answer
+if [ $? != 0 ] ; then
+    echo "ERROR:: install $file failed."
+    exit 1
+else
+    echo "INFO:: install $file succeed."
+    cd $current_path
+    rm -rf $file_dir
+    exit 0 
+fi
