@@ -125,7 +125,7 @@ if __name__ == "__main__":
     clusterNodes = []
     networkInterfaceList = []
 
-    idx = 0
+    idx = 1
     for node in nodes:
         pubIp = None
         privIp = None
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
         else:
             pubIpConf.append("%s\t%s%s" % (pubIp, racName, idx))
-            vipConf.append("%s\t%s-vip%s" % (vipList[idx], racName, idx))
+            vipConf.append("%s\t%s-vip%s" % (vipList[idx - 1], racName, idx))
             clusterNodes.append('%s%s:%s-vip%s' % (racName, idx, racName, idx))
 
         if privIp is None:
