@@ -27,7 +27,7 @@ parseOpts() {
                 ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
-                    echo "Unknown option -- ${OPTARG}" > &2
+                    echo "Unknown option -- ${OPTARG}" >&2
                 fi
                 ;;
             esac
@@ -46,55 +46,51 @@ parseOpts() {
 }
 parseOpts "$@"
 
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
 function install()
 {
     id mysql
     if [ $? != 0 ]
     then
         echo "INFO: Add user mysql"
-        useradd mysql
+        DO_CMD useradd mysql
     fi
 
     if [ -e "/home/mysql/data" ]
     then
-        rm -rf /home/mysql/data
-        exitIfFailed "remove /home/mysql/data"
+        DO_CMD rm -rf /home/mysql/data
     fi
-    mkdir /home/mysql/data
-    exitIfFailed "create /home/mysql/data"
+    DO_CMD mkdir -p /home/mysql/data
 
     if [ -e "/home/mysql/log" ]
     then
-        rm -rf /home/mysql/log
-        exitIfFailed "remove /home/mysql/log"
+        DO_CMD rm -rf /home/mysql/log
     fi
-    mkdir /home/mysql/log
-    exitIfFailed "create /home/mysql/log"
-    chown -R mysql:mysql /home/mysql
-    exitIfFailed "chown -R mysql:mysql /home/mysql"
+    DO_CMD mkdir -p /home/mysql/log
+    DO_CMD chown -R mysql:mysql /home/mysql
 
-    curl -s -o my.cnf $mycnf
-    exitIfFailed "download my.cnf"
-    cp my.cnf /etc/my.cnf
-    exitIfFailed "cp my.cnf /etc/my.cnf"
-    rm -f my.cnf
+    DO_CMD cp $mycnf /etc/my.cnf
 
-    curl -s -o inspkg.tgz $inspkg
-    exitIfFailed "download inspkg.tgz"
-    
-    tar -xvzf inspgk.tgz
-    exitIfFailed "unzip inspkg.tgz"
+    DO_CMD tar -xvzf $inspkg
 
-    rpm -Uvh *.rpm
-    exitIfFailed "MySQL rpms install"
-    rm -f *.rpm
+    DO_CMD rpm -Uvh *.rpm
 
     echo "INFO: Begin to init mysql db"
-    /usr/bin/mysql_install_db
-    exitIfFailed "init mysql database"
+    DO_CMD /usr/bin/mysql_install_db
 
-    service mysql start
-    exitIfFailed "service mysql start"
+    DO_CMD service mysql start
 
     #mysql 脚本运行，注意密码处理
     echo "INFO: modify mysql user password and create new users."
@@ -106,10 +102,15 @@ select host,user,password from user;
 update user set host='%' where user='root' and host='localhost';
 flush privileges;
 EOF
-    
-    exitIfFailed "modify mysql password"
+    if [ $? != 0 ]
+    then
+        echo "ERROR: modify mysql password failed."
+        exit 1;
+    else
+        echo "INFO: modify mysql password succeed."
+    fi
 
-    chkconfig mysql on
+    DO_CMD chkconfig mysql on
     mysqlExists=`chkconfig --list | grep mysql`
     if [ -z "$mysqlExists" ]
     then
@@ -130,18 +131,6 @@ function checkInstalled()
 }
 
 
-
-function exitIfFailed()
-{
-	if [ $? != 0 ]
-	then
-		echo "ERROR: $1 failed."
-		exit 1;
-	else 
-		echo "INFO: $1 succeed."
-	fi
-}
-
 if [[ ! -n "$rootpwd" || ! -n "$mycnf" || ! -n "$inspkg" ]] ; then
     usage
 fi 
@@ -149,3 +138,5 @@ fi
 checkInstalled
 
 install
+
+exit $HAS_ERROR

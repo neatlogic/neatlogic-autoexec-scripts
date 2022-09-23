@@ -6,11 +6,11 @@
     "description": "centos安装mysql",
     "argument": null,
     "option": [{
-        "opt": "node",
-        "name": "node",
+        "opt": "rootpwd",
+        "name": "rootpwd",
         "help": "",
-        "type": "text",
-        "required": "false",
+        "type": "password",
+        "required": "true",
         "validate": "",
         "defaultValue": ""
     },{
@@ -18,7 +18,7 @@
         "name": "mysql配置文件",
         "help": "存放mysql配置文件my.cnf文件，如：my.cnf",
         "type": "file",
-        "required": "false",
+        "required": "true",
         "validate": "",
         "defaultValue": ""
     },{
@@ -26,7 +26,7 @@
         "name": "安装包文件",
         "help": "mysql安装tar.gz包，如：inspkg.tar.gz",
         "type": "file",
-        "required": "false",
+        "required": "true",
         "validate": "",
         "defaultValue": ""
     }],
