@@ -115,6 +115,7 @@ if __name__ == "__main__":
     pubNicName = None
     privNicName = None
 
+    hostNameMap = {}
     pubNicNameMap = {}
     privNicNameMap = {}
     notusedNicNameMap = {}
@@ -152,15 +153,16 @@ if __name__ == "__main__":
             hasError = 1
             print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
         else:
-            pubIpConf.append("%s\t%s%s" % (pubIp, racName, idx))
-            vipConf.append("%s\t%s-vip%s" % (vipList[idx - 1], racName, idx))
-            clusterNodes.append('%s%s:%s-vip%s' % (racName, idx, racName, idx))
+            pubIpConf.append('%s\t%s%s' % (pubIp, racName, idx))
+            hostNameMap[pubIp] = '%s%s' % (racName, idx)
+            vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
+            clusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
 
         if privIp is None:
             hasError = 1
             print("ERROR: Node:%s does not config private network:%s ip" % (node, privNetTxt))
         else:
-            privIpConf.append("%s\t%s-priv%s" % (privIp, racName, idx))
+            privIpConf.append("%s\t%s%s-priv" % (privIp, racName, idx))
 
         idx = idx + 1
 
@@ -194,6 +196,8 @@ if __name__ == "__main__":
     hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
 
     out = {}
+    out['hostNames'] = hostNameMap
+    
     out['hostsConfTxt'] = hostConfTxt
 
     # oracle.install.crs.config.clusterNodes
