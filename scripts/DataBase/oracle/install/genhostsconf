@@ -196,16 +196,13 @@ if __name__ == "__main__":
     hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
 
     out = {}
-    out['hostNames'] = hostNameMap
     
+    out['ip2HostName'] = hostNameMap
     out['hostsConfTxt'] = hostConfTxt
-
     # oracle.install.crs.config.clusterNodes
     out['clusterNodes'] = ','.join(clusterNodes)
-
     # oracle.install.crs.config.networkInterfaceList
     out['networkInterfaceList'] = ','.join(networkInterfaceList)
-
     # oracle.install.crs.config.gpnp.scanName
     out['scanName'] = racName + '-scan'
 

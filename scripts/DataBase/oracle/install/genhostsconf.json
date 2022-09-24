@@ -62,7 +62,7 @@
     ],
     "output": [
         {
-            "opt": "hostNames",
+            "opt": "ip2HostName",
             "name": "IP到主机名映射",
             "help": "public网卡IP到主机名的映射",
             "type": "json",
