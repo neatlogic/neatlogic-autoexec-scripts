@@ -14,9 +14,9 @@
         "validate": "",
         "defaultValue": ""
     },{
-        "opt": "tselect",
-        "name": "reinstall",
-        "help": "强制重装",
+        "opt": "reinstall",
+        "name": "强制重装",
+        "help": "如存在mysql服务，先卸载后安装",
         "type": "select",
         "dataSource": {
             "dataList": [{
