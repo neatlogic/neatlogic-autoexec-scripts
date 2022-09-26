@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "Linux克隆机器后硬盘挂载和网卡配置",
+    "description": "Linux克隆机器后硬盘挂载、网卡配置、关闭防火墙",
     "argument": null,
     "option": [
     {
