@@ -69,7 +69,13 @@ function prepareRspFile(){
         exit 3
     fi
 
+    sed -i s/'^\s*ORACLE_BASE\s*=.*$'/"ORACLE_BASE=$GRID_BASE"/ $RESPONSE_FILE
     sed -i s/'^\s*INVENTORY_LOCATION\s*=.*$'/"INVENTORY_LOCATION=$INVENTORY_LOCATION"/ $RESPONSE_FILE
+
+    sed -i s/'^\s*oracle.install.asm.OSDBA\s*=.*$'/"oracle.install.asm.OSDBA=$OSDBA_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.asm.OSASM\s*=.*$'/"oracle.install.asm.OSASM=$OSASM_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.asm.OSOPER\s*=.*$'/"oracle.install.asm.OSOPER=$OSOPER_GROUP"/ $RESPONSE_FILE
+
     sed -i s/'^\s*oracle.install.crs.config.gpnp.scanName\s*=.*$'/"oracle.install.crs.config.gpnp.scanName=$SCAN_NAME"/ $RESPONSE_FILE
     sed -i s/'^\s*oracle.install.crs.config.gpnp.scanPort\s*=.*$'/"oracle.install.crs.config.gpnp.scanPort=$SCAN_PORT"/ $RESPONSE_FILE
     sed -i s/'^\s*oracle.install.crs.config.clusterNodes\s*=.*$'/"oracle.install.crs.config.clusterNodes=$CLUSTER_NODES"/ $RESPONSE_FILE

@@ -35,6 +35,16 @@ function prepareRspFile() {
         exit 3
     fi
 
+    sed -i s/'^\s*UNIX_GROUP_NAME\s*=.*$'/"UNIX_GROUP_NAME=$UNIX_GROUP_NAME"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.db.OSDBA_GROUP\s*=.*$'/"oracle.install.db.OSDBA_GROUP=$OSDBA_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.db.OSOPER_GROUP\s*=.*$'/"oracle.install.db.OSOPER_GROUP=$OSOPER_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.db.OSBACKUPDBA_GROUP\s*=.*$'/"oracle.install.db.OSBACKUPDBA_GROUP=$OSBACKUPDBA_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.db.OSDGDBA_GROUP\s*=.*$'/"oracle.install.db.OSDGDBA_GROUP=$OSDGDBA_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.db.OSKMDBA_GROUP\s*=.*$'/"oracle.install.db.OSKMDBA_GROUP=$OSKMDBA_GROUP"/ $RESPONSE_FILE
+    sed -i s/'^\s*oracle.install.db.OSRACDBA_GROUP\s*=.*$'/"oracle.install.db.OSRACDBA_GROUP=$OSRACDBA_GROUP"/ $RESPONSE_FILE
+    
+    sed -i s/'^\s*ORACLE_BASE\s*=.*$'/"ORACLE_BASE=$ORACLE_BASE"/ $RESPONSE_FILE
+    sed -i s/'^\s*ORACLE_HOME\s*=.*$'/"ORACLE_HOME=$ORACLE_HOME"/ $RESPONSE_FILE
     sed -i s/'^\s*INVENTORY_LOCATION\s*=.*$'/"INVENTORY_LOCATION=$INVENTORY_LOCATION"/ $RESPONSE_FILE
     sed -i s/'^\s*oracle.install.db.CLUSTER_NODES\s*=.*$'/"oracle.install.db.CLUSTER_NODES=$CLUSTER_NODES"/ $RESPONSE_FILE
 

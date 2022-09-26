@@ -1,0 +1,22 @@
+#!/bin/bash
+#创建数据库
+#su - oracle
+dbca -silent -createDatabase \
+    -templateName General_Purpose.dbc \
+    -gdbname racdb -sid racdb \
+    -responseFile NO_VALUE \
+    -characterSet AL32UTF8 \
+    -sysPassword oracle -systemPassword oracle -pdbAdminPassword oracle -dbsnmpPassword oracle \
+    -datafileDestination '+datadg' \
+    -createAsContainerDatabase false \
+    -databaseType MULTIPURPOSE \
+    -automaticMemoryManagement false \
+    -totalMemory 2385 \
+    -redoLogFileSize 50 \
+    -emConfiguration NONE \
+    -ignorePreReqs \
+    -nodelist oracle19crac01,oracle19crac02 \
+    -storageType ASM \
+    -diskGroupName +datadg \
+    -asmsnmpPassword oracle \
+    -recoveryAreaDestination NONE
