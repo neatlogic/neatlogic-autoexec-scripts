@@ -14,6 +14,26 @@
         "validate": "",
         "defaultValue": ""
     },{
+        "opt": "tselect",
+        "name": "reinstall",
+        "help": "强制重装",
+        "type": "select",
+        "dataSource": {
+            "dataList": [{
+                    "text": "否",
+                    "value": "0"
+                },
+                {
+                    "text": "是",
+                    "value": "1"
+                }
+            ],
+            "dataType": "static"
+        },
+        "defaultValue": "0",
+        "required": "true",
+        "validate": ""
+    },{
         "opt": "mycnf",
         "name": "mysql配置文件",
         "help": "存放mysql配置文件my.cnf文件，如：my.cnf",

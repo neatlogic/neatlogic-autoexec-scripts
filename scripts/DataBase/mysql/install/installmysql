@@ -3,7 +3,7 @@
 usage(){
     pname=$(basename $0)
     echo "Usage:"
-    echo "$pname --rootpwd <root password> --mycnf <mysql config file> --inspkg <install rpm pkg>"
+    echo "$pname --rootpwd <root password> --reinstall <Uninstall first and then install> --mycnf <mysql config file> --inspkg <install rpm pkg>"
     exit -1
 }
 
@@ -15,6 +15,10 @@ parseOpts() {
             case "${OPTARG}" in
             rootpwd)
                 rootpwd="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            reinstall)
+                reinstall="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             mycnf)
@@ -67,17 +71,7 @@ function install()
         echo "INFO: Add user mysql"
         DO_CMD useradd mysql
     fi
-
-    if [ -e "/home/mysql/data" ]
-    then
-        DO_CMD rm -rf /home/mysql/data
-    fi
     DO_CMD mkdir -p /home/mysql/data
-
-    if [ -e "/home/mysql/log" ]
-    then
-        DO_CMD rm -rf /home/mysql/log
-    fi
     DO_CMD mkdir -p /home/mysql/log
     DO_CMD chown -R mysql:mysql /home/mysql
 
@@ -120,23 +114,65 @@ EOF
 
 }
 
+function uninstall()
+{
+    #卸载现有mysql
+    service mysql stop 2>&1 > /dev/null
+    mysqlPids=`ps -efww |grep mysql |grep -v grep|awk '{print $2}'`
+    if [ ! -z "$mysqlPids" ]
+    then
+        DO_CMD kill -9 $mysqlPids
+    fi
+    if [ -e "/root/.mysql_secret" ]
+    then
+        DO_CMD rm /root/.mysql_secret
+    fi
+    if [ -e "/home/mysql/data" ]
+    then
+        DO_CMD rm -rf /home/mysql/data
+    fi
+    if [ -e "/home/mysql/log" ]
+    then
+        DO_CMD rm -rf /home/mysql/log
+    fi
+    for mysqlRpm in `rpm -qa |grep -i mysql`
+    do
+        DO_CMD rpm -e --nodeps $mysqlRpm
+    done
+
+    for mariadbRpm in `rpm -qa |grep -i mariadb`
+    do
+        DO_CMD rpm -e --nodeps $mariadbRpm
+    done
+    for numactlRpm in `rpm -qa |grep -i numactl`
+    do
+        DO_CMD rpm -e --nodeps $numactlRpm
+    done
+
+}
+
+
 function checkInstalled()
 {
     mysqlPids=`ps -efww |grep mysql |grep -v grep|awk '{print $2}'`
     if [ ! -z "$mysqlPids" ]
     then
         echo "INFO: mysql have already installed ."
-        exit 0
+        if [ $reinstall == 0]
+        then
+            exit 0
+        else
+            uninstall
+            install
+        fi
     fi
 }
 
 
-if [[ ! -n "$rootpwd" || ! -n "$mycnf" || ! -n "$inspkg" ]] ; then
+if [[ ! -n "$rootpwd" || ! -n "$reinstall" || ! -n "$mycnf" || ! -n "$inspkg" ]] ; then
     usage
 fi 
 
 checkInstalled
-
-install
 
 exit $HAS_ERROR
