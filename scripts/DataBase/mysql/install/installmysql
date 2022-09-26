@@ -118,7 +118,7 @@ function uninstall()
 {
     #卸载现有mysql
     service mysql stop 2>&1 > /dev/null
-    mysqlPids=`ps -efww |grep mysql |grep -v grep|awk '{print $2}'`
+    mysqlPids=`ps -efww |grep mysql |grep -v grep |grep -v installmysql|awk '{print $2}'`
     if [ ! -z "$mysqlPids" ]
     then
         DO_CMD kill -9 $mysqlPids
@@ -126,6 +126,10 @@ function uninstall()
     if [ -e "/root/.mysql_secret" ]
     then
         DO_CMD rm /root/.mysql_secret
+    fi
+    if [ -e "/var/lib/mysql" ]
+    then
+        DO_CMD rm /var/lib/mysql
     fi
     if [ -e "/home/mysql/data" ]
     then
@@ -154,7 +158,7 @@ function uninstall()
 
 function checkInstalled()
 {
-    mysqlPids=`ps -efww |grep mysql |grep -v grep|awk '{print $2}'`
+    mysqlPids=`ps -efww |grep mysql |grep -v grep |grep -v installmysql|awk '{print $2}'`
     if [ ! -z "$mysqlPids" ]
     then
         echo "INFO: mysql have already installed ."
