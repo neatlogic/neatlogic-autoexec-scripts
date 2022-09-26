@@ -1,0 +1,32 @@
+#!/bin/bash
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+GRID_HOME=$1
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Argument not provided."
+    echo "Usage: dbins-root <Oracle Home dir>"
+    exit 2
+fi
+
+INVENTORY_DIR=$(cat $GRID_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+
+if [ -z "$INVENTORY_DIR" ]; then
+    echo "ERROR: Can not determin invertory directory by file:$GRID_HOME/oraInst.loc."
+    exit 3
+fi
+
+DO_CMD $INVENTORY_LOCATION/orainstRoot.sh
+DO_CMD $GRID_HOME/root.sh
+
+exit $HAS_ERROR

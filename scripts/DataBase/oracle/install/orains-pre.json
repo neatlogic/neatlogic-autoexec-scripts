@@ -1,0 +1,9 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "option": [],
+    "output": []
+}
