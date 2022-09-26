@@ -45,7 +45,8 @@ def importJsonInfo(params):
                 if not opName.endswith('.json'):
                     try:
                         scriptPath = os.path.join(root, opName)
-                        catalogName = os.path.basename(root)
+                        # 获取当前脚本所在目录的相对路径作为工具目录
+                        catalogName = os.path.relpath(scriptPath, dataDir).replace('\\' + opName, '')
                         jsonList = []
                         jsonInfo = {}
                         # 获取脚本描述.json文件
