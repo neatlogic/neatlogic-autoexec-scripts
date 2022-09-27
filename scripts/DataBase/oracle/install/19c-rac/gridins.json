@@ -1,0 +1,73 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "enabled": 1,
+    "option": [{
+            "opt": "EXEC_ENV",
+            "name": "变量设置",
+            "help": "执行前的变量设（使用${}引用作业参数）",
+            "type": "textarea",
+            "defaultValue": "GRID_USER=${GRID_USER}\nUNIX_GROUP_NAME=${UNIX_GROUP_NAME}\nINVENTORY_LOCATION=${INVENTORY_LOCATION}\nGRID_BASE=${GRID_BASE}\nGRID_HOME=${GRID_HOME}\nOSDBA_GROUP=${OSDBA_GROUP}\nOSOPER_GROUP=${OSOPER_GROUP}\nOSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}\nOSDGDBA_GROUP=${OSDGDBA_GROUP}\nOSKMDBA_GROUP=${OSKMDBA_GROUP}\nOSRACDBA_GROUP=${OSRACDBA_GROUP}\nCLUSTER_NAME=${CLUSTER_NAME}\nSCAN_NAME=${SCAN_NAME}\nSCAN_PORT=${SAN_PORT}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "RSPONSE_FILE",
+            "name": "静默响应文件",
+            "help": "静默安装的响应文件",
+            "type": "file",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "CLUSTER_NODES_DEF",
+            "name": "安装节点",
+            "help": "安装节点列表(genhossconf工具输出参数gridClusterNodes), 不同类型Cluster不一样, 例如Flex Cluster: rac1:rac1-vip,rac2:rac2-vip",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "NETWORK_INTERFACE_LIST",
+            "name": "网卡设置",
+            "help": "安装节点列表(genhossconf工具输出参数networkInterfaceList), 例如: enp0s3:192.168.0.0:3,enp0s8:192.168.56.0:1,enp0s9:192.168.57.0:5",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SYS_DISKS",
+            "name": "系统盘",
+            "help": "用于存放集群数据, 集群仲裁用的盘, 防止脑裂, 一般指定三个，例如: /dev/asm/sys01,/dev/asm/sys01,/dev/asm/sys01",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DISKS_WITH_FAILGROUPS",
+            "name": "系统盘FAILGROUP设置",
+            "help": "例如不需设置fail磁盘组: /dev/asm/sys01,,/dev/asm/sys01,,/dev/asm/sys01,",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DISK_DISCOVERY_STRING",
+            "name": "磁盘发现",
+            "help": "磁盘发现路径，例如：/dev/asm/*",
+            "type": "text",
+            "defaultValue": "/dev/asm/*",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

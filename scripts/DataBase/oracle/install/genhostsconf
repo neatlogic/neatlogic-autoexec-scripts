@@ -123,7 +123,8 @@ if __name__ == "__main__":
     pubIpConf = []
     privIpConf = []
     vipConf = []
-    clusterNodes = []
+    dbClusterNodes = []
+    gridClusterNodes = []
     networkInterfaceList = []
 
     idx = 1
@@ -156,7 +157,8 @@ if __name__ == "__main__":
             pubIpConf.append('%s\t%s%s' % (pubIp, racName, idx))
             hostNameMap[pubIp] = '%s%s' % (racName, idx)
             vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
-            clusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
+            gridClusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
+            dbClusterNodes.append('%s%s' % idx)
 
         if privIp is None:
             hasError = 1
@@ -196,14 +198,21 @@ if __name__ == "__main__":
     hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
 
     out = {}
-    
+
     out['ip2HostName'] = hostNameMap
     out['hostsConfTxt'] = hostConfTxt
-    # oracle.install.crs.config.clusterNodes
-    out['clusterNodes'] = ','.join(clusterNodes)
-    # oracle.install.crs.config.networkInterfaceList
+
+    # oracle.install.crs.config.gridClusterNodes=rac1:rac1-vip,rac2:rac2-vip
+    out['gridClusterNodes'] = ','.join(gridClusterNodes)
+
+    # oracle.install.db.CLUSTER_NODES=rac1,rac23
+    # nodelist=rac1,rac2
+    out['dbClusterNodes'] = ','.join(dbClusterNodes)
+
+    # oracle.install.crs.config.networkInterfaceList=enp0s3:192.168.0.0:3,enp0s8:192.168.56.0:1,enp0s9:192.168.57.0:5
     out['networkInterfaceList'] = ','.join(networkInterfaceList)
-    # oracle.install.crs.config.gpnp.scanName
+
+    # oracle.install.crs.config.gpnp.scanName=myscan
     out['scanName'] = racName + '-scan'
 
     AutoExecUtils.saveOutput(out)

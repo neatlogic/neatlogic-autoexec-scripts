@@ -1,0 +1,35 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "enabled": 1,
+    "option": [{
+            "opt": "name",
+            "name": "磁盘组名",
+            "help": "磁盘组名",
+            "type": "text",
+            "defaultValue": "DATA",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "disks",
+            "name": "磁盘列表",
+            "help": "磁盘路径列表",
+            "type": "textarea",
+            "defaultValue": "/dev/asm/data1\n/dev/asm/data2",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [{
+        "opt": "diskGroupName",
+        "name": "磁盘组名称",
+        "help": "创建的磁盘组名称",
+        "type": "text",
+        "defaultValue": null,
+        "required": "false"
+    }]
+}

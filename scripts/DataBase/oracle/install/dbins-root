@@ -14,7 +14,7 @@ function DO_CMD() {
 
 ORACLE_HOME=$1
 
-if [ ! -z "$ORACLE_HOME" ]; then
+if [ -n "$ORACLE_HOME" ]; then
     echo "ERROR: Argument not provided."
     echo "Usage: dbins-root <Oracle Home dir>"
     exit 2

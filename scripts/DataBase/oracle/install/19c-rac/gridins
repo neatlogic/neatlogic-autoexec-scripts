@@ -1,0 +1,182 @@
+#!/bin/bash
+#GRID_USER=${GRID_USER}
+#UNIX_GROUP_NAME=${UNIX_GROUP_NAME}
+#INVENTORY_LOCATION=${INVENTORY_LOCATION}
+#GRID_BASE=${GRID_BASE}
+#GRID_HOME=${GRID_HOME}
+#OSDBA_GROUP=${OSDBA_GROUP}
+#OSOPER_GROUP=${OSOPER_GROUP}
+#OSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}
+#OSDGDBA_GROUP=${OSDGDBA_GROUP}
+#OSKMDBA_GROUP=${OSKMDBA_GROUP}
+#OSRACDBA_GROUP=${OSRACDBA_GROUP}
+#CLUSTER_NAME=${CLUSTER_NAME}
+#SCAN_NAME=${SCAN_NAME}
+#SCAN_PORT=${SAN_PORT}
+
+#vote disks
+#DISKS=/dev/asmdisks/asmdisk0b,/dev/asmdisks/asmdisk0c,/dev/asmdisks/asmdisk0d
+#DISKS_WITH_FAILGROUPS=/dev/asmdisks/asmdisk0b,,/dev/asmdisks/asmdisk0c,,/dev/asmdisks/asmdisk0d
+#diskDiscoveryString
+#DISK_DISCOVERY_STRING=/dev/asmdisks/*
+#CLUSTER_NODES_DEF=myrac01:myrac01-vip:HUB,myrac02:myrac02-vip:HUB
+#NETWORK_INTERFACE_LIST=ens160:172.16.200.0:1,ens192:192.168.0.0:5
+
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$(shift)
+    echo "Exec ommand: su -u $USER -c '$@'"
+    eval "sudo -u $USER -c '$@'"
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function createOraDir() {
+    mkdir -p $INVENTORY_LOCATION
+    chown -R $GRID_USER:$INSTALL_GROUP $INVENTORY_LOCATION
+    chmod -R 775 $INVENTORY_LOCATION
+
+    mkdir -p $GRID_BASE
+    mkdir -p $GRID_HOME
+    chown -R $GRID_USER:$INSTALL_GROUP $GRID_BASE
+    chown -R $GRID_USER:$INSTALL_GROUP $GRID_HOME
+    chmod -R 775 $GRID_BASE
+    chmod -R 775 $GRID_HOME
+}
+
+function installCvuqdisk() {
+    export CVUQDISK_GRP=$INSTALL_GROUP
+    rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-1.0.9-1.rpm
+}
+
+function setInstallEnv() {
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | sed "s/\\n/\n/g")
+    if [ ! -z "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            RSPONSE_FILE)
+                RSPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CLUSTER_NODES_DEF)
+                CLUSTER_NODES_DEF="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            NETWORK_INTERFACE_LIST)
+                NETWORK_INTERFACE_LIST="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYS_DISKS)
+                SYS_DISKS="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYS_DISKS_WITH_FAILGROUPS)
+                SYS_DISKS_WITH_FAILGROUPS="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DISK_DISCOVERY_STRING)
+                DISK_DISCOVERY_STRING="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+setInstallEnv
+installCvuqdisk
+
+#su - grid #解压介质到GRID_HOME(ORACLE_HOME)
+#验证
+#$ORACLE_HOME/runcluvfy.sh stage -pre crsinst -n "oracle19crac01,oracle19crac02" -verbose
+#grid用户执行安装
+if [ -n "$RESPONSE_FILE"]; then
+    RESPONSE_FILE=${RESPONSE_FILE#*\"}
+    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/grid_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+else
+    echo "ERROR: Must defined response file with option --RESPONSE_FILE."
+    exit 5
+fi
+
+SUDO_CMD $GRID_USER ${ORACLE_HOME}/gridSetup.sh -ignorePrereq -waitforcompletion -silent \
+    -responseFile $REAL_RESPONSE_FILE \
+    INVENTORY_LOCATION=$INVENTORY_LOCATION \
+    oracle.install.option=CRS_CONFIG \
+    ORACLE_BASE=$ORACLE_BASE \
+    oracle.install.asm.OSDBA=$OSDBA_GROUP \
+    oracle.install.asm.OSASM=$OSASM_GROUP \
+    oracle.install.asm.OSOPER=$OSOPER_GROUP \
+    oracle.install.crs.config.clusterName=$CLUSTER_NAME \
+    oracle.install.crs.config.gpnp.scanName=$SCAN_NAME \
+    oracle.install.crs.config.gpnp.scanPort=$SCAN_PORT \
+    oracle.install.crs.config.clusterNodes=$CLUSTER_NODES_DEF \
+    oracle.install.crs.config.networkInterfaceList=$NETWORK_INTERFACE_LIST \
+    oracle.install.crs.config.storageOption=FLEX_ASM_STORAGE \
+    oracle.install.asm.diskGroup.disksWithFailureGroupNames=$DISKS_WITH_FAILGROUPS \
+    oracle.install.asm.diskGroup.disks=$SYS_DISKS \
+    oracle.install.asm.diskGroup.diskDiscoveryString=$DISK_DISCOVERY_STRING \
+    oracle.install.crs.rootconfig.executeRootScript=false
+
+exit $HAS_ERROR

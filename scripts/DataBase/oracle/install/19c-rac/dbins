@@ -1,0 +1,155 @@
+#!/bin/bash
+#ORACLE_USER=${ORACLE_USER}
+#UNIX_GROUP_NAME=${UNIX_GROUP_NAME}
+#INVENTORY_LOCATION=${INVENTORY_LOCATION}
+#ORACLE_BASE=${ORACLE_BASE}
+#ORACLE_HOME=${ORACLE_HOME}
+#GRID_BASE=${GRID_BASE}
+#GRID_HOME=${GRID_HOME}
+#OSDBA_GROUP=${OSDBA_GROUP}
+#OSOPER_GROUP=${OSOPER_GROUP}
+#OSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}
+#OSDGDBA_GROUP=${OSDGDBA_GROUP}
+#OSKMDBA_GROUP=${OSKMDBA_GROUP}
+#OSRACDBA_GROUP=${OSRACDBA_GROUP}
+
+#CLUSTER_NODES=oracle19crac01,oracle19crac02
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$(shift)
+    echo "Exec ommand: su -u $USER -c '$@'"
+    eval "sudo -u $USER -c '$@'"
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function createOraDir() {
+    if [ ! -e "$INVENTORY_LOCATION" ]; then
+        mkdir -p $INVENTORY_LOCATION
+        chown -R $ORACLE_USER:$INSTALL_GROUP $INVENTORY_LOCATION
+        chmod -R 775 $INVENTORY_LOCATION
+    fi
+
+    mkdir -p $ORACLE_BASE
+    mkdir -p $ORACLE_BASE/cfgtoollogs
+    mkdir -p $ORACLE_HOME
+    chown -R $ORACLE_USER:$INSTALL_GROUP $ORACLE_BASE
+    chmod -R 775 $ORACLE_BASE
+}
+
+if [ -n "$RESPONSE_FILE"]; then
+    RESPONSE_FILE=${RESPONSE_FILE#*\"}
+    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/db_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+fi
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            RSPONSE_FILE)
+                RSPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CLUSTER_NODES)
+                CLUSTER_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+#unzip安装包到$ORACLE_HOME下，chown oracle:oinstall
+if [ ! -z "$RESPONSE_FILE"]; then
+    RESPONSE_FILE=${RESPONSE_FILE#*\"}
+    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/gridsetup_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $?!=0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+else
+    echo "ERROR: Must defined response file with option --RESPONSE_FILE."
+    exit 5
+fi
+
+#静默安装DB软件
+#su - oracle
+SUDO_CMD $ORACLE_USER $ORACLE_HOME/runInstaller -silent -force -noconfig -ignorePrereq \
+    -responseFile $REAL_RESPONSE_FILE \
+    oracle.install.option=INSTALL_DB_SWONLY \
+    UNIX_GROUP_NAME=$UNIX_GROUP_NAME \
+    INVENTORY_LOCATION=$INVENTORY_LOCATION \
+    ORACLE_BASE=$ORACLE_BASE \
+    ORACLE_HOME=$ORACLE_HOME \
+    oracle.install.db.InstallEdition=EE \
+    oracle.install.db.OSDBA_GROUP=$OSDBA_GROUP \
+    oracle.install.db.OSOPER_GROUP=$OSOPER_GROUP \
+    oracle.install.db.OSBACKUPDBA_GROUP=$OSBACKUPDBA_GROUP \
+    oracle.install.db.OSDGDBA_GROUP=$OSDGDBA_GROUP \
+    oracle.install.db.OSKMDBA_GROUP=$OSKMDBA_GROUP \
+    oracle.install.db.OSRACDBA_GROUP=$OSRACDBA_GROUP \
+    oracle.install.db.CLUSTER_NODES=$CLUSTER_NODES
+
+exit $HAS_ERROR
