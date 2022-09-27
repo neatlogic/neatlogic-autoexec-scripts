@@ -74,23 +74,30 @@
             "defaultValue": ""
         },
         {
-            "opt": "clusterNodes",
-            "name": "集群节点名配置",
-            "help": "集群节点名配置，用于Grid的静默安装配置",
+            "opt": "dbClusterNodes",
+            "name": "DB集群节点名配置",
+            "help": "DB集群节点名配置, 用于Oracle DB的静默安装配置",
+            "type": "text",
+            "defaultValue": ""
+        },
+        {
+            "opt": "gridClusterNodes",
+            "name": "Grid集群节点名配置",
+            "help": "Grid集群节点名配置, 用于Orcle grid的静默安装配置",
             "type": "text",
             "defaultValue": ""
         },
         {
             "opt": "networkInterfaceList",
             "name": "节点网卡配置",
-            "help": "节点网卡配置，用于Grid的静默安装配置",
+            "help": "节点网卡配置, 用于Grid的静默安装配置",
             "type": "text",
             "defaultValue": ""
         },
         {
             "opt": "scanName",
             "name": "SCAN名",
-            "help": "SCAN名，用于Grid的静默安装配置",
+            "help": "SCAN名, 用于Grid的静默安装配置",
             "type": "text",
             "defaultValue": ""
         }
