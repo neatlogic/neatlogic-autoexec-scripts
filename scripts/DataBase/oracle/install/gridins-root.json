@@ -4,6 +4,7 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "description": "OracleGRID安装执行root脚本",
+    "enabled": 0,
     "argument": {
         "name": "GRID_HOME",
         "type": "text",

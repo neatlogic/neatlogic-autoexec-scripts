@@ -46,7 +46,7 @@ def importJsonInfo(params):
                     try:
                         scriptPath = os.path.join(root, opName)
                         # 获取当前脚本所在目录的相对路径作为工具目录
-                        catalogName = os.path.relpath(scriptPath, dataDir).replace('\\' + opName, '')
+                        catalogName = os.path.dirname(os.path.relpath(scriptPath, dataDir))
                         jsonList = []
                         jsonInfo = {}
                         # 获取脚本描述.json文件
@@ -59,6 +59,10 @@ def importJsonInfo(params):
                                 data = json.load(scriptJsonFile)
                             except Exception as ex:
                                 print("ERROR: Load json file %s failed, there is possible format error: %s" % (scriptPath + ".json", str(ex)))
+                            enabled = data.get('enabled', 1)
+                            if enabled == 0:
+                                print("WARN: Script %s not enabled, skip." % (scriptPath))
+                                continue
                             paramList = []
                             # 输入参数
                             optionList = data.get('option')

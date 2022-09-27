@@ -4,6 +4,7 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "description": "OracleDB安装执行root脚本",
+    "enabled": 0,
     "argument": {
         "name": "ORACLE_HOME",
         "type": "text",
