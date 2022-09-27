@@ -170,7 +170,7 @@
         },
         {
             "opt": "MEM_PERCENTAGE",
-            "name": "占用内存%",
+            "name": "内存百分比",
             "help": "占用内存百分比, 如果设置了自动内存管理, 则此设置会失效",
             "type": "text",
             "defaultValue": "50",
@@ -195,15 +195,6 @@
                 "dataType": "static"
             },
             "defaultValue": "ASM",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "ARCH_DISKGROUP",
-            "name": "归档磁盘组",
-            "help": "用于存放REDO, 归档日志, 闪回等数据的磁盘组名称",
-            "type": "text",
-            "defaultValue": "ARCH",
             "required": "true",
             "validate": ""
         },
