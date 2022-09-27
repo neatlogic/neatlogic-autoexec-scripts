@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "Zip安装介质解压",
+    "description": "Zip安装介质解压(roo用户执行)",
     "enabled": 1,
     "option": [{
             "opt": "ZIP_FILE",

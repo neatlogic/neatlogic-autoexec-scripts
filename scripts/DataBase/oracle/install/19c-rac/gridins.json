@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "Oracle Grid软件安装(在root用户下执行, 会su到oracle用户执行)",
+    "description": "Oracle Grid软件安装(在root用户下执行, 会su到grid用户执行)",
     "enabled": 1,
     "option": [{
             "opt": "EXEC_ENV",

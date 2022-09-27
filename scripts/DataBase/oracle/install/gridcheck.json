@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "集群状态检查",
+    "description": "集群状态检查(在root用户下执行, 会su到grid用户执行)",
     "enabled": 1,
     "option": [],
     "output": [],

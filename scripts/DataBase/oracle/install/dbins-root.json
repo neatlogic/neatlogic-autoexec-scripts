@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "OracleDB安装执行root脚本",
+    "description": "OracleDB安装执行root脚本(root用户执行)",
     "enabled": 1,
     "option": [],
     "output": [],
