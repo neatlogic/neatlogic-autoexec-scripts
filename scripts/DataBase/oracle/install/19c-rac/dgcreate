@@ -12,14 +12,14 @@ use SqlplusExec;
 sub usage {
     my $pname = $FindBin::Script;
 
-    print("$pname --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
+    print("$pname --griduser <Grid os user name> --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
     exit(1);
 }
 
 sub cerateDiskGroup {
-    my ( $dgName, $dgDisks ) = @_;
+    my ( $gridUser, $dgName, $dgDisks ) = @_;
 
-    my $sqlplus = SqlplusExec->new( sysasm => 1 );
+    my $sqlplus = SqlplusExec->new( osUser => $gridUser, sysasm => 1 );
 
     my @disks = ();
     foreach my $diskPath ( split( /\s*[,|\\n]\s*/, $dgDisks ) ) {
@@ -39,10 +39,12 @@ sub cerateDiskGroup {
 
 sub main {
     my ( $isHelp, $dgName, $dgDisks );
+    my $gridUser = 'grid';
     GetOptions(
-        'h|help'  => \$isHelp,
-        'name=s'  => \$dgName,
-        'disks=s' => \$dgDisks
+        'h|help'     => \$isHelp,
+        'griduser=s' => \$gridUser,
+        'name=s'     => \$dgName,
+        'disks=s'    => \$dgDisks
     );
 
     if ($isHelp) {
@@ -65,7 +67,7 @@ sub main {
     #create diskgroup datadg external redundancy disk '/dev/asmdisks/asmdisk0g','/dev/asmdisks/asmdisk0h' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
 
     my $out      = {};
-    my $exitCode = cerateDiskGroup( $dgName, $dgDisks );
+    my $exitCode = cerateDiskGroup( $gridUser, $dgName, $dgDisks );
     if ( $exitCode != 0 ) {
         print("ERROR: Create disk group:$dgName:$dgDisks failed.\n");
     }

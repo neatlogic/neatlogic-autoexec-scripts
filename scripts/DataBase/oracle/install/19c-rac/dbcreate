@@ -130,6 +130,21 @@ if [ "$IS_CDB" == "true" ] && [ -n "$PDB_NAME" ]; then
     PDB_COUNT="1"
 fi
 
+if [ -z "$ORACLE_USER" ]; then
+    echo "ERROR: Must defined ORACLE_USER with option --EXEC_ENV."
+    exit 2
+fi
+
+if [ -z "$ORACLE_BASE" ]; then
+    echo "ERROR: Must defined ORACLE_BASE with option --EXEC_ENV."
+    exit 2
+fi
+
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Must defined ORACLE_HOME with option --EXEC_ENV."
+    exit 2
+fi
+
 #创建数据库
 #su - oracle
 SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \

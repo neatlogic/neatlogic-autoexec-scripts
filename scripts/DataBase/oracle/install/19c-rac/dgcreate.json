@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "description": "ASM磁盘组创建(在root用户下执行, 会su到oracle用户执行)",
     "enabled": 1,
     "option": [{
             "opt": "name",

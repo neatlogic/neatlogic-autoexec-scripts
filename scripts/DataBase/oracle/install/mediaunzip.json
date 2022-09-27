@@ -3,7 +3,7 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "description": "Zip安装介质解压",
     "enabled": 1,
     "option": [{
             "opt": "ZIP_FILE",
