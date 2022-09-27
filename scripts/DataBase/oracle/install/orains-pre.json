@@ -4,7 +4,7 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "description": "Oracle安装OS其他前置工作(root用户执行服务配置)",
-    "enabled": 0,
+    "enabled": 1,
     "option": [],
     "output": []
 }

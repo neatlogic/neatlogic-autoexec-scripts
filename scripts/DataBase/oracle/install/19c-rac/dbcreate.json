@@ -116,7 +116,7 @@
             "opt": "PDB_NAME",
             "name": "PDB名称",
             "help": "PDB名称",
-            "type": "select",
+            "type": "text",
             "defaultValue": "mypdb",
             "required": "true",
             "validate": ""
