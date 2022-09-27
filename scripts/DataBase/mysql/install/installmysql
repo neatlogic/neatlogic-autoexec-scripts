@@ -129,7 +129,7 @@ function uninstall()
     fi
     if [ -e "/var/lib/mysql" ]
     then
-        DO_CMD rm /var/lib/mysql
+        DO_CMD rm -rf /var/lib/mysql
     fi
     if [ -e "/home/mysql/data" ]
     then
@@ -143,7 +143,6 @@ function uninstall()
     do
         DO_CMD rpm -e --nodeps $mysqlRpm
     done
-
     for mariadbRpm in `rpm -qa |grep -i mariadb`
     do
         DO_CMD rpm -e --nodeps $mariadbRpm
@@ -162,13 +161,15 @@ function checkInstalled()
     if [ ! -z "$mysqlPids" ]
     then
         echo "INFO: mysql have already installed ."
-        if [ $reinstall == 0]
+        if [ $reinstall == "0" ]
         then
             exit 0
         else
             uninstall
             install
         fi
+    else
+        install
     fi
 }
 
