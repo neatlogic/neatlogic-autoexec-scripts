@@ -1,0 +1,46 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "enabled": 1,
+    "option": [{
+            "opt": "ZIP_FILE",
+            "name": "ZIP文件",
+            "help": "在服务器上的Oracle安装文件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "UNZIP_DEST_PATH",
+            "name": "目标目录",
+            "help": "解压到哪个目录, Oracle18c以上需要直接解压到$ORACLE_HOME目录下",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "USER",
+            "name": "Owner用户",
+            "help": "修改解压后的文件的Owner用户",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "GROUP",
+            "name": "Owner用户组",
+            "help": "修改解压后的文件的Owner用户组",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

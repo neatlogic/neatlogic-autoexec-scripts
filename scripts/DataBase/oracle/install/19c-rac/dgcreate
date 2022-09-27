@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+
+use AutoExecUtils;
+use SqlplusExec;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
+    exit(1);
+}
+
+sub cerateDiskGroup {
+    my ( $dgName, $dgDisks ) = @_;
+
+    my $sqlplus = SqlplusExec->new( sysasm => 1 );
+
+    my @disks = ();
+    foreach my $diskPath ( split( /\s*[,|\\n]\s*/, $dgDisks ) ) {
+        push( @disks, "'$diskPath'" );
+    }
+    my $disksStr = join( ',', @disks );
+
+    my $rows = $sqlplus->do(
+        sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'},
+        verbose => 1
+    );
+
+    my $exitCode = system("srvctl start diskgroup -diskgroup $dgName");
+
+    return $exitCode;
+}
+
+sub main {
+    my ( $isHelp, $dgName, $dgDisks );
+    GetOptions(
+        'h|help'  => \$isHelp,
+        'name=s'  => \$dgName,
+        'disks=s' => \$dgDisks
+    );
+
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($dgName) or $dgName eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined disk group name by option --name.\n");
+    }
+    if ( not defined($dgDisks) or $dgDisks eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined disk paths by option --disks.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    #create diskgroup archdg external redundancy disk '/dev/asmdisks/asmdisk0e','/dev/asmdisks/asmdisk0f' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+    #create diskgroup datadg external redundancy disk '/dev/asmdisks/asmdisk0g','/dev/asmdisks/asmdisk0h' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+
+    my $out      = {};
+    my $exitCode = cerateDiskGroup( $dgName, $dgDisks );
+    if ( $exitCode != 0 ) {
+        print("ERROR: Create disk group:$dgName:$dgDisks failed.\n");
+    }
+    else {
+        $out->{diskGroupName} = $dgName;
+    }
+
+    AutoExecUtils::saveOutput($out);
+
+    print("------All disk groups------------------\n");
+    system("asmcmd lsdg");
+
+    return $exitCode;
+}
+
+exit main();

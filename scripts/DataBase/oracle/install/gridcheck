@@ -1,0 +1,43 @@
+#!/bin/bash
+
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$(shift)
+    echo "Exec ommand: su -u $USER -c '$@'"
+    eval "sudo -u $USER -c '$@'"
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+GRID_USER=$1
+
+if [ -z "$GRID_USER" ]; then
+    echo "ERROR: Must defined grid user by argument."
+    echo "Usage: gridcheck <Grid user name>"
+    exit 2
+fi
+
+#检查集群状态
+SUDO_CMD $GRID_USER crsctl check crs
+SUDO_CMD $GRID_USER crsctl check cluster
+SUDO_CMD $GRID_USER olsnodes -n -i -s
+SUDO_CMD $GRID_USER crsctl query css votedisk
+SUDO_CMD $GRID_USER srvctl config scan
+SUDO_CMD $GRID_USER srvctl config scan_listener

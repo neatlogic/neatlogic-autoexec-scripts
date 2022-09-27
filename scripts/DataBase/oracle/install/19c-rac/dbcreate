@@ -1,0 +1,167 @@
+#!/bin/bash
+
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$(shift)
+    echo "Exec ommand: su -u $USER -c '$@'"
+    eval "sudo -u $USER -c '$@'"
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            RSPONSE_FILE)
+                RSPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            NODE_LIST)
+                NODE_LIST="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATA_DISKGROUP)
+                DATA_DISKGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ARCH_DISKGROUP)
+                ARCH_DISKGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            STORAGE_TYPE)
+                STORAGE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATABASE_TYPE)
+                DATABASE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DEFAULT_PWD)
+                DEFAULT_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            IS_CDB)
+                IS_CDB="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_NAME)
+                PDB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            AUTO_MEMORY)
+                AUTO_MEMORY="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            MEM_PERCENTAGE)
+                MEM_PERCENTAGE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -n "$RESPONSE_FILE"]; then
+    RESPONSE_FILE=${RESPONSE_FILE#*\"}
+    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/assistants/dbca/dbca_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $?!=0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+fi
+
+PDB_COUNT="0"
+if [ "$IS_CDB" == "true" ] && [ -n "$PDB_NAME" ]; then
+    PDB_COUNT="1"
+fi
+
+#创建数据库
+#su - oracle
+SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
+    -responseFile $REAL_RESPONSE_FILE \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
+    -createDatabase \
+    -templateName General_Purpose.dbc \
+    -gdbname $DB_UNIQUE_NAME \
+    -sid $DB_UNIQUE_NAME \
+    -nodelist $NODE_LIST \
+    -databaseConfigType=$CONFIG_TYPE \
+    -databaseType $DATABASE_TYPE \
+    -createAsContainerDatabase $IS_CDB \
+    -numberOfPDBs $PDB_COUNT \
+    -pdbName "$PDB_NAME" \
+    -characterSet $CHARSET \
+    -nationalCharacterSet AL16UTF16 \
+    -sysPassword $DEFAULT_PWD \
+    -systemPassword $DEFAULT_PWD \
+    -pdbAdminPassword $DEFAULT_PWD \
+    -dbsnmpPassword $DEFAULT_PWD \
+    -asmsnmpPassword $DEFAULT_PWD \
+    -automaticMemoryManagement $AUTO_MEMORY \
+    -memoryPercentage $MEM_PERCENTAGE \
+    -totalMemory 0 \
+    -emConfiguration NONE \
+    -ignorePreReqs \
+    -storageType $STORAGE_TYPE \
+    -diskGroupName "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -recoveryAreaDestination "+$ARCH_DISKGROUP" \
+    -recoveryGroupName "+$ARCH_DISKGROUP"
+
+#集群验证
+crsctl stat res -t

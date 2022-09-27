@@ -4,7 +4,9 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "description": "OracleDB安装执行root脚本",
-    "enabled": 0,
+    "enabled": 1,
+    "option": [],
+    "output": [],
     "argument": {
         "name": "ORACLE_HOME",
         "type": "text",
@@ -13,7 +15,5 @@
         "count": 1,
         "validate": "",
         "required": "true"
-    },
-    "option": [],
-    "output": []
+    }
 }

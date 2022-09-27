@@ -1,0 +1,37 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "Oracle安装OS其他前置工作(服务配置)",
+    "enabled": 1,
+    "option": [{
+            "opt": "EXEC_ENV",
+            "name": "变量设置",
+            "help": "执行前的变量设（使用${}引用作业参数）",
+            "type": "textarea",
+            "defaultValue": "ORACLE_USER=${ORACLE_USER}\nUNIX_GROUP_NAME=${UNIX_GROUP_NAME}\nINVENTORY_LOCATION=${INVENTORY_LOCATION}\nORACLE_BASE=${ORACLE_BASE}\nORACLE_HOME=${ORACLE_HOME}\nGRID_BASE=${GRID_BASE}\nGRID_HOME=${GRID_HOME}\nOSDBA_GROUP=${OSDBA_GROUP}\nOSOPER_GROUP=${OSOPER_GROUP}\nOSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}\nOSDGDBA_GROUP=${OSDGDBA_GROUP}\nOSKMDBA_GROUP=${OSKMDBA_GROUP}\nOSRACDBA_GROUP=${OSRACDBA_GROUP}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "RSPONSE_FILE",
+            "name": "静默响应文件",
+            "help": "静默安装的响应文件",
+            "type": "file",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "CLUSTER_NODES",
+            "name": "安装节点",
+            "help": "安装节点列表(genhossconf工具输出参数dbClusterNodes), 例如: rac1,rac2",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

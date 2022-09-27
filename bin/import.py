@@ -47,6 +47,7 @@ def importJsonInfo(params):
                         scriptPath = os.path.join(root, opName)
                         # 获取当前脚本所在目录的相对路径作为工具目录
                         catalogName = os.path.dirname(os.path.relpath(scriptPath, dataDir))
+                        catalogName = catalogName.replace('\\', '/')
                         jsonList = []
                         jsonInfo = {}
                         # 获取脚本描述.json文件
