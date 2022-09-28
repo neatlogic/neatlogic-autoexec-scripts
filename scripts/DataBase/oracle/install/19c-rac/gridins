@@ -65,7 +65,7 @@ function createOraDir() {
 function installCvuqdisk() {
     #安装ASM的磁盘工具
     export CVUQDISK_GRP=$INSTALL_GROUP
-    DO_CMD rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
+    rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
 }
 
 function setInstallEnv() {
