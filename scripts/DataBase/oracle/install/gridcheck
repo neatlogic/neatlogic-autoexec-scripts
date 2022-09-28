@@ -1,15 +1,14 @@
 #!/bin/bash
-
 function DO_CMD() {
     echo Exec ommand: $@
     $@
-
-    if [ $? != 0 ]; then
-        HAS_ERROR=$?
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
         echo ERROR: Execute failed.
-        exit $HAS_ERROR
+        exit $EXIT_CODE
     else
-        echo FIND: Execute success.
+        echo FINE: Execute success.
     fi
 }
 
@@ -17,12 +16,13 @@ function SUDO_CMD() {
     USER=$(shift)
     echo "Exec ommand: su -u $USER -c '$@'"
     eval "sudo -u $USER -c '$@'"
-    if [ $? != 0 ]; then
-        HAS_ERROR=$?
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
         echo ERROR: Execute failed.
-        exit $HAS_ERROR
+        exit $EXIT_CODE
     else
-        echo FIND: Execute success.
+        echo FINE: Execute success.
     fi
 }
 

@@ -59,7 +59,7 @@ function DO_CMD() {
         echo ERROR: Execute failed.
         exit $HAS_ERROR
     else
-        echo FIND: Execute success.
+        echo FINE: Execute success.
     fi
 }
 
