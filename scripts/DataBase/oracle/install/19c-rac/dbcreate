@@ -26,6 +26,16 @@ function SUDO_CMD() {
     fi
 }
 
+function setInstallEnv() {
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g')
+    if [ ! -z "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
 #参数处理,全部用长参数
 ######################################
 function parseOpts() {
@@ -107,6 +117,7 @@ function parseOpts() {
 }
 
 parseOpts "$@"
+setInstallEnv
 
 if [ -n "$RESPONSE_FILE"]; then
     RESPONSE_FILE=${RESPONSE_FILE#*\"}
@@ -179,4 +190,6 @@ SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
     -recoveryGroupName "+$ARCH_DISKGROUP"
 
 #集群验证
-crsctl stat res -t
+SUDO_CMD $ORACLE_USER crsctl stat res -t
+
+exit $HAS_ERROR

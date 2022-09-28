@@ -40,18 +40,28 @@ function SUDO_CMD() {
     fi
 }
 
+function setInstallEnv() {
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g')
+    if [ ! -z "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
 function createOraDir() {
     if [ ! -e "$INVENTORY_LOCATION" ]; then
         mkdir -p $INVENTORY_LOCATION
-        chown -R $ORACLE_USER:$INSTALL_GROUP $INVENTORY_LOCATION
-        chmod -R 775 $INVENTORY_LOCATION
+        DO_CMD chown -R $ORACLE_USER:$INSTALL_GROUP $INVENTORY_LOCATION
+        DO_CMD chmod -R 775 $INVENTORY_LOCATION
     fi
 
     mkdir -p $ORACLE_BASE
     mkdir -p $ORACLE_BASE/cfgtoollogs
     mkdir -p $ORACLE_HOME
-    chown -R $ORACLE_USER:$INSTALL_GROUP $ORACLE_BASE
-    chmod -R 775 $ORACLE_BASE
+    DO_CMD chown -R $ORACLE_USER:$INSTALL_GROUP $ORACLE_BASE
+    DO_CMD chmod -R 775 $ORACLE_BASE
 }
 
 if [ -n "$RESPONSE_FILE"]; then
@@ -112,6 +122,8 @@ function parseOpts() {
 }
 
 parseOpts "$@"
+setInstallEnv
+createOraDir
 
 #unzip安装包到$ORACLE_HOME下，chown oracle:oinstall
 if [ ! -z "$RESPONSE_FILE"]; then

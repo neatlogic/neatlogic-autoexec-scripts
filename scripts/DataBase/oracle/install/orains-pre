@@ -2,6 +2,18 @@
 #不包括/etc/sysctl.conf、/etc/security/limit.conf、/etc/hosts、 $HOME/.bash_profile
 #不包括Oracle、grid用户和组的配置、配置yum源
 #上述的处理需要使用自动化的基础工具来完成
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FIND: Execute success.
+    fi
+}
 
 function disableNetworkManager() {
     if [ "$INIT_TYPE" = 'systemd' ]; then
@@ -25,15 +37,22 @@ function disableIptables() {
 
 function disableAvahi() {
     if [[ -f "/etc/systemd/system/dbus-org.freedesktop.Avahi.service" ]]; then
-        systemctl stop avahi-dnsconfd
-        systemctl stop avahi-daemon
-        systemctl disable avahi-dnsconfd
-        systemctl disable avahi-daemon
+        if [ "$INIT_TYPE" = 'systemd' ]; then
+            systemctl stop avahi-dnsconfd
+            systemctl stop avahi-daemon
+            systemctl disable avahi-dnsconfd
+            systemctl disable avahi-daemon
+        else
+            service avahi-dnsconfd stop
+            service avahi-daemon stop
+            chkconfig avahi-dnsconfd off
+            chkconfig avahi-daemon off
+        fi
     fi
 }
 
 function dependRpmInstall() {
-    yum install -y openssh \
+    DO_CMD yum install -y openssh \
         pam \
         libXaw \
         unixODBC \
@@ -164,3 +183,5 @@ function main() {
 }
 
 main
+
+exit $HAS_ERROR
