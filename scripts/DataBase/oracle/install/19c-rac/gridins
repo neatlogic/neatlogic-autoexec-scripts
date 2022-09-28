@@ -75,10 +75,6 @@ function setInstallEnv() {
     EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
     if [ ! -z "$EXEC_ENV_TXT" ]; then
         eval "$EXEC_ENV_TXT"
-        echo ================================
-        echo $EXEC_ENV_TXT
-        echo ================================
-        env
     else
         echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
         exit 2
