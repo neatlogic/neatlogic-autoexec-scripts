@@ -64,7 +64,7 @@ function createOraDir() {
 
 function installCvuqdisk() {
     export CVUQDISK_GRP=$INSTALL_GROUP
-    DO_CMD rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-1.0.9-1.rpm
+    DO_CMD rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
 }
 
 function setInstallEnv() {
