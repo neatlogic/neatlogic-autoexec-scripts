@@ -86,9 +86,13 @@ if __name__ == "__main__":
     scanIpList = splitReg.split(scanIpListTxt)
     scanIpList.sort()
 
+    pubIpMap = {}
+    vipMap = {}
+
     hasError = 0
     # Check vip in public net
     for vip in vipList:
+        vipMap[vip] = 1
         if ipaddress.ip_address(vip) not in pubNet:
             hasError = 1
             print("ERROR: VIP:%s not in public network %s\n" % (vip, pubNetTxt))
@@ -154,6 +158,7 @@ if __name__ == "__main__":
             hasError = 1
             print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
         else:
+            pubIpMap[ip] = 1
             pubIpConf.append('%s\t%s%s' % (pubIp, racName, idx))
             hostNameMap[pubIp] = '%s%s' % (racName, idx)
             vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
@@ -189,8 +194,20 @@ if __name__ == "__main__":
         netAddr = notusedNicNameMap[nicName]
         networkInterfaceList.append('%s:%s:3' % (nicName, netAddr))
 
+    for vip in vipList:
+        if vip in pubIpMap:
+            hasError = 1
+            print("ERROR: VIP:%s is public ip for rac node, conflict." % (vip))
+
     scanIpConf = []
     for scanIp in scanIpList:
+        if scanIp in pubIpMap:
+            hasError = 1
+            print("ERROR: SCAN IP:%s is public ip for rac node, conflict." % (scanIp))
+        if scanIp in vipMap:
+            hasError = 1
+            print("ERROR: SCAN IP:%s is vip for rac node, conflict." % (scanIp))
+        
         scanIpConf.append("%s\t%s-scan" % (scanIp, racName))
 
     hostConfTxt = "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n" + "\n".join(scanIpConf)
