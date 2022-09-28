@@ -45,8 +45,8 @@ function parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
-            RSPONSE_FILE)
-                RSPONSE_FILE="${!OPTIND}"
+            RESPONSE_FILE)
+                RESPONSE_FILE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             EXEC_ENV)
@@ -121,8 +121,6 @@ parseOpts "$@"
 setInstallEnv
 
 if [ -n "$RESPONSE_FILE"]; then
-    RESPONSE_FILE=${RESPONSE_FILE#*\"}
-    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
     if [ ! -e "$RESPONSE_FILE" ]; then
         echo "ERROR: Response file:$RESPONSE_FILE not exists."
         exit 3

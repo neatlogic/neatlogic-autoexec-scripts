@@ -71,13 +71,15 @@ function setOracleSidInProfile() {
     #给profile里设置的ORACLE_SID加上序号
     ORACLE_USER_HOME=$(eval echo ~$ORACLE_USER)
     SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
-    perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.bash_profile"
-    perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.profile"
+    if [ -f "$ORACLE_USER_HOME/.bash_profile" ]; then
+        perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.bash_profile"
+    fi
+    if [ -f "$ORACLE_USER_HOME/.profile" ]; then
+        perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.profile"
+    fi
 }
 
 if [ -n "$RESPONSE_FILE"]; then
-    RESPONSE_FILE=${RESPONSE_FILE#*\"}
-    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
     if [ ! -e "$RESPONSE_FILE" ]; then
         echo "ERROR: Response file:$RESPONSE_FILE not exists."
         exit 3
@@ -100,8 +102,8 @@ function parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
-            RSPONSE_FILE)
-                RSPONSE_FILE="${!OPTIND}"
+            RESPONSE_FILE)
+                RESPONSE_FILE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             EXEC_ENV)

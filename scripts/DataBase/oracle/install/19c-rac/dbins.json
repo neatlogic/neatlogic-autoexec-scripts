@@ -15,7 +15,7 @@
             "validate": ""
         },
         {
-            "opt": "RSPONSE_FILE",
+            "opt": "RESPONSE_FILE",
             "name": "静默响应文件",
             "help": "静默安装的响应文件",
             "type": "file",

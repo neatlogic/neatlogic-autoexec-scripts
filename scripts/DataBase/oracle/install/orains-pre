@@ -2,6 +2,7 @@
 #不包括/etc/sysctl.conf、/etc/security/limit.conf、/etc/hosts、 $HOME/.bash_profile
 #不包括Oracle、grid用户和组的配置、配置yum源
 #上述的处理需要使用自动化的基础工具来完成
+HAS_ERROR=0
 function DO_CMD() {
     echo Exec ommand: $@
     $@
@@ -53,7 +54,8 @@ function disableAvahi() {
 
 function dependRpmInstall() {
     DO_CMD yum install -y \
-        binutils libnsl gcc gcc-c++ glibc glibc-devel ksh libaiolibaio-devel libgcc libgcc.i686 libstdc++ libstdc++-devel libXi libXtst libnslmake sysstat
+        binutils gcc gcc-c++ glibc glibc-devel ksh libaio \
+        libaio-devel libgcc libgcc.i686 libstdc++ libstdc++-devel libXi libXtst libnsl make sysstat
 }
 
 function configNTP() {
@@ -106,6 +108,7 @@ function configShmDev() {
 function enableNscd() {
     chkconfig --level 35 nscd on
     if [ "$INIT_TYPE" = 'systemd' ]; then
+        systemctl enabled nscd
         systemctl restart nscd
     else
         service nscd restart
