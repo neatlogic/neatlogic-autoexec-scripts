@@ -1,11 +1,12 @@
 #!/bin/bash
+HAS_ERROR=0
 function DO_CMD() {
     echo Exec ommand: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
-        echo ERROR: Execute failed.
+        echo ERROR: Execute $@ failed.
         exit $EXIT_CODE
     else
         echo FINE: Execute success.
@@ -19,7 +20,7 @@ function SUDO_CMD() {
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
-        echo ERROR: Execute failed.
+        echo ERROR: Execute $@ failed.
         exit $EXIT_CODE
     else
         echo FINE: Execute success.

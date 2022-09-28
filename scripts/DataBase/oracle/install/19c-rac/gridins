@@ -21,14 +21,14 @@
 #DISK_DISCOVERY_STRING=/dev/asmdisks/*
 #CLUSTER_NODES_DEF=myrac01:myrac01-vip:HUB,myrac02:myrac02-vip:HUB
 #NETWORK_INTERFACE_LIST=ens160:172.16.200.0:1,ens192:192.168.0.0:5
-
+HAS_ERROR=0
 function DO_CMD() {
     echo Exec ommand: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
-        echo ERROR: Execute failed.
+        echo ERROR: Execute $@ failed.
         exit $EXIT_CODE
     else
         echo FINE: Execute success.
@@ -42,7 +42,7 @@ function SUDO_CMD() {
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
-        echo ERROR: Execute failed.
+        echo ERROR: Execute $@ failed.
         exit $EXIT_CODE
     else
         echo FINE: Execute success.
