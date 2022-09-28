@@ -64,6 +64,13 @@ function createOraDir() {
     DO_CMD chmod -R 775 $ORACLE_BASE
 }
 
+function setOracleSidInProfile() {
+    ORACLE_USER_HOME=$(eval echo ~$ORACLE_USER)
+    SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
+    perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.bash_profile"
+    perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.profile"
+}
+
 if [ -n "$RESPONSE_FILE"]; then
     RESPONSE_FILE=${RESPONSE_FILE#*\"}
     RESPONSE_FILE=${RESPONSE_FILE%%\"*}
@@ -123,6 +130,7 @@ function parseOpts() {
 
 parseOpts "$@"
 setInstallEnv
+setOracleSidInProfile
 createOraDir
 
 #unzip安装包到$ORACLE_HOME下，chown oracle:oinstall
