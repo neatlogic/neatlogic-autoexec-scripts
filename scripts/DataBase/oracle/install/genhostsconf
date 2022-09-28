@@ -158,7 +158,7 @@ if __name__ == "__main__":
             hostNameMap[pubIp] = '%s%s' % (racName, idx)
             vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
             gridClusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
-            dbClusterNodes.append('%s%s' % idx)
+            dbClusterNodes.append('%s%s' % (racName, idx))
 
         if privIp is None:
             hasError = 1
