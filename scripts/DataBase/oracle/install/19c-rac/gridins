@@ -36,9 +36,10 @@ function DO_CMD() {
 }
 
 function SUDO_CMD() {
-    USER=$(shift)
-    echo "Exec ommand: su -u $USER -c '$@'"
-    eval "sudo -u $USER -c '$@'"
+    USER=$1
+    shift
+    echo "Exec ommand: su -u '$USER' -c '$@'"
+    eval "sudo - '$USER' -c '$@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
@@ -74,6 +75,10 @@ function setInstallEnv() {
     EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
     if [ ! -z "$EXEC_ENV_TXT" ]; then
         eval "$EXEC_ENV_TXT"
+        echo ================================
+        echo $EXEC_ENV_TXT
+        echo ================================
+        env
     else
         echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
         exit 2

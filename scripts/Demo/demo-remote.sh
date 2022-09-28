@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
 #显示帮助信息
 #####################################
+HAS_WARN=0
+HAS_ERROR=0
 function DO_CMD() {
     echo Exec ommand: $@
     $@
-
-    if [ $? != 0 ]; then
-        echo ERROR: Execute failed.
-        exit $?
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
     else
-        echo FIND: Execute success.
+        echo FINE: Execute success.
     fi
 }
 
 function DO_CMD_CONT() {
     echo Exec ommand: $@
     $@
-
-    if [ $? != 0 ]; then
-        echo ERROR: Execute failed.
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
     else
         echo FIND: Execute success.
     fi
@@ -28,10 +31,10 @@ function DO_CMD_CONT() {
 function DO_CMD_IGNOR() {
     echo Exec ommand: $@
     $@
-
-    if [ $? != 0 ]; then
-        echo WARN: Execute failed.
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
         HAS_WARN=1
+        echo WARN: Execute $@ failed.
     else
         echo FIND: Execute success.
     fi
