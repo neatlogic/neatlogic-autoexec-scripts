@@ -63,12 +63,15 @@ function createOraDir() {
 }
 
 function installCvuqdisk() {
+    #安装ASM的磁盘工具
     export CVUQDISK_GRP=$INSTALL_GROUP
     DO_CMD rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
 }
 
 function setInstallEnv() {
-    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g')
+    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
+    #然后eval为shell的变量
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
     if [ ! -z "$EXEC_ENV_TXT" ]; then
         eval "$EXEC_ENV_TXT"
     else
@@ -78,6 +81,7 @@ function setInstallEnv() {
 }
 
 function setOracleSidInProfile() {
+    #给profile里设置的ORACLE_SID加上序号
     GRID_USER_HOME=$(eval echo ~$GRID_USER)
     SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
     perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.bash_profile"
@@ -146,10 +150,7 @@ createOraDir
 setOracleSidInProfile
 installCvuqdisk
 
-#su - grid #解压介质到GRID_HOME(ORACLE_HOME)
-#验证
-#$ORACLE_HOME/runcluvfy.sh stage -pre crsinst -n "oracle19crac01,oracle19crac02" -verbose
-#grid用户执行安装
+#把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
 if [ -n "$RESPONSE_FILE"]; then
     RESPONSE_FILE=${RESPONSE_FILE#*\"}
     RESPONSE_FILE=${RESPONSE_FILE%%\"*}
@@ -170,12 +171,26 @@ else
     exit 5
 fi
 
+#SYS_DISK是textarea格式，换行符号变成了符号'\n',要替换为逗号
+#根据SYS_DISK和FAILGROUP名称拼接配置DISKS_WITH_FAILGROUPS
 DISKS_WITH_FAILGROUPS=$(echo "$SYS_DISK" | perl -pe 's/(\\n)+$//' | perl -pe "s/\\\\n/,$SYS_DISKS_FAILGROUP,/g" | perl -pe 's/,+$/,/')
 DISKS_WITH_FAILGROUPS=$DISKS_WITH_FAILGROUPS,$SYS_DISKS_FAILGROUP
 
 SYS_DISK=$(echo "$SYS_DISK" | perl -pe 's/\\n/,/g' | perl -pe 's/,+$//')
 
-SUDO_CMD $GRID_USER ${ORACLE_HOME}/gridSetup.sh -ignorePrereq -waitforcompletion -silent \
+#把CLUSTER_NODES_DEF格式;myrac1:myrac1-vip:HUB,myrac2:myrac2-vip:HUB
+#转换为：myrac1,myrac2
+DB_NODES=''
+for NODE_DEF in ${CLUSTER_NODES_DEF//,/ }; do
+    DB_NODES=$DB_NODES,${NODE_DEF%%:*}
+done
+DB_NODES=${DB_NODES#,}
+
+#安装前检查
+SUDO_CMD $GRID_USER "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose
+
+#执行安装
+SUDO_CMD $GRID_USER "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
     -responseFile $REAL_RESPONSE_FILE \
     INVENTORY_LOCATION=$INVENTORY_LOCATION \
     oracle.install.option=CRS_CONFIG \

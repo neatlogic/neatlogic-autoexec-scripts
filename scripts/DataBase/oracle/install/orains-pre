@@ -52,32 +52,8 @@ function disableAvahi() {
 }
 
 function dependRpmInstall() {
-    DO_CMD yum install -y openssh \
-        pam \
-        libXaw \
-        unixODBC \
-        nscd \
-        binutils \
-        compat-libcap1 \
-        compat-libstdc++-33 \
-        gcc \
-        gcc-c++ \
-        glibc \
-        glibc-devel \
-        ksh \
-        libgcc \
-        libstdc++ \
-        libaio \
-        libaio-devel \
-        libXext \
-        libXtst \
-        libX11 \
-        libXau \
-        libxcb \
-        libXi \
-        make \
-        sysstat \
-        nfs-utils
+    DO_CMD yum install -y \
+        binutils libnsl gcc gcc-c++ glibc glibc-devel ksh libaiolibaio-devel libgcc libgcc.i686 libstdc++ libstdc++-devel libXi libXtst libnslmake sysstat
 }
 
 function configNTP() {
