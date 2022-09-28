@@ -190,7 +190,7 @@ done
 DB_NODES=${DB_NODES#,}
 
 #安装前检查
-SUDO_CMD $GRID_USER "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose
+SUDO_CMD $GRID_USER "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
 SUDO_CMD $GRID_USER "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
