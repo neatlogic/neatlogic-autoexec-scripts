@@ -140,7 +140,7 @@ setOracleSidInProfile
 createOraDir
 
 #把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
-if [ ! -z "$RESPONSE_FILE"]; then
+if [ ! -z "$RESPONSE_FILE" ]; then
     RESPONSE_FILE=${RESPONSE_FILE#*\"}
     RESPONSE_FILE=${RESPONSE_FILE%%\"*}
     if [ ! -e "$RESPONSE_FILE" ]; then
