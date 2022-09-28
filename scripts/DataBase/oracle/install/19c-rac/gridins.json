@@ -44,27 +44,27 @@
         {
             "opt": "SYS_DISKS",
             "name": "系统盘",
-            "help": "用于存放集群数据, 集群仲裁用的盘, 防止脑裂, 一般指定三个，例如: /dev/asm/sys01,/dev/asm/sys01,/dev/asm/sys01",
-            "type": "text",
-            "defaultValue": "",
+            "help": "用于存放集群数据, 集群仲裁用的盘, 防止脑裂, 一般指定三个",
+            "type": "textarea",
+            "defaultValue": "/dev/asmdisk/sys1\n/dev/asmdisk/sys2\n/dev/asmdisk/sys3",
             "required": "true",
             "validate": ""
         },
         {
-            "opt": "DISKS_WITH_FAILGROUPS",
-            "name": "系统盘FAILGROUP设置",
-            "help": "例如不需设置fail磁盘组: /dev/asm/sys01,,/dev/asm/sys01,,/dev/asm/sys01,",
+            "opt": "SYS_DISKS_FAILGROUPS",
+            "name": "系统盘FAILGROUP名",
+            "help": "如不需设置fail磁盘组留空",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
             "opt": "DISK_DISCOVERY_STRING",
             "name": "磁盘发现",
-            "help": "磁盘发现路径，例如：/dev/asm/*",
+            "help": "磁盘发现路径，例如：/dev/asmdisk/*",
             "type": "text",
-            "defaultValue": "/dev/asm/*",
+            "defaultValue": "/dev/asmdisk/*",
             "required": "true",
             "validate": ""
         }

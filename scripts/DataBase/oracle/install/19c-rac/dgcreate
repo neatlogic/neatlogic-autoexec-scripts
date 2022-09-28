@@ -23,7 +23,10 @@ sub cerateDiskGroup {
 
     my @disks = ();
     foreach my $diskPath ( split( /\s*[,|\\n]\s*/, $dgDisks ) ) {
-        push( @disks, "'$diskPath'" );
+        $diskPath =~ s/^\s*|\s*$//g;
+        if ( $diskPath ne '' ) {
+            push( @disks, "'$diskPath'" );
+        }
     }
     my $disksStr = join( ',', @disks );
 

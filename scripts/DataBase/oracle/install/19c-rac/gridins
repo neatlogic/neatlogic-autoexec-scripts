@@ -104,8 +104,8 @@ function parseOpts() {
                 SYS_DISKS="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            SYS_DISKS_WITH_FAILGROUPS)
-                SYS_DISKS_WITH_FAILGROUPS="${!OPTIND}"
+            SYS_DISKS_FAILGROUP)
+                SYS_DISKS_FAILGROUP="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             DISK_DISCOVERY_STRING)
@@ -159,6 +159,11 @@ else
     echo "ERROR: Must defined response file with option --RESPONSE_FILE."
     exit 5
 fi
+
+DISKS_WITH_FAILGROUPS=$(echo "$SYS_DISK" | perl -pe 's/(\\n)+$//' | perl -pe "s/\\\\n/,$SYS_DISKS_FAILGROUP,/g" | perl -pe 's/,+$/,/')
+DISKS_WITH_FAILGROUPS=$DISKS_WITH_FAILGROUPS,$SYS_DISKS_FAILGROUP
+
+SYS_DISK=$(echo "$SYS_DISK" | perl -pe 's/\\n/,/g' | perl -pe 's/,+$//')
 
 SUDO_CMD $GRID_USER ${ORACLE_HOME}/gridSetup.sh -ignorePrereq -waitforcompletion -silent \
     -responseFile $REAL_RESPONSE_FILE \
