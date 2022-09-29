@@ -81,8 +81,19 @@ function configNTP() {
     echo 'SYNC_HWCLOCK=yes' >>/etc/sysconfig/ntpd
 
     if [ "$INIT_TYPE" = 'systemd' ]; then
-        systemctl restart ntpd
+        systemctl enable chronyd
+        chronydStatus=$?
+
+        systemctl restart chronyd
+        chronyc -a 'burst 4/4'
+        chronyc -a makestep
+
+        if [ chronydStatus != 0 ]; then
+            systemctl enable ntpd
+            systemctl restart ntpd
+        fi
     else
+        chkconfig ntpd on
         service ntpd restart
     fi
 }

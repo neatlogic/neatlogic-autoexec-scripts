@@ -50,6 +50,20 @@ function SUDO_CMD() {
     fi
 }
 
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo ERROR: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
 function createOraDir() {
     mkdir -p $INVENTORY_LOCATION
     DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
@@ -187,7 +201,7 @@ done
 DB_NODES=${DB_NODES#,}
 
 #安装前检查
-SUDO_CMD $GRID_USER CV_ASSUME_DISTID=OL7 "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
+SUDO_CMD_CONT $GRID_USER CV_ASSUME_DISTID=OL7 "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
 SUDO_CMD $GRID_USER "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
