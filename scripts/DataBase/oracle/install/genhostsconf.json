@@ -14,6 +14,15 @@
             "validate": ""
         },
         {
+            "opt": "scanname",
+            "name": "SCAN名",
+            "help": "集群访问VIP, RAC名-SCAN",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "pubnet",
             "name": "Public网段",
             "help": "Public网段定义, 例如: 10.10.10.0/24",
@@ -91,13 +100,6 @@
             "opt": "networkInterfaceList",
             "name": "节点网卡配置",
             "help": "节点网卡配置, 用于Grid的静默安装配置",
-            "type": "text",
-            "defaultValue": ""
-        },
-        {
-            "opt": "scanName",
-            "name": "SCAN名",
-            "help": "SCAN名, 用于Grid的静默安装配置",
             "type": "text",
             "defaultValue": ""
         }

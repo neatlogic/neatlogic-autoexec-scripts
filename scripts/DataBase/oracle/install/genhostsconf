@@ -22,6 +22,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--racname', default='', help='Oracle rac name')
+    parser.add_argument('--scanname', default='', help='Oracle scan name')
     parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
     parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
@@ -33,6 +34,9 @@ if __name__ == "__main__":
     hasOptError = 0
     if args.racname == '':
         print("ERROR: Must defined rac name by option --racname")
+        hasOptError = 1
+    if args.scanname == '':
+        print("ERROR: Must defined scan name by option --scanname")
         hasOptError = 1
     if args.pubnet == '':
         print("ERROR: Must defined public net by option --pubnet, example: --pubnet 10.10.10.0/24\n")
@@ -51,6 +55,7 @@ if __name__ == "__main__":
         usage()
 
     racName = args.racname
+    scanName = args.scanname
 
     pubNetTxt = args.pubnet
     pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
@@ -207,8 +212,8 @@ if __name__ == "__main__":
         if scanIp in vipMap:
             hasError = 1
             print("ERROR: SCAN IP:%s is vip for rac node, conflict." % (scanIp))
-        
-        scanIpConf.append("%s\t%s-scan" % (scanIp, racName))
+
+        scanIpConf.append("%s\t%s" % (scanIp, scanName))
 
     hostConfTxt = "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n" + "\n".join(scanIpConf)
     hostConfTxt = "::1         localhost localhost.localdomain localhost6 localhost6.localdomain6\n" + hostConfTxt
@@ -228,9 +233,6 @@ if __name__ == "__main__":
 
     # oracle.install.crs.config.networkInterfaceList=enp0s3:192.168.0.0:3,enp0s8:192.168.56.0:1,enp0s9:192.168.57.0:5
     out['networkInterfaceList'] = ','.join(networkInterfaceList)
-
-    # oracle.install.crs.config.gpnp.scanName=myscan
-    out['scanName'] = racName + '-scan'
 
     AutoExecUtils.saveOutput(out)
 
