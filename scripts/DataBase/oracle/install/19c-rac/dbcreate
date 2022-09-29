@@ -13,16 +13,32 @@ function DO_CMD() {
     fi
 }
 
-function SUDO_CMD() {
+function SUDO_ORA_CMD() {
     USER=$1
     shift
     echo "Exec ommand: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
-        HAS_ERROR=1
-        echo ERROR: Execute $@ failed.
-        exit $EXIT_CODE
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
     else
         echo FINE: Execute success.
     fi
@@ -162,7 +178,7 @@ fi
 
 #创建数据库
 #su - oracle
-SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
     -responseFile $REAL_RESPONSE_FILE \
     -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
     -createDatabase \
@@ -193,18 +209,7 @@ SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
     -recoveryAreaDestination "+$ARCH_DISKGROUP" \
     -recoveryGroupName "+$ARCH_DISKGROUP"
 
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    #负数返回码，大于127就是负数的补码
-    echo "ERROR: Installation failed, exitCode:$exitCode."
-    exit $exitCode
-elif [ $exitCode -ge 0 ]; then
-    echo "WARN: Installation has some warning, exitCode:$exitCode."
-else
-    echo "FINE: All installations were successful."
-fi
-
 #集群验证
-SUDO_CMD $ORACLE_USER crsctl stat res -t
+SUDO_CMD_CONT $ORACLE_USER crsctl stat res -t
 
 exit $HAS_ERROR

@@ -36,18 +36,20 @@ function DO_CMD() {
     fi
 }
 
-function SUDO_CMD() {
+function SUDO_ORA_CMD() {
     USER=$1
     shift
     echo "Exec ommand: su - '$USER' -c '$@'"
     eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
-    EXIT_CODE=$?
-    if [ $EXIT_CODE != 0 ]; then
-        HAS_ERROR=1
-        echo ERROR: Execute $@ failed.
-        exit $EXIT_CODE
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
     else
-        echo FINE: Execute success.
+        echo "FINE: All installations were successful."
     fi
 }
 
@@ -211,7 +213,7 @@ fi
 #SUDO_CMD_CONT $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
-SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
     -responseFile $REAL_RESPONSE_FILE \
     INVENTORY_LOCATION=$INVENTORY_LOCATION \
     oracle.install.option=CRS_CONFIG \
@@ -233,17 +235,5 @@ SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitf
     oracle.install.asm.SYSASMPassword=$ASM_PWD \
     oracle.install.asm.monitorPassword=$ASM_PWD \
     oracle.install.asm.configureAFD=false
-
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    #负数返回码，大于127就是负数的补码
-    HAS_ERROR=1
-    echo "ERROR: Installation failed, exitCode:$exitCode."
-elif [ $exitCode -ge 0 ]; then
-    HAS_WARN=1
-    echo "WARN: Installation has some warning, exitCode:$exitCode."
-else
-    echo "FINE: All installations were successful."
-fi
 
 exit $HAS_ERROR

@@ -41,7 +41,7 @@ if [ $exitCode -ge 128 ]; then
     #负数返回码，大于127就是负数的补码
     echo "ERROR: Execute $ORACLE_HOME/root.sh failed, exitCode:$exitCode."
     exit $exitCode
-elif [ $exitCode -ge 0 ]; then
+elif [ $exitCode -gt 0 ]; then
     echo "WARN: Execute $ORACLE_HOME/root.sh has some warning, exitCode:$exitCode."
 else
     echo "FINE: Execute $ORACLE_HOME/root.sh successful."

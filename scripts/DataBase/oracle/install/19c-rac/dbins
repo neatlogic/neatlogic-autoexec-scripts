@@ -28,18 +28,20 @@ function DO_CMD() {
     fi
 }
 
-function SUDO_CMD() {
+function SUDO_ORA_CMD() {
     USER=$1
     shift
     echo "Exec ommand: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
-    EXIT_CODE=$?
-    if [ $EXIT_CODE != 0 ]; then
-        HAS_ERROR=1
-        echo ERROR: Execute $@ failed.
-        exit $EXIT_CODE
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
     else
-        echo FINE: Execute success.
+        echo "FINE: All installations were successful."
     fi
 }
 
@@ -169,7 +171,7 @@ fi
 # You can ignore this code if the prerequisite is optional.
 
 #静默安装DB软件
-SUDO_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/runInstaller -silent -force -noconfig -ignorePrereq \
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/runInstaller -silent -force -noconfig -ignorePrereq \
     -responseFile $REAL_RESPONSE_FILE \
     oracle.install.option=INSTALL_DB_SWONLY \
     UNIX_GROUP_NAME=$UNIX_GROUP_NAME \
@@ -184,17 +186,5 @@ SUDO_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/runInstaller -silent -force -noco
     oracle.install.db.OSKMDBA_GROUP=$OSKMDBA_GROUP \
     oracle.install.db.OSRACDBA_GROUP=$OSRACDBA_GROUP \
     oracle.install.db.CLUSTER_NODES=$CLUSTER_NODES
-
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    #负数返回码，大于127就是负数的补码
-    HAS_ERROR=1
-    echo "ERROR: Installation failed, exitCode:$exitCode."
-elif [ $exitCode -ge 0 ]; then
-    HAS_WARN=1
-    echo "WARN: Installation has some warning, exitCode:$exitCode."
-else
-    echo "FINE: All installations were successful."
-fi
 
 exit $HAS_ERROR
