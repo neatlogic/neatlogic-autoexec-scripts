@@ -52,7 +52,7 @@
             "name": "ASM管理密码",
             "help": "ASM默认管理密码",
             "type": "password",
-            "defaultValue": "oracle",
+            "defaultValue": "Oracle123",
             "required": "true",
             "validate": ""
         },

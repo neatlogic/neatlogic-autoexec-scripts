@@ -229,9 +229,9 @@ SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitf
     oracle.install.asm.diskGroup.disks=$SYS_DISKS \
     oracle.install.asm.diskGroup.diskDiscoveryString=$DISK_DISCOVERY_STRING \
     oracle.install.crs.rootconfig.executeRootScript=false \
-    oracle.install.asm.monitorPassword=${ASM_PWD} \
-    oracle.install.asm.SYSASMPassword=${ASM_PWD} \
-    oracle.install.asm.configureAFD=false \
-    oracle.install.asm.monitorPassword=${ASM_PWD}
+    oracle.install.asm.monitorPassword=$ASM_PWD \
+    oracle.install.asm.SYSASMPassword=$ASM_PWD \
+    oracle.install.asm.monitorPassword=$ASM_PWD \
+    oracle.install.asm.configureAFD=false
 
 exit $HAS_ERROR

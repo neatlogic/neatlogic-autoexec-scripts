@@ -155,7 +155,7 @@
             "name": "CDB密码",
             "help": "CDB默认密码",
             "type": "password",
-            "defaultValue": "oracle",
+            "defaultValue": "Oracle123",
             "required": "true",
             "validate": ""
         },
@@ -164,7 +164,7 @@
             "name": "PDB密码",
             "help": "PDB默认密码",
             "type": "password",
-            "defaultValue": "oracle",
+            "defaultValue": "Oracle123",
             "required": "true",
             "validate": ""
         },
