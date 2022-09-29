@@ -24,6 +24,27 @@
             "validate": ""
         },
         {
+            "opt": "OVER_WRITE",
+            "name": "是否覆盖",
+            "help": "是否强制覆盖已存在的文件",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "USER",
             "name": "Owner用户",
             "help": "修改解压后的文件的Owner用户",

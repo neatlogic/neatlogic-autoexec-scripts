@@ -108,7 +108,7 @@
                 ],
                 "dataType": "static"
             },
-            "defaultValue": "trye",
+            "defaultValue": "true",
             "required": "true",
             "validate": ""
         },
