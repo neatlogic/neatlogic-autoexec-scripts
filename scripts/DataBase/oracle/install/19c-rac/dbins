@@ -104,6 +104,10 @@ function parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             RESPONSE_FILE)
                 RESPONSE_FILE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -162,8 +166,13 @@ else
     exit 5
 fi
 
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
 #静默安装DB软件
-SUDO_CMD $ORACLE_USER $ORACLE_HOME/runInstaller -silent -force -noconfig -ignorePrereq \
+SUDO_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/runInstaller -silent -force -noconfig -ignorePrereq \
     -responseFile $REAL_RESPONSE_FILE \
     oracle.install.option=INSTALL_DB_SWONLY \
     UNIX_GROUP_NAME=$UNIX_GROUP_NAME \

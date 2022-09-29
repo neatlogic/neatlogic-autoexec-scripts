@@ -58,7 +58,7 @@ function SUDO_CMD_CONT() {
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_WARN=1
-        echo ERROR: Execute $@ failed.
+        echo WARN: Execute $@ failed.
     else
         echo FINE: Execute success.
     fi
@@ -187,8 +187,19 @@ fi
 
 #SYS_DISK是textarea格式，换行符号变成了符号'\n',要替换为逗号
 #根据SYS_DISK和FAILGROUP名称拼接配置DISKS_WITH_FAILGROUPS
-DISKS_WITH_FAILGROUPS=$(echo "$SYS_DISK" | perl -pe 's/(\\n)+$//' | perl -pe "s/\\\\n/,$SYS_DISKS_FAILGROUP,/g" | perl -pe 's/,+$/,/')
-DISKS_WITH_FAILGROUPS=$DISKS_WITH_FAILGROUPS,$SYS_DISKS_FAILGROUP
+if [ -n "$SYS_DISKS_FAILGROUP" ]; then
+    DISK_IDX=1
+    for ASM_DISK in ${SYS_DISK//,/ }; do
+        DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS},${ASM_DISK},${SYS_DISKS_FAILGROUP}${DISK_IDX}
+        DISK_IDX=$(($DISK_IDX + 1))
+    done
+else
+    for ASM_DISK in ${SYS_DISK//,/ }; do
+        DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS},${ASM_DISK},
+        DISK_IDX=$(($DISK_IDX + 1))
+    done
+fi
+DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS#,}
 
 SYS_DISK=$(echo "$SYS_DISK" | perl -pe 's/\\n/,/g' | perl -pe 's/,+$//')
 
@@ -200,11 +211,16 @@ for NODE_DEF in ${CLUSTER_NODES_DEF//,/ }; do
 done
 DB_NODES=${DB_NODES#,}
 
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
 #安装前检查
-SUDO_CMD_CONT $GRID_USER CV_ASSUME_DISTID=OL7 "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
+SUDO_CMD_CONT $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
-SUDO_CMD $GRID_USER "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
+SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
     -responseFile $REAL_RESPONSE_FILE \
     INVENTORY_LOCATION=$INVENTORY_LOCATION \
     oracle.install.option=CRS_CONFIG \
