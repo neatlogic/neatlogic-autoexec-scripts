@@ -56,13 +56,15 @@ parseOpts() {
 
 parseOpts "$@"
 
-if [[ ! -n "$disk_name"  && ! -n "$vg_name" && ! -n "$lv_name" && ! -n "$fs_type" && ! -n "$mount_name" && ! -n "$size"]] ; then
+if [[ ! -n "$disk_name"  && ! -n "$vg_name" && ! -n "$lv_name" && ! -n "$fs_type" && ! -n "$mount_name" && ! -n "$size" ]] ; then
     usage
 fi 
 
+#与文件格式有关不能100%挂载，此处减去400MB空间
+size_mb=$(((size*1024)-400))
 pvcreate $disk_name
 vgcreate $vg_name $disk_name
-lvcreate -L ${size}G -n $lv_name $vg_name
+lvcreate -L ${size_mb}M -n $lv_name $vg_name
 
 mkfs -t $fs_type /dev/${vg_name}/${lv_name}
 mkdir -p $mount_name
@@ -75,6 +77,7 @@ then
     rm -f $file
 fi
 
+#重置克隆后的网卡名和网卡信息
 file="/etc/sysconfig/network-scripts/ifcfg-eth1"
 if [ -e $file ]
 then
@@ -84,13 +87,22 @@ then
     mv ifcfg-eth1 ifcfg-eth0
 fi
 
+#关闭防火墙
 ps -p1 | grep systemd >/dev/null && initType="systemd" || initType="sysvinit"
 if [ "$initType" = "sysvinit" ]; then
-        service iptables stop
-        chkconfig iptables off
+    service iptables stop
+    chkconfig iptables off
 else
-        systemctl stop firewalld
-        systemctl disable firewalld
+    systemctl stop firewalld
+    systemctl disable firewalld
 fi
 
-reboot
+#关闭selinux
+if [ -d "/etc/selinux/config" ]; then
+    getenforce 
+    setenforce 0
+    sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config
+fi
+
+#延迟1分钟关机重启
+shutdown -r 1

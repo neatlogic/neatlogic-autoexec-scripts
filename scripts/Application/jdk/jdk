@@ -92,7 +92,7 @@ function install()
         mkdir -p $home
     fi
 
-    if [[ "$user"!="root" ]] ;then 
+    if [[ -n "$user"  && "$user"!="root" ]] ;then 
        echo "Add group $user and user $user."
        groupadd $user 
        useradd $user -g $user
@@ -114,26 +114,29 @@ function install()
     fi
 
     #修改用户.base_profile 
-    filename=$(basename -s .tar.gz "$file")
-    if [ ! -d "$home/$filename" ] ; then 
+    filedir=$(basename -s .tar.gz "$file")
+    if [ ! -d "$home/$filedir" ] ; then 
        getname
     fi
-    JAVA_HOME="$home/$filename"
-    JRE_HOME="$home/$filename/jre"
+    JAVA_HOME="$home/$filedir"
 cat <<EOF >> "$profile"
-JAVA_HOME=\$JAVA_HOME
-JRE_HOME=\$JRE_HOME
-PATH=\$JAVA_HOME/bin/:\$PATH
-export JAVA_HOME JRE_HOME PATH
+JAVA_HOME=$JAVA_HOME
+PATH=$JAVA_HOME/bin/:$PATH
+CLASSPATH=$JRE_HOME/lib:$JRE_HOME:/lib/tools.jar:$home/$filedir/jre
+export JAVA_HOME PATH CLASSPATH
 EOF
     source $profile
     
     java -version
     if [ $? != 0 ] ;then
-       echo "ERROR:: install Jdk $filename failed."
+       echo "ERROR:: install Jdk $filedir failed."
        exit 1
     else
-       echo "INFO:: install Jdk $filename succeed."
+       echo "FINE:: install Jdk $filename succeed."
+       rm -f "$current_path/output.json"
+cat <<EOF > "$current_path/output.json"
+{ "JAVA_HOME":"$JAVA_HOME" }
+EOF
        exit 0
     fi
 }
@@ -150,6 +153,7 @@ if [ ! -n "$user" ]; then
    user='root'
 fi 
 
+current_path=`pwd`
 if [[ "$user"!="root" ]] ; then
    profile="/home/$user/.bash_profile"
 else
