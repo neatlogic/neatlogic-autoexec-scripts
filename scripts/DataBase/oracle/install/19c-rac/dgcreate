@@ -66,8 +66,8 @@ sub main {
         usage();
     }
 
-    #create diskgroup archdg external redundancy disk '/dev/asmdisks/asmdisk0e','/dev/asmdisks/asmdisk0f' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
-    #create diskgroup datadg external redundancy disk '/dev/asmdisks/asmdisk0g','/dev/asmdisks/asmdisk0h' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+    #create diskgroup archdg external redundancy disk '/dev/oracleasm/arch-disk1','/dev/oracleasm/arch-disk2' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+    #create diskgroup datadg external redundancy disk '/dev/oracleasm/data-disk1','/dev/oracleasm/data-disk2' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
 
     my $out      = {};
     my $exitCode = cerateDiskGroup( $gridUser, $dgName, $dgDisks );

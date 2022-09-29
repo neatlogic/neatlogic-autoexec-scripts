@@ -79,7 +79,7 @@
             "name": "系统盘",
             "help": "用于存放集群数据, 集群仲裁用的盘, 防止脑裂, 一般指定三个",
             "type": "textarea",
-            "defaultValue": "/dev/asmdisk/sys1\n/dev/asmdisk/sys2\n/dev/asmdisk/sys3",
+            "defaultValue": "/dev/oracleasm/crs-disk1\n/dev/oracleasm/crs-disk2\n/dev/oracleasm/crs-disk3",
             "required": "true",
             "validate": ""
         },
@@ -95,9 +95,9 @@
         {
             "opt": "DISK_DISCOVERY_STRING",
             "name": "磁盘发现",
-            "help": "磁盘发现路径，例如：/dev/asmdisk/*",
+            "help": "磁盘发现路径，例如：/dev/oracleasm/*",
             "type": "text",
-            "defaultValue": "/dev/asmdisk/*",
+            "defaultValue": "/dev/oracleasm/*",
             "required": "true",
             "validate": ""
         }

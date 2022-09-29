@@ -15,10 +15,10 @@
 #SCAN_PORT=${SAN_PORT}
 
 #vote disks
-#DISKS=/dev/asmdisks/asmdisk0b,/dev/asmdisks/asmdisk0c,/dev/asmdisks/asmdisk0d
-#DISKS_WITH_FAILGROUPS=/dev/asmdisks/asmdisk0b,,/dev/asmdisks/asmdisk0c,,/dev/asmdisks/asmdisk0d
+#DISKS=/dev/oracleasm/asmdisk0b,/dev/oracleasm/crs-disk1,/dev/oracleasm/crs-disk2,/dev/oracleasm/crs-disk3
+#DISKS_WITH_FAILGROUPS=/dev/oracleasm/crs-disk1,CRSFG1,/dev/oracleasm/crs-disk2,CRSFG2,/dev/oracleasm/crs-disk3,CRSFG3
 #diskDiscoveryString
-#DISK_DISCOVERY_STRING=/dev/asmdisks/*
+#DISK_DISCOVERY_STRING=/dev/oracleasm/*
 #CLUSTER_NODES_DEF=myrac01:myrac01-vip:HUB,myrac02:myrac02-vip:HUB
 #NETWORK_INTERFACE_LIST=ens160:172.16.200.0:1,ens192:192.168.0.0:5
 HAS_ERROR=0

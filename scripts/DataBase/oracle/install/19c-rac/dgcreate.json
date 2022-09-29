@@ -19,7 +19,7 @@
             "name": "磁盘列表",
             "help": "磁盘路径列表",
             "type": "textarea",
-            "defaultValue": "/dev/asmdisk/data1\n/dev/asmdisk/data2",
+            "defaultValue": "/dev/oracleasm/data-disk1\n/dev/oracleasm/data-disk2",
             "required": "true",
             "validate": ""
         }
