@@ -234,4 +234,16 @@ SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitf
     oracle.install.asm.monitorPassword=$ASM_PWD \
     oracle.install.asm.configureAFD=false
 
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    #负数返回码，大于127就是负数的补码
+    HAS_ERROR=1
+    echo "ERROR: Installation failed, exitCode:$exitCode."
+elif [ $exitCode -ge 0 ]; then
+    HAS_WARN=1
+    echo "WARN: Installation has some warning, exitCode:$exitCode."
+else
+    echo "FINE: All installations were successful."
+fi
+
 exit $HAS_ERROR

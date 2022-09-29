@@ -156,6 +156,18 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
 fi
 
+##runInstall exit code##
+# 0	All installations were successful.
+# 1	All installations were successful, but some optional configuration tools failed.
+# 2	Local installations were successful, but some remote operations failed.
+# 3	All installations were successful, but some recommended configuration tools failed.
+# 4	The installation was stopped.
+# 6	The installation was successful after you proceeded by disregarding a few prerequisite checks or warnings.
+# -1	At least one installation failed.
+# -2	The installation failed. One or more validation of variables failed.
+# -3	The attempted installation encountered a prerequisite failure. Some of the optional prerequisites have not been met. See the logs for details.
+# You can ignore this code if the prerequisite is optional.
+
 #静默安装DB软件
 SUDO_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/runInstaller -silent -force -noconfig -ignorePrereq \
     -responseFile $REAL_RESPONSE_FILE \
@@ -172,5 +184,17 @@ SUDO_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/runInstaller -silent -force -noco
     oracle.install.db.OSKMDBA_GROUP=$OSKMDBA_GROUP \
     oracle.install.db.OSRACDBA_GROUP=$OSRACDBA_GROUP \
     oracle.install.db.CLUSTER_NODES=$CLUSTER_NODES
+
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    #负数返回码，大于127就是负数的补码
+    HAS_ERROR=1
+    echo "ERROR: Installation failed, exitCode:$exitCode."
+elif [ $exitCode -ge 0 ]; then
+    HAS_WARN=1
+    echo "WARN: Installation has some warning, exitCode:$exitCode."
+else
+    echo "FINE: All installations were successful."
+fi
 
 exit $HAS_ERROR

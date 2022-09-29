@@ -29,13 +29,20 @@ function SUDO_CMD() {
 }
 
 ORACLE_HOME=$1
-
-if [ -n "$ORACLE_HOME" ]; then
+if [ -z "$ORACLE_HOME" ]; then
     echo "ERROR: Argument not provided."
     echo "Usage: dbins-root <Oracle Home dir>"
     exit 2
 fi
 
-DO_CMD $ORACLE_HOME/root.sh
-
-exit $HAS_ERROR
+$ORACLE_HOME/root.sh
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    #负数返回码，大于127就是负数的补码
+    echo "ERROR: Execute $ORACLE_HOME/root.sh failed, exitCode:$exitCode."
+    exit $exitCode
+elif [ $exitCode -ge 0 ]; then
+    echo "WARN: Execute $ORACLE_HOME/root.sh has some warning, exitCode:$exitCode."
+else
+    echo "FINE: Execute $ORACLE_HOME/root.sh successful."
+fi

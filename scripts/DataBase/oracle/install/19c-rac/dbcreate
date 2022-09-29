@@ -193,6 +193,17 @@ SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
     -recoveryAreaDestination "+$ARCH_DISKGROUP" \
     -recoveryGroupName "+$ARCH_DISKGROUP"
 
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    #负数返回码，大于127就是负数的补码
+    echo "ERROR: Installation failed, exitCode:$exitCode."
+    exit $exitCode
+elif [ $exitCode -ge 0 ]; then
+    echo "WARN: Installation has some warning, exitCode:$exitCode."
+else
+    echo "FINE: All installations were successful."
+fi
+
 #集群验证
 SUDO_CMD $ORACLE_USER crsctl stat res -t
 
