@@ -154,25 +154,25 @@ function installCvuqdisk() {
 }
 
 function createOraDir() {
-    if [ -z "$INVENTORY_LOCATION" ] || [ "$INVENTORY_LOCATION"=="/" ]; then
+    if [ -z "$INVENTORY_LOCATION" ] || [ "$INVENTORY_LOCATION" == "/" ]; then
         HAS_ERROR=1
         echo "ERROR: Inventory directory:$INVENTORY_LOCATION is invalid."
     fi
 
-    if [ -z "$GRID_BASE" ] || [ "$GRID_BASE"=="/" ]; then
+    if [ -z "$GRID_BASE" ] || [ "$GRID_BASE" == "/" ]; then
         echo "WARN: Grid base directory:$GRID_BASE is invalid."
     fi
 
-    if [ -z "$GRID_HOME" ] || [ "$GRID_HOME"=="/" ]; then
+    if [ -z "$GRID_HOME" ] || [ "$GRID_HOME" == "/" ]; then
         echo "WARN: Grid home directory:$GRID_HOME is invalid."
     fi
 
-    if [ -z "$ORACLE_BASE" ] || [ "$ORACLE_BASE"=="/" ]; then
+    if [ -z "$ORACLE_BASE" ] || [ "$ORACLE_BASE" == "/" ]; then
         HAS_ERROR=1
         echo "ERROR: Oracle base directory:$ORACLE_BASE is invalid."
     fi
 
-    if [ -z "$ORACLE_HOME" ] || [ "$ORACLE_HOME"=="/" ]; then
+    if [ -z "$ORACLE_HOME" ] || [ "$ORACLE_HOME" == "/" ]; then
         HAS_ERROR=1
         echo "ERROR: Oracle home directory:$ORACLE_HOME is invalid."
     fi
@@ -257,54 +257,50 @@ function parseOpts() {
     done
 }
 
-function main() {
-    parseOpts "$@"
+parseOpts "$@"
 
-    ps -p1 | grep systemd >/dev/null && INIT_TYPE="systemd" || INIT_TYPE="sysvinit"
+ps -p1 | grep systemd >/dev/null && INIT_TYPE="systemd" || INIT_TYPE="sysvinit"
 
-    echo "--Turning NetworkManager off-------------"
-    disableNetworkManager
+echo "--Turning NetworkManager off-------------"
+disableNetworkManager
 
-    echo "--Stop iptables--------------------------"
-    disableIptables
+echo "--Stop iptables--------------------------"
+disableIptables
 
-    echo "--Disable selinux------------------------"
-    disableSELinux
+echo "--Disable selinux------------------------"
+disableSELinux
 
-    echo "--Config yum local repo------------------"
-    configYumLocalRepo
+echo "--Config yum local repo------------------"
+configYumLocalRepo
 
-    echo "--Depenndency package install------------"
-    dependRpmInstall
+echo "--Depenndency package install------------"
+dependRpmInstall
 
-    echo "--Config Lang----------------------------"
-    configI18nLANG
+echo "--Config Lang----------------------------"
+configI18nLANG
 
-    echo "--Config sshd----------------------------"
-    configSshd
+echo "--Config sshd----------------------------"
+configSshd
 
-    echo "--Config ntp-----------------------------"
-    configNTP
+echo "--Config ntp-----------------------------"
+configNTP
 
-    echo "--Config networking----------------------"
-    configNetworking
+echo "--Config networking----------------------"
+configNetworking
 
-    echo "--disableTransHugepage-------------------"
-    disableTransHugepage
+echo "--disableTransHugepage-------------------"
+disableTransHugepage
 
-    echo "--config fstab---------------------------"
-    configShmDev
+echo "--config fstab---------------------------"
+configShmDev
 
-    echo "--Config nscd----------------------------"
-    enableNscd
+echo "--Config nscd----------------------------"
+enableNscd
 
-    echo "--Install cvuqdisk rpm-------------------"
-    installCvuqdisk
+echo "--Install cvuqdisk rpm-------------------"
+installCvuqdisk
 
-    echo "--Create directory-----------------------"
-    createOraDir
-}
-
-main
+echo "--Create directory-----------------------"
+createOraDir
 
 exit $HAS_ERROR
