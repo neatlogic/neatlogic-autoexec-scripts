@@ -185,7 +185,7 @@ function createOraDir() {
     DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
     DO_CMD chmod -R 775 $INVENTORY_LOCATION
 
-    if [ -n "$GRID_BASE" ] && [ "$GRID_BASE" != "/" ] && [ -n "$GRID_HOME" ] && [ "$GRID_HOME" != "/" ]
+    if [ -n "$GRID_BASE" ] && [ "$GRID_BASE" != "/" ] && [ -n "$GRID_HOME" ] && [ "$GRID_HOME" != "/" ]; then
         mkdir -p $GRID_BASE
         mkdir -p $GRID_HOME
         DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME "$GRID_BASE" "$GRID_HOME"
