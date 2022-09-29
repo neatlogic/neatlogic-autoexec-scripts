@@ -160,13 +160,11 @@ function createOraDir() {
     fi
 
     if [ -z "$GRID_BASE" ] || [ "$GRID_BASE"=="/" ]; then
-        HAS_ERROR=1
-        echo "ERROR: Grid base directory:$GRID_BASE is invalid."
+        echo "WARN: Grid base directory:$GRID_BASE is invalid."
     fi
 
     if [ -z "$GRID_HOME" ] || [ "$GRID_HOME"=="/" ]; then
-        HAS_ERROR=1
-        echo "ERROR: Grid home directory:$GRID_HOME is invalid."
+        echo "WARN: Grid home directory:$GRID_HOME is invalid."
     fi
 
     if [ -z "$ORACLE_BASE" ] || [ "$ORACLE_BASE"=="/" ]; then
@@ -187,10 +185,12 @@ function createOraDir() {
     DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
     DO_CMD chmod -R 775 $INVENTORY_LOCATION
 
-    mkdir -p $GRID_BASE
-    mkdir -p $GRID_HOME
-    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME "$GRID_BASE" "$GRID_HOME"
-    DO_CMD chmod -R 775 "$GRID_BASE" "$GRID_HOME"
+    if [ -n "$GRID_BASE" ] && [ "$GRID_BASE" != "/" ] && [ -n "$GRID_HOME" ] && [ "$GRID_HOME" != "/" ]
+        mkdir -p $GRID_BASE
+        mkdir -p $GRID_HOME
+        DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME "$GRID_BASE" "$GRID_HOME"
+        DO_CMD chmod -R 775 "$GRID_BASE" "$GRID_HOME"
+    fi
 
     mkdir -p $ORACLE_BASE
     mkdir -p $ORACLE_BASE/cfgtoollogs
