@@ -1,0 +1,44 @@
+{
+	"opType": "target",
+	"typeName": "INSTALL",
+	"riskName": "LOW",
+	"interpreter": "bash",
+	"description": "weblogic启动adminserver",
+	"argument": null,
+	"option": [
+		{
+			"opt": "run_user",
+			"name": "软件安装用户",
+			"help": "为软件安装指定特定的用户，如：weblogic",
+			"type": "text",
+			"required": "true",
+			"validate": "",
+			"defaultValue": ""
+		}, {
+			"opt": "weblogic_path",
+			"name": "软件安装路径",
+			"help": "软件安装路径，如：/home/weblogic",
+			"type": "text",
+			"required": "true",
+			"validate": "",
+			"defaultValue": ""
+		}, {
+			"opt": "domain_path",
+			"name": "domain路径",
+			"help": "domain路径，如：/home/weblogic",
+			"type": "text",
+			"required": "true",
+			"validate": "",
+			"defaultValue": ""
+		}, {
+			"opt": "listen_port",
+			"name": "监听端口",
+			"help": "adminserver监控端口,如:7001",
+			"type": "text",
+			"required": "true",
+			"validate": "",
+			"defaultValue": "7001"
+		}
+	],
+	"output": []
+}
