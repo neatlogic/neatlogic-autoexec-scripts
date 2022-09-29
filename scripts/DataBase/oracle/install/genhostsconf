@@ -144,7 +144,7 @@ if __name__ == "__main__":
         for nodeIpInfo in nodesIpInfo.get(node):
             ipType = nodeIpInfo.get('type')
             if ipType != 'IPV4':
-                next
+                continue
 
             nicName = nodeIpInfo.get('nic')
             ip = nodeIpInfo.get('ip')

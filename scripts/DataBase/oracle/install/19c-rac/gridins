@@ -185,23 +185,23 @@ else
     exit 5
 fi
 
+SYS_DISKS=$(echo "$SYS_DISKS" | perl -pe 's/\\n/,/g' | perl -pe 's/,+$//')
+
 #SYS_DISK是textarea格式，换行符号变成了符号'\n',要替换为逗号
 #根据SYS_DISK和FAILGROUP名称拼接配置DISKS_WITH_FAILGROUPS
 if [ -n "$SYS_DISKS_FAILGROUP" ]; then
     DISK_IDX=1
-    for ASM_DISK in ${SYS_DISK//,/ }; do
+    for ASM_DISK in ${SYS_DISKS//,/ }; do
         DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS},${ASM_DISK},${SYS_DISKS_FAILGROUP}${DISK_IDX}
         DISK_IDX=$(($DISK_IDX + 1))
     done
 else
-    for ASM_DISK in ${SYS_DISK//,/ }; do
+    for ASM_DISK in ${SYS_DISKS//,/ }; do
         DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS},${ASM_DISK},
         DISK_IDX=$(($DISK_IDX + 1))
     done
 fi
 DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS#,}
-
-SYS_DISK=$(echo "$SYS_DISK" | perl -pe 's/\\n/,/g' | perl -pe 's/,+$//')
 
 #把CLUSTER_NODES_DEF格式;myrac1:myrac1-vip:HUB,myrac2:myrac2-vip:HUB
 #转换为：myrac1,myrac2
