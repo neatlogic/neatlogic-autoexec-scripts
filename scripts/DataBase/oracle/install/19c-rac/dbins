@@ -46,14 +46,14 @@ function SUDO_CMD() {
 function createOraDir() {
     if [ ! -e "$INVENTORY_LOCATION" ]; then
         mkdir -p $INVENTORY_LOCATION
-        DO_CMD chown -R $ORACLE_USER:$INSTALL_GROUP $INVENTORY_LOCATION
+        DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
         DO_CMD chmod -R 775 $INVENTORY_LOCATION
     fi
 
     mkdir -p $ORACLE_BASE
     mkdir -p $ORACLE_BASE/cfgtoollogs
     mkdir -p $ORACLE_HOME
-    DO_CMD chown -R $ORACLE_USER:$INSTALL_GROUP $ORACLE_BASE
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $ORACLE_BASE
     DO_CMD chmod -R 775 $ORACLE_BASE
 }
 

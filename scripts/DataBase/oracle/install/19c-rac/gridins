@@ -39,7 +39,7 @@ function SUDO_CMD() {
     USER=$1
     shift
     echo "Exec ommand: su - '$USER' -c '$@'"
-    eval "su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
         HAS_ERROR=1
@@ -52,21 +52,15 @@ function SUDO_CMD() {
 
 function createOraDir() {
     mkdir -p $INVENTORY_LOCATION
-    DO_CMD chown -R $GRID_USER:$INSTALL_GROUP $INVENTORY_LOCATION
+    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
     DO_CMD chmod -R 775 $INVENTORY_LOCATION
 
     mkdir -p $GRID_BASE
     mkdir -p $GRID_HOME
-    DO_CMD chown -R $GRID_USER:$INSTALL_GROUP $GRID_BASE
-    DO_CMD chown -R $GRID_USER:$INSTALL_GROUP $GRID_HOME
+    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $GRID_BASE
+    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $GRID_HOME
     DO_CMD chmod -R 775 $GRID_BASE
     DO_CMD chmod -R 775 $GRID_HOME
-}
-
-function installCvuqdisk() {
-    #安装ASM的磁盘工具
-    export CVUQDISK_GRP=$INSTALL_GROUP
-    rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
 }
 
 function setInstallEnv() {
@@ -101,6 +95,10 @@ function parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             RESPONSE_FILE)
                 RESPONSE_FILE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -153,7 +151,6 @@ parseOpts "$@"
 setInstallEnv
 createOraDir
 setOracleSidInProfile
-installCvuqdisk
 
 #把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
 if [ -n "$RESPONSE_FILE" ]; then
@@ -190,7 +187,7 @@ done
 DB_NODES=${DB_NODES#,}
 
 #安装前检查
-SUDO_CMD $GRID_USER "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
+SUDO_CMD $GRID_USER CV_ASSUME_DISTID=OL7 "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
 SUDO_CMD $GRID_USER "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \

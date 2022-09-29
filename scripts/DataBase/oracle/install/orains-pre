@@ -136,7 +136,49 @@ function disableSELinux() {
     setenforce 0
 }
 
+function installCvuqdisk() {
+    #安装ASM的磁盘工具
+    export CVUQDISK_GRP=$UNIX_GROUP_NAME
+    rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
+}
+
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            GRID_HOME)
+                GRID_HOME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            UNIX_GROUP_NAME)
+                UNIX_GROUP_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
 function main() {
+    parseOpts "$@"
+
     ps -p1 | grep systemd >/dev/null && INIT_TYPE="systemd" || INIT_TYPE="sysvinit"
 
     echo "--Turning NetworkManager off-------------"
@@ -174,6 +216,9 @@ function main() {
 
     echo "--Config nscd----------------------------"
     enableNscd
+
+    echo "--Install cvuqdisk rpm-------------------"
+    installCvuqdisk
 }
 
 main
