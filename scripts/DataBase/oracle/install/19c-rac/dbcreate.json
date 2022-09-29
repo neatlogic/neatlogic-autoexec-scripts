@@ -151,9 +151,18 @@
             "validate": ""
         },
         {
-            "opt": "DEFAULT_PWD",
-            "name": "默认密码",
-            "help": "默认密码",
+            "opt": "CDB_PWD",
+            "name": "CDB密码",
+            "help": "CDB默认密码",
+            "type": "password",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "PDB_PWD",
+            "name": "PDB密码",
+            "help": "PDB默认密码",
             "type": "password",
             "defaultValue": "oracle",
             "required": "true",

@@ -48,6 +48,15 @@
             "validate": ""
         },
         {
+            "opt": "ASM_PWD",
+            "name": "ASM管理密码",
+            "help": "ASM默认管理密码",
+            "type": "password",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "RESPONSE_FILE",
             "name": "静默响应文件",
             "help": "静默安装的响应文件",

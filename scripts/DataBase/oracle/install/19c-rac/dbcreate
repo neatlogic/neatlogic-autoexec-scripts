@@ -74,8 +74,12 @@ function parseOpts() {
                 DATABASE_TYPE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            DEFAULT_PWD)
-                DEFAULT_PWD="${!OPTIND}"
+            CDB_PWD)
+                CDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PWD_PWD)
+                PWD_PWD="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             IS_CDB)
@@ -173,11 +177,11 @@ SUDO_CMD $ORACLE_USER $ORACLE_HOME/bin/dbca -silent \
     -pdbName "$PDB_NAME" \
     -characterSet $CHARSET \
     -nationalCharacterSet AL16UTF16 \
-    -sysPassword $DEFAULT_PWD \
-    -systemPassword $DEFAULT_PWD \
-    -pdbAdminPassword $DEFAULT_PWD \
-    -dbsnmpPassword $DEFAULT_PWD \
-    -asmsnmpPassword $DEFAULT_PWD \
+    -sysPassword $CDB_PWD \
+    -systemPassword $CDB_PWD \
+    -pdbAdminPassword $PWD_PWD \
+    -dbsnmpPassword $CDB_PWD \
+    -asmsnmpPassword $CDB_PWD \
     -automaticMemoryManagement $AUTO_MEMORY \
     -memoryPercentage $MEM_PERCENTAGE \
     -totalMemory 0 \

@@ -217,7 +217,7 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
 fi
 
 #安装前检查
-SUDO_CMD_CONT $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
+#SUDO_CMD_CONT $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
 SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
@@ -237,6 +237,10 @@ SUDO_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitf
     oracle.install.asm.diskGroup.disksWithFailureGroupNames=$DISKS_WITH_FAILGROUPS \
     oracle.install.asm.diskGroup.disks=$SYS_DISKS \
     oracle.install.asm.diskGroup.diskDiscoveryString=$DISK_DISCOVERY_STRING \
-    oracle.install.crs.rootconfig.executeRootScript=false
+    oracle.install.crs.rootconfig.executeRootScript=false \
+    oracle.install.asm.monitorPassword=${ASM_PWD} \
+    oracle.install.asm.SYSASMPassword=${ASM_PWD} \
+    oracle.install.asm.configureAFD=false \
+    oracle.install.asm.monitorPassword=${ASM_PWD}
 
 exit $HAS_ERROR
