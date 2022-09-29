@@ -142,6 +142,10 @@ if __name__ == "__main__":
         privIp = None
 
         for nodeIpInfo in nodesIpInfo.get(node):
+            ipType = nodeIpInfo.get('type')
+            if ipType != 'IPV4':
+                next
+
             nicName = nodeIpInfo.get('nic')
             ip = nodeIpInfo.get('ip')
             prefixLen = nodeIpInfo.get('netmask')
