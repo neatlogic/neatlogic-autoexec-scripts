@@ -153,6 +153,52 @@ function installCvuqdisk() {
     rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
 }
 
+function createOraDir() {
+    if [ -z "$INVENTORY_LOCATION" ] || [ "$INVENTORY_LOCATION"=="/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Inventory directory:$INVENTORY_LOCATION is invalid."
+    fi
+
+    if [ -z "$GRID_BASE" ] || [ "$GRID_BASE"=="/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Grid base directory:$GRID_BASE is invalid."
+    fi
+
+    if [ -z "$GRID_HOME" ] || [ "$GRID_HOME"=="/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Grid home directory:$GRID_HOME is invalid."
+    fi
+
+    if [ -z "$ORACLE_BASE" ] || [ "$ORACLE_BASE"=="/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Oracle base directory:$ORACLE_BASE is invalid."
+    fi
+
+    if [ -z "$ORACLE_HOME" ] || [ "$ORACLE_HOME"=="/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Oracle home directory:$ORACLE_HOME is invalid."
+    fi
+
+    if [ "$HAS_ERROR" != "0" ]; then
+        exit 1
+    fi
+
+    mkdir -p $INVENTORY_LOCATION
+    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
+    DO_CMD chmod -R 775 $INVENTORY_LOCATION
+
+    mkdir -p $GRID_BASE
+    mkdir -p $GRID_HOME
+    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME "$GRID_BASE" "$GRID_HOME"
+    DO_CMD chmod -R 775 "$GRID_BASE" "$GRID_HOME"
+
+    mkdir -p $ORACLE_BASE
+    mkdir -p $ORACLE_BASE/cfgtoollogs
+    mkdir -p $ORACLE_HOME
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME "$ORACLE_BASE" "$ORACLE_HOME"
+    DO_CMD chmod -R 775 "$ORACLE_BASE" "$ORACLE_HOME"
+}
+
 function parseOpts() {
     OPT_SPEC=":h-:"
     while getopts "$OPT_SPEC" optchar; do
@@ -230,6 +276,9 @@ function main() {
 
     echo "--Install cvuqdisk rpm-------------------"
     installCvuqdisk
+
+    echo "--Create directory-----------------------"
+    createOraDir
 }
 
 main

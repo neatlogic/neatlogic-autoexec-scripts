@@ -43,20 +43,6 @@ function SUDO_CMD() {
     fi
 }
 
-function createOraDir() {
-    if [ ! -e "$INVENTORY_LOCATION" ]; then
-        mkdir -p $INVENTORY_LOCATION
-        DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
-        DO_CMD chmod -R 775 $INVENTORY_LOCATION
-    fi
-
-    mkdir -p $ORACLE_BASE
-    mkdir -p $ORACLE_BASE/cfgtoollogs
-    mkdir -p $ORACLE_HOME
-    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $ORACLE_BASE
-    DO_CMD chmod -R 775 $ORACLE_BASE
-}
-
 function setInstallEnv() {
     #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
     #然后eval为shell的变量
@@ -143,7 +129,6 @@ function parseOpts() {
 parseOpts "$@"
 setInstallEnv
 setOracleSidInProfile
-createOraDir
 
 #把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
 if [ ! -z "$RESPONSE_FILE" ]; then

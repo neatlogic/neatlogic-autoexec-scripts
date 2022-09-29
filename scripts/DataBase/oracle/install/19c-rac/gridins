@@ -64,19 +64,6 @@ function SUDO_CMD_CONT() {
     fi
 }
 
-function createOraDir() {
-    mkdir -p $INVENTORY_LOCATION
-    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
-    DO_CMD chmod -R 775 $INVENTORY_LOCATION
-
-    mkdir -p $GRID_BASE
-    mkdir -p $GRID_HOME
-    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $GRID_BASE
-    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $GRID_HOME
-    DO_CMD chmod -R 775 $GRID_BASE
-    DO_CMD chmod -R 775 $GRID_HOME
-}
-
 function setInstallEnv() {
     #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
     #然后eval为shell的变量
@@ -121,6 +108,10 @@ function parseOpts() {
                 EXEC_ENV="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            ASM_PWD)
+                ASM_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             CLUSTER_NODES_DEF)
                 CLUSTER_NODES_DEF="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -163,7 +154,6 @@ function parseOpts() {
 
 parseOpts "$@"
 setInstallEnv
-createOraDir
 setOracleSidInProfile
 
 #把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
