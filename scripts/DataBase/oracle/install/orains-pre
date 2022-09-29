@@ -205,8 +205,32 @@ function parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GRID_BASE)
+                GRID_BASE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             GRID_HOME)
                 GRID_HOME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            INVENTORY_LOCATION)
+                INVENTORY_LOCATION="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_BASE)
+                ORACLE_BASE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_HOME)
+                ORACLE_HOME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             UNIX_GROUP_NAME)

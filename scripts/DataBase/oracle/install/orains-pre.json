@@ -33,6 +33,15 @@
             "validate": ""
         },
         {
+            "opt": "INVENTORY_LOCATION",
+            "name": "Inventory目录",
+            "help": "Oracle Inventory目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "ORACLE_USER",
             "name": "ORACLE_USER",
             "help": "GRID安装用户",
