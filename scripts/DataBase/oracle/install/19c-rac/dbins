@@ -69,20 +69,6 @@ function setOracleSidInProfile() {
     fi
 }
 
-if [ -n "$RESPONSE_FILE"]; then
-    if [ ! -e "$RESPONSE_FILE" ]; then
-        echo "ERROR: Response file:$RESPONSE_FILE not exists."
-        exit 3
-    else
-        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/db_auto.rsp
-        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
-        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
-        if [ $? != 0 ]; then
-            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
-            exit 4
-        fi
-    fi
-fi
 
 #参数处理,全部用长参数
 ######################################
@@ -133,17 +119,15 @@ setInstallEnv
 setOracleSidInProfile
 
 #把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
-if [ ! -z "$RESPONSE_FILE" ]; then
-    RESPONSE_FILE=${RESPONSE_FILE#*\"}
-    RESPONSE_FILE=${RESPONSE_FILE%%\"*}
+if [ -n "$RESPONSE_FILE" ]; then
     if [ ! -e "$RESPONSE_FILE" ]; then
         echo "ERROR: Response file:$RESPONSE_FILE not exists."
         exit 3
     else
-        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/gridsetup_auto.rsp
+        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/db_auto.rsp
         echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
         cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
-        if [ $?!=0 ]; then
+        if [ $? != 0 ]; then
             echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
             exit 4
         fi
