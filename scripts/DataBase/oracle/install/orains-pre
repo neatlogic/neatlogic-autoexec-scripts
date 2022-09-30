@@ -153,40 +153,10 @@ function installCvuqdisk() {
     rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
 }
 
-function setOracleSidInProfile() {
-    #给profile里设置的ORACLE_SID加上序号
-    GRID_USER_HOME=$(eval echo ~$GRID_USER)
-    SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
-    if [ -f "$GRID_USER_HOME/.bash_profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*?)\d*/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.bash_profile"
-    fi
-    if [ -f "$GRID_USER_HOME/.profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*?)\d*/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.profile"
-    fi
-
-    #给profile里设置的ORACLE_SID加上序号
-    ORACLE_USER_HOME=$(eval echo ~$ORACLE_USER)
-    SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
-    if [ -f "$ORACLE_USER_HOME/.bash_profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*?)\d*/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.bash_profile"
-    fi
-    if [ -f "$ORACLE_USER_HOME/.profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*)\d*/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.profile"
-    fi
-}
-
 function createOraDir() {
     if [ -z "$INVENTORY_LOCATION" ] || [ "$INVENTORY_LOCATION" == "/" ]; then
         HAS_ERROR=1
         echo "ERROR: Inventory directory:$INVENTORY_LOCATION is invalid."
-    fi
-
-    if [ -z "$GRID_BASE" ] || [ "$GRID_BASE" == "/" ]; then
-        echo "WARN: Grid base directory:$GRID_BASE is invalid."
-    fi
-
-    if [ -z "$GRID_HOME" ] || [ "$GRID_HOME" == "/" ]; then
-        echo "WARN: Grid home directory:$GRID_HOME is invalid."
     fi
 
     if [ -z "$ORACLE_BASE" ] || [ "$ORACLE_BASE" == "/" ]; then
@@ -204,15 +174,8 @@ function createOraDir() {
     fi
 
     mkdir -p $INVENTORY_LOCATION
-    DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
     DO_CMD chmod -R 775 $INVENTORY_LOCATION
-
-    if [ -n "$GRID_BASE" ] && [ "$GRID_BASE" != "/" ] && [ -n "$GRID_HOME" ] && [ "$GRID_HOME" != "/" ]; then
-        mkdir -p $GRID_BASE
-        mkdir -p $GRID_HOME
-        DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME "$GRID_BASE" "$GRID_HOME"
-        DO_CMD chmod -R 775 "$GRID_BASE" "$GRID_HOME"
-    fi
 
     mkdir -p $ORACLE_BASE
     mkdir -p $ORACLE_BASE/cfgtoollogs
@@ -227,18 +190,6 @@ function parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
-            GRID_USER)
-                GRID_USER="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            GRID_BASE)
-                GRID_BASE="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            GRID_HOME)
-                GRID_HOME="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
             INVENTORY_LOCATION)
                 INVENTORY_LOCATION="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -324,8 +275,5 @@ installCvuqdisk
 
 echo "--Create directory-----------------------"
 createOraDir
-
-echo "--Add sequence number to ORACLE_SID------"
-setOracleSidInProfile
 
 exit $HAS_ERROR

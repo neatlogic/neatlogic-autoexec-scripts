@@ -3,44 +3,9 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
-    "description": "Oracle安装OS其他前置工作(root用户执行服务配置)",
+    "description": "非Grid的Oracle安装OS其他前置工作(root用户执行服务配置)",
     "enabled": 1,
-    "option": [{
-            "opt": "GRID_USER",
-            "name": "GRID_USER",
-            "help": "GRID安装用户",
-            "type": "text",
-            "defaultValue": "grid",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "GRID_BASE",
-            "name": "GRID_BASE",
-            "help": "GRID_BASE目录",
-            "type": "text",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "GRID_HOME",
-            "name": "GRID_HOME",
-            "help": "GRID安装的目录",
-            "type": "text",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "INVENTORY_LOCATION",
-            "name": "Inventory目录",
-            "help": "Oracle Inventory目录",
-            "type": "text",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
+    "option": [
         {
             "opt": "ORACLE_USER",
             "name": "ORACLE_USER",
@@ -63,6 +28,15 @@
             "opt": "ORACLE_HOME",
             "name": "ORACLE_HOME",
             "help": "GRID安装的目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INVENTORY_LOCATION",
+            "name": "Inventory目录",
+            "help": "Oracle Inventory目录",
             "type": "text",
             "defaultValue": "",
             "required": "true",
