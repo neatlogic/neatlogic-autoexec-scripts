@@ -79,18 +79,6 @@ function setInstallEnv() {
     fi
 }
 
-function setOracleSidInProfile() {
-    #给profile里设置的ORACLE_SID加上序号
-    GRID_USER_HOME=$(eval echo ~$GRID_USER)
-    SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
-    if [ -f "$GRID_USER_HOME/.bash_profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.bash_profile"
-    fi
-    if [ -f "$GRID_USER_HOME/.profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S+)/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.profile"
-    fi
-}
-
 #参数处理,全部用长参数
 ######################################
 function parseOpts() {
@@ -157,7 +145,6 @@ function parseOpts() {
 
 parseOpts "$@"
 setInstallEnv
-setOracleSidInProfile
 
 #把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
 if [ -n "$RESPONSE_FILE" ]; then
