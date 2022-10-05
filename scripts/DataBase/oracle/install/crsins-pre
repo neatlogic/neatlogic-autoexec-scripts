@@ -150,13 +150,18 @@ function disableSELinux() {
 function installCvuqdisk() {
     #安装ASM的磁盘工具
     export CVUQDISK_GRP=$UNIX_GROUP_NAME
-    cvuqdiskFile=$GRID_HOME/cv/rpm/cvuqdisk-*.rpm
-    if [ -f "$cvuqdiskFile" ]; then
+    cvuqdiskFile=$(ls $GRID_HOME/cv/rpm/cvuqdisk-*.rpm 2>/dev/null)
+    if [ -n "$cvuqdiskFile" ] && [ -f "$cvuqdiskFile" ]; then
+        echo rpm -ivh "$cvuqdiskFile"
         rpm -ivh "$cvuqdiskFile"
     else
-        cvuqdiskFile=/tmp/cvuqdisk-*.rpm
-        if [ -f "$cvuqdiskFile" ]; then
+        cvuqdiskFile=$(ls /tmp/cvuqdisk-*.rpm 2>/dev/null)
+        if [ -n "$cvuqdiskFile" ] && [ -f "$cvuqdiskFile" ]; then
+            echo rpm -ivh "$cvuqdiskFile"
             rpm -ivh "$cvuqdiskFile"
+        else
+            echo "ERROR: Can not find rpm package for cvuqdisk."
+            exit -2
         fi
     fi
 }
