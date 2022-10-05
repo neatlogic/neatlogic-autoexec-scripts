@@ -173,6 +173,16 @@ function createOraDir() {
         exit 1
     fi
 
+    mkdir -p $INVENTORY_LOCATION
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
+    DO_CMD chmod -R 775 $INVENTORY_LOCATION
+
+    mkdir -p $ORACLE_BASE
+    mkdir -p $ORACLE_BASE/cfgtoollogs
+    mkdir -p $ORACLE_HOME
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME "$ORACLE_BASE" "$ORACLE_HOME"
+    DO_CMD chmod -R 775 "$ORACLE_BASE" "$ORACLE_HOME"
+
     P_ORACLE_BASE=$(dirname "$ORACLE_BASE")
     P_ORACLE_HOME=$(dirname "$ORACLE_HOME")
     if [ -n "$P_ORACLE_BASE" ] && [ "$P_ORACLE_BASE" != '/' ]; then
@@ -183,16 +193,6 @@ function createOraDir() {
         chgrp $UNIX_GROUP_NAME "$P_ORACLE_HOME"
         chmod g+rwx "$P_ORACLE_HOME"
     fi
-
-    mkdir -p $INVENTORY_LOCATION
-    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
-    DO_CMD chmod -R 775 $INVENTORY_LOCATION
-
-    mkdir -p $ORACLE_BASE
-    mkdir -p $ORACLE_BASE/cfgtoollogs
-    mkdir -p $ORACLE_HOME
-    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME "$ORACLE_BASE" "$ORACLE_HOME"
-    DO_CMD chmod -R 775 "$ORACLE_BASE" "$ORACLE_HOME"
 }
 
 function parseOpts() {

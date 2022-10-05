@@ -38,6 +38,7 @@ fi
 #检查集群状态
 SUDO_CMD $GRID_USER crsctl check crs
 SUDO_CMD $GRID_USER crsctl check cluster
+SUDO_CMD $GRID_USER crsctl stat res -t
 SUDO_CMD $GRID_USER olsnodes -n -i -s
 SUDO_CMD $GRID_USER crsctl query css votedisk
 SUDO_CMD $GRID_USER srvctl config scan

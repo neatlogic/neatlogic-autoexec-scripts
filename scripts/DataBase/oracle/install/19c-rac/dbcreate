@@ -160,7 +160,7 @@ if [ -n "$RESPONSE_FILE" ]; then
     else
         REAL_RESPONSE_FILE=$ORACLE_HOME/assistants/dbca/dbca_auto.rsp
         echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
-        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $ORACLE_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
         if [ $? != 0 ]; then
             echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
             exit 4
@@ -224,8 +224,5 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
 -datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
 -recoveryAreaDestination "+$ARCH_DISKGROUP" \
 -recoveryGroupName "+$ARCH_DISKGROUP"
-
-#集群验证
-SUDO_CMD_CONT $ORACLE_USER crsctl stat res -t
 
 exit $HAS_ERROR
