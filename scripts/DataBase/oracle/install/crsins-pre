@@ -150,7 +150,15 @@ function disableSELinux() {
 function installCvuqdisk() {
     #安装ASM的磁盘工具
     export CVUQDISK_GRP=$UNIX_GROUP_NAME
-    rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
+    cvuqdiskFile=$GRID_HOME/cv/rpm/cvuqdisk-*.rpm
+    if [ -f "$cvuqdiskFile" ]; then
+        rpm -ivh "$cvuqdiskFile"
+    else
+        cvuqdiskFile=/tmp/cvuqdisk-*.rpm
+        if [ -f "$cvuqdiskFile" ]; then
+            rpm -ivh "$cvuqdiskFile"
+        fi
+    fi
 }
 
 function setOracleSidInProfile() {
