@@ -166,10 +166,11 @@ else
     echo "Uninstall success."
 fi
 
+oracleEnv=${oraEnv//$'\n'/\\n}
 #Save oracle env
 cat <<EOF >"output.json"
 {
-    "oracleEnv":"${oraEnv//$'\n'/\\n}"
+    "oracleEnv":"$oracleEnv"
 }
 EOF
 
