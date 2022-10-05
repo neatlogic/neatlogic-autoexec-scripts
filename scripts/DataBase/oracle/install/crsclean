@@ -116,8 +116,10 @@ function manualUnInstall() {
     if [ "$initType" == "systemd" ]; then
         systemctl stop ohasd
         systemctl disable ohasd
+        systemctl daemon-reload
         systemctl stop cssd
         systemctl disable cssd
+        systemctl daemon-reload
         systemctl stop crs
         systemctl disable crs
         systemctl daemon-reload
