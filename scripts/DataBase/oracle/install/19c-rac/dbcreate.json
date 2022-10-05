@@ -5,12 +5,47 @@
     "interpreter": "bash",
     "description": "创建Oracle DB库(在root用户下执行, 会su到oracle用户执行)",
     "enabled": 1,
-    "option": [{
+    "option": [
+        {
             "opt": "EXEC_ENV",
             "name": "变量设置",
             "help": "执行前的变量设（使用${}引用作业参数）",
             "type": "textarea",
             "defaultValue": "ORACLE_USER=${ORACLE_USER}\nORACLE_BASE=${ORACLE_BASE}\nORACLE_HOME=${ORACLE_HOME}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "CV_ASSUME_DISTID",
+            "name": "对应OS版本",
+            "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "自动",
+                        "value": "AUTO"
+                    },
+                    {
+                        "text": "OL7",
+                        "value": "OL7"
+                    },
+                    {
+                        "text": "OEL7.8",
+                        "value": "OEL7.8"
+                    },
+                    {
+                        "text": "OL8",
+                        "value": "OL8"
+                    },
+                    {
+                        "text": "OL9",
+                        "value": "OL9"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "AUTO",
             "required": "true",
             "validate": ""
         },
@@ -47,7 +82,8 @@
             "help": "DB配置类型",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "RAC",
                         "value": "RAC"
                     },
@@ -72,7 +108,8 @@
             "help": "DB目的类型",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "多用途",
                         "value": "MULTIPURPOSE"
                     },
@@ -97,7 +134,8 @@
             "help": "是否CDB",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "true"
                     },
@@ -127,7 +165,8 @@
             "help": "安装DB字符集",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "UTF8",
                         "value": "AL32UTF8"
                     },
@@ -192,7 +231,8 @@
             "help": "存储类型",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "ASM",
                         "value": "ASM"
                     },
