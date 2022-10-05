@@ -61,11 +61,17 @@ function setInstallEnv() {
 }
 
 function removeUserAndGroups() {
+    if [ -z "$ORACLE_UID" ]; then
+        return
+    fi
+
+    usermod -g10 $ORACLE_USER
+
     #delete group id bigger than 1000
     groups=$(id -G $ORACLE_USER)
     for oraGid in $(id -G $ORACLE_USER); do
         if [ $oraGid -gt 1000 ]; then
-            groupName=$(getent group GID | cut -d: -f1)
+            groupName=$(getent group $oraGid | cut -d: -f1)
             groupdel $groupName
         fi
     done
@@ -75,14 +81,16 @@ function removeUserAndGroups() {
 }
 
 function manualUnInstall() {
-    #kill oracle process
-    SUCALL_ORA_CMD $ORACLE_USER shutdown immediate
-    SUCALL_ORA_CMD $ORACLE_USER lsnrctl stop
-    pkill -u $ORACLE_USER
-    exitCode=$?
-    if [ $exitCode == 0 ]; then
-        sleep 5
-        pkill -9 -u $ORACLE_USER
+    if [ -n "$ORACLE_UID" ]; then
+        #kill oracle process
+        SUCALL_ORA_CMD $ORACLE_USER shutdown immediate
+        SUCALL_ORA_CMD $ORACLE_USER lsnrctl stop
+        pkill -u $ORACLE_USER
+        exitCode=$?
+        if [ $exitCode == 0 ]; then
+            sleep 5
+            pkill -9 -u $ORACLE_USER
+        fi
     fi
 
     #remove ORACLE_HOME
@@ -100,7 +108,9 @@ function manualUnInstall() {
     rm -rf /opt/ORCLfmap
 
     #stop and disable service
-    sed -i "/$ORACLE_HOME/d" /etc/rc.local
+    if [ -n "$ORACLE_HOME" ]; then
+        sed -i "/${ORACLE_HOME//\//\\\/}/"d /etc/rc.local
+    fi
 
     if [ "$DEL_USER" == "1" ]; then
         removeUserAndGroups
@@ -149,11 +159,22 @@ function parseOpts() {
 
 parseOpts "$@"
 
+if [ -z "$ORACLE_USER" ]; then
+    ORACLE_USER=oracle
+fi
+
+ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
+if [ -z "$ORACLE_UID" ]; then
+    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
+fi
+
 #如果没有给出环境变量，则可能是直接执行强制删除Oracle，直接获取用户环境变狼
-if [ -z "$EXEC_ENV" ]; then
+if [ -z "$EXEC_ENV" ] && [ -n "$ORACLE_UID" ]; then
     EXEC_ENV=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 fi
-setInstallEnv
+if [ -n "$EXEC_ENV" ]; then
+    setInstallEnv
+fi
 
 if [ -z "$ORACLE_HOME" ]; then
     echo "ERROR: Environment ORACLE_HOME not set by option --EXEC_ENV, can not perform uninstall oracle."

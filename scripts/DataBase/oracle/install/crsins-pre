@@ -203,6 +203,27 @@ function createOraDir() {
         exit 1
     fi
 
+    P_GRID_BASE=$(dirname "$GRID_BASE")
+    P_GRID_HOME=$(dirname "$GRID_HOME")
+    P_ORACLE_BASE=$(dirname "$ORACLE_BASE")
+    P_ORACLE_HOME=$(dirname "$ORACLE_HOME")
+    if [ -n "$P_GRID_BASE" ] && [ "$P_GRID_BASE" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_GRID_BASE"
+        chmod g+rwx "$P_GRID_BASE"
+    fi
+    if [ -n "$P_GRID_HOME" ] && [ "$P_GRID_HOME" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_GRID_HOME"
+        chmod g+rwx "$P_GRID_HOME"
+    fi
+    if [ -n "$P_ORACLE_BASE" ] && [ "$P_ORACLE_BASE" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_ORACLE_BASE"
+        chmod g+rwx "$P_ORACLE_BASE"
+    fi
+    if [ -n "$P_ORACLE_HOME" ] && [ "$P_ORACLE_HOME" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_ORACLE_HOME"
+        chmod g+rwx "$P_ORACLE_HOME"
+    fi
+
     mkdir -p $INVENTORY_LOCATION
     DO_CMD chown -R $GRID_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
     DO_CMD chmod -R 775 $INVENTORY_LOCATION

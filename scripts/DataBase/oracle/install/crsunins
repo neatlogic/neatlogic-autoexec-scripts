@@ -49,6 +49,13 @@ function SUCALL_ORA_CMD() {
 }
 
 function removeUserAndGroups() {
+    if [ -z "$GRID_UID" ]; then
+        return
+    fi
+
+    #delete GRID_USER
+    usermod -g10 $GRID_USER
+
     #delete group id bigger than 1000
     groups=$(id -G $GRID_USER)
     for oraGid in $(id -G $GRID_USER); do
@@ -60,6 +67,18 @@ function removeUserAndGroups() {
 
     #delete GRID_USER
     userdel $GRID_USER
+}
+
+function setInstallEnv() {
+    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
+    #然后eval为shell的变量
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ ! -z "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
 }
 
 #参数处理,全部用长参数
@@ -108,6 +127,11 @@ if [ -z "$GRID_USER" ]; then
     GRID_USER=oracle
 fi
 
+GRID_UID=$(id -u $GRID_USER 2>/dev/null)
+if [ -z "$GRID_UID" ]; then
+    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
+fi
+
 ENV_DISTID=""
 if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
@@ -115,8 +139,15 @@ fi
 
 oraEnv=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
 echo "$oraEnv"
+EXEC_ENV=$oraEnv
+setInstallEnv
 
-SUCALL_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp 2>&1 | tee > oragridunins_check.out'
+if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
+    echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists."
+    exit 0
+fi
+
+SUCALL_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
     echo "WARN: Uninstall failed"
@@ -125,7 +156,7 @@ fi
 
 rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
 
-SUCALL_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent --paramfile '$rspFile' | tee > oragridunins.out'
+SUCALL_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
     echo "WARN: Uninstall failed"
@@ -137,15 +168,23 @@ else
 fi
 
 #从日志中后去root命令行
-rootCmds=$(grep 'crs/install/rootcrs.sh -force  -deconfig -paramfile' oragridunins.out)
-rootCmdsArray=($rootCmds)
-rootCmd=${rootCmdsArray[0]}
+rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
+rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
+uninsDir=$(echo $rspFile | cut -d/ -f3)
+
+rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
+lastNodeCmd="$rootCmd -lastnode"
+if [ -f "/tmp/$uninsDir/rootdeinstall.sh" ]; then
+    lastNodeCmd="/tmp/$uninsDir/rootdeinstall.sh"
+fi
+
+gridEnv=${oraEnv//$'\n'/\\n/}
 #Save oracle env
 cat <<EOF >"output.json"
 {
-    "gridEnv":"${oraEnv//\n/\\n}",
-    "uninstRootCmd":"${rootCmd//\"/\'/}"
-    "uninstLastNodeRootCmd":"${rootCmd//\"/\'/} -lastnode"
+    "gridEnv":"$gridEnv",
+    "uninstRootCmd":"$rootCmd",
+    "uninstLastNodeRootCmd":"$lastNodeCmd"
 }
 EOF
 

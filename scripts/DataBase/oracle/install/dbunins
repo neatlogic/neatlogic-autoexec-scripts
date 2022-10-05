@@ -49,6 +49,12 @@ function SUCALL_ORA_CMD() {
 }
 
 function removeUserAndGroups() {
+    if [ -z "$ORACLE_UID" ]; then
+        return
+    fi
+
+    usermod -g10 $ORACLE_USER
+
     #delete group id bigger than 1000
     groups=$(id -G $ORACLE_USER)
     for oraGid in $(id -G $ORACLE_USER); do
@@ -60,6 +66,18 @@ function removeUserAndGroups() {
 
     #delete oracle_user
     userdel $ORACLE_USER
+}
+
+function setInstallEnv() {
+    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
+    #然后eval为shell的变量
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ ! -z "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
 }
 
 #参数处理,全部用长参数
@@ -108,6 +126,11 @@ if [ -z "$ORACLE_USER" ]; then
     ORACLE_USER=oracle
 fi
 
+ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
+if [ -z "$ORACLE_UID" ]; then
+    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
+fi
+
 ENV_DISTID=""
 if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
@@ -115,8 +138,15 @@ fi
 
 oraEnv=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
+EXEC_ENV=$oraEnv
+setInstallEnv
 
-SUCALL_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp 2>&1 | tee > oradbunins_check.out'
+if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
+    echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists."
+    exit 0
+fi
+
+SUCALL_ORA_CMD $ORACLE_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oradbunins_check.out
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
     echo "WARN: Uninstall failed"
@@ -125,7 +155,7 @@ fi
 
 rspFile=$(grep "Location of response file generated:" oradbunins_check.out | cut -d: -f 2)
 
-SUCALL_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent --paramfile '$rspFile
+SUCALL_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
     echo "WARN: Uninstall failed"
@@ -139,7 +169,7 @@ fi
 #Save oracle env
 cat <<EOF >"output.json"
 {
-    "oracleEnv":"${oraEnv//\n/\\n}"
+    "oracleEnv":"${oraEnv//$'\n'/\\n/}"
 }
 EOF
 

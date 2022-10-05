@@ -61,11 +61,18 @@ function setInstallEnv() {
 }
 
 function removeUserAndGroups() {
+    if [ -z "$GRID_UID" ]; then
+        return
+    fi
+
+    #delete GRID_USER
+    usermod -g10 $GRID_USER
+
     #delete group id bigger than 1000
     groups=$(id -G $GRID_USER)
     for oraGid in $(id -G $GRID_USER); do
         if [ $oraGid -gt 1000 ]; then
-            groupName=$(getent group GID | cut -d: -f1)
+            groupName=$(getent group $oraGid | cut -d: -f1)
             groupdel $groupName
         fi
     done
@@ -75,14 +82,16 @@ function removeUserAndGroups() {
 }
 
 function manualUnInstall() {
-    #kill oracle process
-    SUCALL_ORA_CMD $GRID_USER shutdown immediate
-    SUCALL_ORA_CMD $GRID_USER lsnrctl stop
-    pkill -u $GRID_USER
-    exitCode=$?
-    if [ $exitCode == 0 ]; then
-        sleep 5
-        pkill -9 -u $GRID_USER
+    if [ -n "$GRID_UID" ]; then
+        #kill oracle process
+        SUCALL_ORA_CMD $GRID_USER shutdown immediate
+        SUCALL_ORA_CMD $GRID_USER lsnrctl stop
+        pkill -u $GRID_USER
+        exitCode=$?
+        if [ $exitCode == 0 ]; then
+            sleep 5
+            pkill -9 -u $GRID_USER
+        fi
     fi
 
     #remove ORACLE_HOME
@@ -111,7 +120,7 @@ function manualUnInstall() {
         systemctl disable cssd
         systemctl stop crs
         systemctl disable crs
-
+        systemctl daemon-reload
     else
         service ohasd stop
         chkconfig ohasd off
@@ -121,7 +130,10 @@ function manualUnInstall() {
         chkconfig crs off
     fi
 
-    sed -i "/$ORACLE_HOME/d" /etc/rc.local
+    if [ -n "$ORACLE_HOME" ]; then
+        sed -i "/${ORACLE_HOME//\//\\\/}/"d /etc/rc.local
+    fi
+
     rm -f /etc/init.d/init.ohasd
 
     if [ "$DEL_USER" == "1" ]; then
@@ -171,11 +183,22 @@ function parseOpts() {
 
 parseOpts "$@"
 
+if [ -z "$GRID_USER" ]; then
+    GRID_USER=oracle
+fi
+
+GRID_UID=$(id -u $GRID_USER 2>/dev/null)
+if [ -z "$GRID_UID" ]; then
+    echo "WARN: User $GRID_USER not exists, maybe already uninstalled."
+fi
+
 #如果没有给出环境变量，则可能是直接执行强制删除Oracle，直接获取用户环境变狼
-if [ -z "$EXEC_ENV" ]; then
+if [ -z "$EXEC_ENV" ] && [ -n "$GRID_UID" ]; then
     EXEC_ENV=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
 fi
-setInstallEnv
+if [ -n "$EXEC_ENV" ]; then
+    setInstallEnv
+fi
 
 if [ -z "$ORACLE_HOME" ]; then
     echo "ERROR: Environment ORACLE_HOME not set by option --EXEC_ENV, can not perform uninstall oracle."
