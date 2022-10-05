@@ -1,0 +1,152 @@
+#!/bin/bash
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function CALL_ORA_CMD() {
+    echo Exec ommand: $@
+    $@
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+
+    return $exitCode
+}
+
+function SUCALL_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+
+    return $exitCode
+}
+
+function removeUserAndGroups() {
+    #delete group id bigger than 1000
+    groups=$(id -G $GRID_USER)
+    for oraGid in $(id -G $GRID_USER); do
+        if [ $oraGid -gt 1000 ]; then
+            groupName=$(getent group GID | cut -d: -f1)
+            groupdel $groupName
+        fi
+    done
+
+    #delete GRID_USER
+    userdel $GRID_USER
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DEL_USER)
+                DEL_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$GRID_USER" ]; then
+    GRID_USER=oracle
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+oraEnv=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
+echo "$oraEnv"
+
+SUCALL_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp 2>&1 | tee > oragridunins_check.out'
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    echo "WARN: Uninstall failed"
+    exit $exitCode
+fi
+
+rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
+
+SUCALL_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent --paramfile '$rspFile' | tee > oragridunins.out'
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    echo "WARN: Uninstall failed"
+else
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+    echo "Uninstall success."
+fi
+
+#从日志中后去root命令行
+rootCmds=$(grep 'crs/install/rootcrs.sh -force  -deconfig -paramfile' oragridunins.out)
+rootCmdsArray=($rootCmds)
+rootCmd=${rootCmdsArray[0]}
+#Save oracle env
+cat <<EOF >"output.json"
+{
+    "gridEnv":"${oraEnv//\n/\\n}",
+    "uninstRootCmd":"${rootCmd//\"/\'/}"
+    "uninstLastNodeRootCmd":"${rootCmd//\"/\'/} -lastnode"
+}
+EOF
+
+echo "INFO: Use dbclean to clean process and directory to do clean."

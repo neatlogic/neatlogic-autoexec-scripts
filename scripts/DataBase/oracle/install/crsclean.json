@@ -1,0 +1,49 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "description": "Oracle Grid软件强制手工卸载(在root用户下执行, 会su到oracle用户执行)",
+    "enabled": 1,
+    "option": [{
+            "opt": "EXEC_ENV",
+            "name": "变量设置",
+            "help": "执行前的变量设（使用${}引用作业参数）",
+            "type": "textarea",
+            "defaultValue": "ORACLE_USER=${ORACLE_USER}\nUNIX_GROUP_NAME=${UNIX_GROUP_NAME}\nINVENTORY_LOCATION=${INVENTORY_LOCATION}\nORACLE_BASE=${ORACLE_BASE}\nORACLE_HOME=${ORACLE_HOME}\nGRID_BASE=${GRID_BASE}\nGRID_HOME=${GRID_HOME}\nOSDBA_GROUP=${OSDBA_GROUP}\nOSOPER_GROUP=${OSOPER_GROUP}\nOSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}\nOSDGDBA_GROUP=${OSDGDBA_GROUP}\nOSKMDBA_GROUP=${OSKMDBA_GROUP}\nOSRACDBA_GROUP=${OSRACDBA_GROUP}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "GRID_USER",
+            "name": "GRID用户",
+            "help": "Oracle Grid软件安装用户, 默认是grid",
+            "type": "text",
+            "defaultValue": "grid",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DEL_USER",
+            "name": "删除用户",
+            "help": "软件卸载后, 是否删除Oracle用户和相关的用户组",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "1",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

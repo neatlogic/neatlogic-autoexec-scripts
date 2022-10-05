@@ -1,0 +1,163 @@
+#!/bin/bash
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function CALL_ORA_CMD() {
+    echo Exec ommand: $@
+    $@
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+
+    return $exitCode
+}
+
+function SUCALL_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+
+    return $exitCode
+}
+
+function setInstallEnv() {
+    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
+    #然后eval为shell的变量
+    EXEC_ENV_TXT=$(echo $EXEC_ENV | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ ! -z "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
+function removeUserAndGroups() {
+    #delete group id bigger than 1000
+    groups=$(id -G $ORACLE_USER)
+    for oraGid in $(id -G $ORACLE_USER); do
+        if [ $oraGid -gt 1000 ]; then
+            groupName=$(getent group GID | cut -d: -f1)
+            groupdel $groupName
+        fi
+    done
+
+    #delete oracle_user
+    userdel $ORACLE_USER
+}
+
+function manualUnInstall() {
+    #kill oracle process
+    SUCALL_ORA_CMD $ORACLE_USER shutdown immediate
+    SUCALL_ORA_CMD $ORACLE_USER lsnrctl stop
+    pkill -u $ORACLE_USER
+    exitCode=$?
+    if [ $exitCode == 0 ]; then
+        sleep 5
+        pkill -9 -u $ORACLE_USER
+    fi
+
+    #remove ORACLE_HOME
+
+    #remove script in /usr/local/bin
+    rm -f /usr/local/bin/dbhome
+    rm -f /usr/local/bin/oraenv
+    rm -f /usr/local/bin/coraenv
+
+    #remove config in /etc
+    rm -f /etc/oratab
+    rm -f /etc/oraInst.loc
+
+    #remove /opt/ORCLfmap
+    rm -rf /opt/ORCLfmap
+
+    #stop and disable service
+    sed -i "/$ORACLE_HOME/d" /etc/rc.local
+
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DEL_USER)
+                DEL_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+#如果没有给出环境变量，则可能是直接执行强制删除Oracle，直接获取用户环境变狼
+if [ -z "$EXEC_ENV" ]; then
+    EXEC_ENV=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
+fi
+setInstallEnv
+
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Environment ORACLE_HOME not set by option --EXEC_ENV, can not perform uninstall oracle."
+    exit -1
+else
+    manualUnInstall
+fi
