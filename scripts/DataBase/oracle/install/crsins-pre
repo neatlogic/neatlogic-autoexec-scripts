@@ -158,20 +158,20 @@ function setOracleSidInProfile() {
     GRID_USER_HOME=$(eval echo ~$GRID_USER)
     SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
     if [ -f "$GRID_USER_HOME/.bash_profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*?)\d*/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.bash_profile"
+        perl -i -pe s'/(ORACLE_SID=\S+)\d*/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.bash_profile"
     fi
     if [ -f "$GRID_USER_HOME/.profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*?)\d*/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.profile"
+        perl -i -pe s'/(ORACLE_SID=\S+)\d*/${1}'$SEQ_NO'/' "$GRID_USER_HOME/.profile"
     fi
 
     #给profile里设置的ORACLE_SID加上序号
     ORACLE_USER_HOME=$(eval echo ~$ORACLE_USER)
     SEQ_NO=$(hostname | perl -pe 's/[^\d]*//g')
     if [ -f "$ORACLE_USER_HOME/.bash_profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*?)\d*/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.bash_profile"
+        perl -i -pe s'/(ORACLE_SID=\S+)\d*/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.bash_profile"
     fi
     if [ -f "$ORACLE_USER_HOME/.profile" ]; then
-        perl -i -pe s'/(ORACLE_SID=\S*)\d*/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.profile"
+        perl -i -pe s'/(ORACLE_SID=\S+)\d*/${1}'$SEQ_NO'/' "$ORACLE_USER_HOME/.profile"
     fi
 }
 
