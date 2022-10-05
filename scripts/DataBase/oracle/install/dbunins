@@ -169,7 +169,7 @@ fi
 #Save oracle env
 cat <<EOF >"output.json"
 {
-    "oracleEnv":"${oraEnv//$'\n'/\\n/}"
+    "oracleEnv":"${oraEnv//$'\n'/\\n}"
 }
 EOF
 

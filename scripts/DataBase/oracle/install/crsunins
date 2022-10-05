@@ -178,7 +178,7 @@ if [ -f "/tmp/$uninsDir/rootdeinstall.sh" ]; then
     lastNodeCmd="/tmp/$uninsDir/rootdeinstall.sh"
 fi
 
-gridEnv=${oraEnv//$'\n'/\\n/}
+gridEnv=${oraEnv//$'\n'/\\n}
 #Save oracle env
 cat <<EOF >"output.json"
 {
