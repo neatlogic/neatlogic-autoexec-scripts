@@ -3,8 +3,8 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "创建Oracle DB库(在root用户下执行, 会su到oracle用户执行)",
-    "enabled": 1,
     "option": [
         {
             "opt": "EXEC_ENV",
@@ -54,7 +54,7 @@
             "name": "静默响应文件",
             "help": "静默安装的响应文件",
             "type": "file",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "true",
             "validate": ""
         },
@@ -194,7 +194,7 @@
             "name": "CDB密码",
             "help": "CDB默认密码",
             "type": "password",
-            "defaultValue": "Oracle123",
+            "defaultValue": "{RC4}a251f3fa848b948696",
             "required": "true",
             "validate": ""
         },
@@ -203,7 +203,7 @@
             "name": "PDB密码",
             "help": "PDB默认密码",
             "type": "password",
-            "defaultValue": "Oracle123",
+            "defaultValue": "{RC4}a251f3fa848b948696",
             "required": "true",
             "validate": ""
         },

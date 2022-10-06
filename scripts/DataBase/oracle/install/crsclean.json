@@ -3,9 +3,10 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "Oracle Grid软件强制手工卸载(在root用户下执行, 会su到oracle用户执行)",
-    "enabled": 1,
-    "option": [{
+    "option": [
+        {
             "opt": "EXEC_ENV",
             "name": "变量设置",
             "help": "执行前的变量设（使用${}引用作业参数）",
@@ -29,7 +30,8 @@
             "help": "软件卸载后, 是否删除Oracle用户和相关的用户组",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "1"
                     },

@@ -3,6 +3,7 @@
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "powershell",
+    "defaultProfile": null,
     "description": "在远程target OS执行工具的Demo",
     "argument": {
         "name": "自由参数",
@@ -13,7 +14,8 @@
         "validate": "",
         "required": "false"
     },
-    "option": [{
+    "option": [
+        {
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
@@ -34,12 +36,14 @@
             "validate": ""
         }
     ],
-    "output": [{
-        "opt": "outtext",
-        "name": "普通输出",
-        "help": "普通输出测试",
-        "type": "text",
-        "defaultValue": null,
-        "required": "false"
-    }]
+    "output": [
+        {
+            "opt": "outtext",
+            "name": "普通输出",
+            "help": "普通输出测试",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
 }

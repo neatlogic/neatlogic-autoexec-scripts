@@ -3,8 +3,8 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "OracleDB安装执行root脚本(root用户执行)",
-    "enabled": 1,
     "option": [
         {
             "opt": "CV_ASSUME_DISTID",
@@ -78,7 +78,8 @@
             "name": "Oracle用户环境变量",
             "help": "Oracle用户的ORACLE开头的环境变量",
             "type": "textarea",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         }
     ]
 }

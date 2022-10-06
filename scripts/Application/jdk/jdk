@@ -62,7 +62,7 @@ function uninstall()
     if [ -n "$filename" ] ; then
        rm -rf "$filename"
     fi
- 
+
     yum -y remove java*
     java -version
     result=0 
@@ -97,14 +97,14 @@ function install()
        groupadd $user 
        useradd $user -g $user
     fi
- 
+
     if [  -n $file  ] ; then 
     	file=`echo $(basename $path)`
         cp -r $path $home
     else 
         cp -r $file $home
     fi
-    
+
     cd $home && tar -xvf $file > /dev/null
     if [ $? != 0 ] ; then
        echo "ERROR:: unpack $file failed."
@@ -126,7 +126,7 @@ CLASSPATH=$JRE_HOME/lib:$JRE_HOME:/lib/tools.jar:$home/$filedir/jre
 export JAVA_HOME PATH CLASSPATH
 EOF
     source $profile
-    
+
     java -version
     if [ $? != 0 ] ;then
        echo "ERROR:: install Jdk $filedir failed."

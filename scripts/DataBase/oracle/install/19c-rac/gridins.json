@@ -3,9 +3,10 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "Oracle Grid软件安装(在root用户下执行, 会su到grid用户执行)",
-    "enabled": 1,
-    "option": [{
+    "option": [
+        {
             "opt": "EXEC_ENV",
             "name": "变量设置",
             "help": "执行前的变量设（使用${}引用作业参数）",
@@ -20,7 +21,8 @@
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -52,7 +54,7 @@
             "name": "ASM管理密码",
             "help": "ASM默认管理密码",
             "type": "password",
-            "defaultValue": "Oracle123",
+            "defaultValue": "{RC4}a251f3fa848b948696",
             "required": "true",
             "validate": ""
         },
@@ -61,7 +63,7 @@
             "name": "静默响应文件",
             "help": "静默安装的响应文件",
             "type": "file",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "true",
             "validate": ""
         },

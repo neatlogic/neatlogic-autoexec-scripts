@@ -3,8 +3,10 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "python",
+    "defaultProfile": null,
     "description": "根据getallnicip工具输出的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
-    "option": [{
+    "option": [
+        {
             "opt": "racname",
             "name": "RAC名",
             "help": "作为节点命名的前缀, 节点名称: RAC名+序号",
@@ -68,40 +70,46 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "ip2HostName",
             "name": "IP到主机名映射",
             "help": "public网卡IP到主机名的映射",
             "type": "json",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         },
         {
             "opt": "hostsConfTxt",
             "name": "hosts配置内容",
             "help": "/etc/hosts配置内容",
             "type": "textarea",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         },
         {
             "opt": "dbClusterNodes",
             "name": "DB集群节点名配置",
             "help": "DB集群节点名配置, 用于Oracle DB的静默安装配置",
             "type": "text",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         },
         {
             "opt": "gridClusterNodes",
             "name": "Grid集群节点名配置",
             "help": "Grid集群节点名配置, 用于Orcle grid的静默安装配置",
             "type": "text",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         },
         {
             "opt": "networkInterfaceList",
             "name": "节点网卡配置",
             "help": "节点网卡配置, 用于Grid的静默安装配置",
             "type": "text",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         }
     ]
 }

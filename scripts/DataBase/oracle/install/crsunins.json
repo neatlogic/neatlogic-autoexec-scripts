@@ -3,15 +3,17 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "OracleDB安装执行root脚本(root用户执行)",
-    "enabled": 1,
-    "option": [{
+    "option": [
+        {
             "opt": "CV_ASSUME_DISTID",
             "name": "对应OS版本",
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -53,7 +55,8 @@
             "help": "软件卸载后, 是否删除Oracle用户和相关的用户组",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "1"
                     },
@@ -69,26 +72,30 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "gridEnv",
             "name": "Grid用户环境变量",
             "help": "Grid用户的ORACLE开头的环境变量",
             "type": "textarea",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         },
         {
             "opt": "uninstRootCmd",
             "name": "CRS卸载root命令",
             "help": "Grid集群卸载root命令(非最后节点)",
             "type": "textarea",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         },
         {
             "opt": "uninstLastNodeRootCmd",
             "name": "CRS卸载root命令-lastnode",
             "help": "Grid集群卸载root命令(最后节点)",
             "type": "textarea",
-            "defaultValue": ""
+            "defaultValue": "",
+            "required": "false"
         }
     ]
 }
