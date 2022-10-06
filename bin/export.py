@@ -43,14 +43,23 @@ def exportJsonInfo(params):
         'Content-Type': 'application/json; charset=utf-8'
     }
 
+    if catalogList is None or len(catalogList) == 0:
+        catalogList = ['/']
+
     for catalogName in catalogList:
         print('INFO: Try to export catalog:' + catalogName + '...')
-        params = {
-            'catalogName': catalogName
-        }
-        postBody = json.dumps(params, ensure_ascii=False)
-        signRequest(serverUser, serverPass, headers, uri, postBody=postBody)
-        request = urllib.request.Request(url, headers=headers, data=postBody.encode('utf-8'))
+
+        if catalogName == '/':
+            signRequest(serverUser, serverPass, headers, uri)
+            request = urllib.request.Request(url, headers=headers)
+        else:
+            params = {
+                'catalogName': catalogName
+            }
+            postBody = json.dumps(params, ensure_ascii=False)
+            signRequest(serverUser, serverPass, headers, uri, postBody=postBody)
+            request = urllib.request.Request(url, headers=headers, data=postBody.encode('utf-8'))
+
         try:
             f = urllib.request.urlopen(request)
         except Exception as ex:
@@ -65,7 +74,7 @@ def exportJsonInfo(params):
                 jsonInfo = {}
                 opName = data.get('name')
                 catalogPath = data.get('catalogPath')
-                #jsonInfo['opName'] = opName
+                # jsonInfo['opName'] = opName
                 jsonInfo['opType'] = data.get('execMode')
                 jsonInfo['typeName'] = data.get('typeName')
                 jsonInfo['riskName'] = data.get('riskName')
@@ -139,12 +148,12 @@ def exportJsonInfo(params):
                     jsonPath = ''
                     if catalogPath != None and catalogPath != '':
                         catalogFullDir = os.path.join(pathStr, catalogPath)
-                        #jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
+                        # jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
                         jsonPath = os.path.join(catalogFullDir, opJsonName)
                         if not os.path.exists(catalogFullDir):
                             os.makedirs(catalogFullDir)
                     else:
-                        #jsonPath = pathStr + '/' + opName + '.json'
+                        # jsonPath = pathStr + '/' + opName + '.json'
                         jsonPath = os.path.join(pathStr, opJsonName)
                         if not os.path.exists(pathStr):
                             os.makedirs(pathStr)
@@ -159,10 +168,10 @@ def exportJsonInfo(params):
                     if opName != None:
                         scriptFilePath = None
                         if catalogPath != None and catalogPath != '':
-                            #scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
+                            # scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
                             scriptFilePath = os.path.join(pathStr, catalogPath, opName)
                         else:
-                            #scriptFilePath = pathStr + '/' + opName
+                            # scriptFilePath = pathStr + '/' + opName
                             scriptFilePath = os.path.join(pathStr, opName)
 
                         try:
