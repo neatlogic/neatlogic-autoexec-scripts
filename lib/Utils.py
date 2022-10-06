@@ -71,6 +71,7 @@ def parseCmdArgs(args):
     user = args.user
     password = args.password
     destDir = args.dir
+    catalogList = args.catalogs
 
     homePath = os.path.split(os.path.realpath(__file__))[0]
     homePath = os.path.realpath(homePath + '/..')
@@ -126,7 +127,8 @@ def parseCmdArgs(args):
         'tenant': tenant,
         'user': user,
         'password': password,
-        'destDir': destDir
+        'destDir': destDir,
+        'catalogList': catalogList
     }
 
     return params

@@ -34,6 +34,7 @@ def exportJsonInfo(params):
     serverPass = params.get('password')
     tenant = params.get('tenant')
     pathStr = params.get('destDir')
+    catalogList = params.get('catalogList')
     uri = '/codedriver/api/binary/autoexec/script/export/forautoexec'
     url = params.get('baseUrl') + uri
     # 获取json数据
@@ -41,136 +42,143 @@ def exportJsonInfo(params):
         'Tenant': tenant,
         'Content-Type': 'application/json; charset=utf-8'
     }
-    signRequest(serverUser, serverPass, headers, uri)
-    request = urllib.request.Request(url, headers=headers)
-    try:
-        f = urllib.request.urlopen(request)
-    except Exception as ex:
-        hasError = 1
-        print("ERROR: Request URL:{} failed, {}".format(url, str(ex)))
-        return hasError
 
-    objects = ijson.items(f, 'item')
-    while True:
+    for catalogName in catalogList:
+        print('INFO: Try to export catalog:' + catalogName + '...')
+        params = {
+            'catalogName': catalogName
+        }
+        postBody = json.dumps(params, ensure_ascii=False)
+        signRequest(serverUser, serverPass, headers, uri, postBody=postBody)
+        request = urllib.request.Request(url, headers=headers, data=postBody.encode('utf-8'))
         try:
-            data = objects.__next__()
-            jsonInfo = {}
-            opName = data.get('name')
-            catalogPath = data.get('catalogPath')
-            #jsonInfo['opName'] = opName
-            jsonInfo['opType'] = data.get('execMode')
-            jsonInfo['typeName'] = data.get('typeName')
-            jsonInfo['riskName'] = data.get('riskName')
-            jsonInfo['interpreter'] = data.get('parser')
-            jsonInfo['defaultProfile'] = data.get('defaultProfileName')
-            jsonInfo['description'] = data.get('description')
-            option = []
-            output = []
-            paramList = data.get('paramList')
-            for param in paramList:
-                dataParam = {}
-                if param.get('mode') == 'input':
-                    dataParam['opt'] = param.get('key')
-                    dataParam['name'] = param.get('name')
-                    dataParam['help'] = param.get('description')
-                    dataParam['type'] = param.get('type')
-                    if param.get('type') in needDataSourceTypeList:
-                        config = param.get('config')
-                        if config != None:
-                            # 去掉多余的字段
-                            config.pop('type', None)
-                            config.pop('defaultValue', None)
-                            config.pop('isRequired', None)
-                            dataSource = config.pop('dataSource', None)
-                            if dataSource != None:
-                                config['dataType'] = dataSource
-                        dataParam['dataSource'] = config
-                    dataParam['defaultValue'] = param.get('defaultValue')
-                    if param.get('isRequired') == 1:
-                        dataParam['required'] = 'true'
+            f = urllib.request.urlopen(request)
+        except Exception as ex:
+            hasError = 1
+            print("ERROR: Request URL:{} failed, {}".format(url, str(ex)))
+            return hasError
+
+        objects = ijson.items(f, 'item')
+        while True:
+            try:
+                data = objects.__next__()
+                jsonInfo = {}
+                opName = data.get('name')
+                catalogPath = data.get('catalogPath')
+                #jsonInfo['opName'] = opName
+                jsonInfo['opType'] = data.get('execMode')
+                jsonInfo['typeName'] = data.get('typeName')
+                jsonInfo['riskName'] = data.get('riskName')
+                jsonInfo['interpreter'] = data.get('parser')
+                jsonInfo['defaultProfile'] = data.get('defaultProfileName')
+                jsonInfo['description'] = data.get('description')
+                option = []
+                output = []
+                paramList = data.get('paramList')
+                for param in paramList:
+                    dataParam = {}
+                    if param.get('mode') == 'input':
+                        dataParam['opt'] = param.get('key')
+                        dataParam['name'] = param.get('name')
+                        dataParam['help'] = param.get('description')
+                        dataParam['type'] = param.get('type')
+                        if param.get('type') in needDataSourceTypeList:
+                            config = param.get('config')
+                            if config != None:
+                                # 去掉多余的字段
+                                config.pop('type', None)
+                                config.pop('defaultValue', None)
+                                config.pop('isRequired', None)
+                                dataSource = config.pop('dataSource', None)
+                                if dataSource != None:
+                                    config['dataType'] = dataSource
+                            dataParam['dataSource'] = config
+                        dataParam['defaultValue'] = param.get('defaultValue')
+                        if param.get('isRequired') == 1:
+                            dataParam['required'] = 'true'
+                        else:
+                            dataParam['required'] = 'false'
+                        # 校验正则表达式
+                        dataParam['validate'] = ''
+                        # todo 全局参数
+                        option.append(dataParam)
+
+                    if param.get('mode') == 'output':
+                        dataParam['opt'] = param.get('key')
+                        dataParam['name'] = param.get('name')
+                        dataParam['help'] = param.get('description')
+                        dataParam['type'] = param.get('type')
+                        dataParam['defaultValue'] = param.get('defaultValue')
+                        if param.get('isRequired') == 1:
+                            dataParam['required'] = 'true'
+                        else:
+                            dataParam['required'] = 'false'
+                        output.append(dataParam)
+
+                argumentParam = data.get('argument')
+                # 自由参数
+                if argumentParam != None:
+                    argument = {}
+                    argument['name'] = argumentParam.get('name')
+                    argument['type'] = argumentParam.get('type')
+                    argument['defaultValue'] = argumentParam.get('defaultValue')
+                    argument['help'] = argumentParam.get('description')
+                    argument['count'] = argumentParam.get('argumentCount')
+                    argument['validate'] = ''
+                    if argumentParam.get('isRequired') == 1:
+                        argument['required'] = 'true'
                     else:
-                        dataParam['required'] = 'false'
-                    # 校验正则表达式
-                    dataParam['validate'] = ''
-                    # todo 全局参数
-                    option.append(dataParam)
+                        argument['required'] = 'false'
+                    jsonInfo['argument'] = argument
 
-                if param.get('mode') == 'output':
-                    dataParam['opt'] = param.get('key')
-                    dataParam['name'] = param.get('name')
-                    dataParam['help'] = param.get('description')
-                    dataParam['type'] = param.get('type')
-                    dataParam['defaultValue'] = param.get('defaultValue')
-                    if param.get('isRequired') == 1:
-                        dataParam['required'] = 'true'
-                    else:
-                        dataParam['required'] = 'false'
-                    output.append(dataParam)
-
-            argumentParam = data.get('argument')
-            # 自由参数
-            if argumentParam != None:
-                argument = {}
-                argument['name'] = argumentParam.get('name')
-                argument['type'] = argumentParam.get('type')
-                argument['defaultValue'] = argumentParam.get('defaultValue')
-                argument['help'] = argumentParam.get('description')
-                argument['count'] = argumentParam.get('argumentCount')
-                argument['validate'] = ''
-                if argumentParam.get('isRequired') == 1:
-                    argument['required'] = 'true'
-                else:
-                    argument['required'] = 'false'
-                jsonInfo['argument'] = argument
-
-            jsonInfo['option'] = option
-            jsonInfo['output'] = output
-            # 写入
-            if opName != None:
-                opJsonName = opName + '.json'
-                jsonPath = ''
-                if catalogPath != None and catalogPath != '':
-                    catalogFullDir = os.path.join(pathStr, catalogPath)
-                    #jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
-                    jsonPath = os.path.join(catalogFullDir, opJsonName)
-                    if not os.path.exists(catalogFullDir):
-                        os.makedirs(catalogFullDir)
-                else:
-                    #jsonPath = pathStr + '/' + opName + '.json'
-                    jsonPath = os.path.join(pathStr, opJsonName)
-                    if not os.path.exists(pathStr):
-                        os.makedirs(pathStr)
-                try:
-                    with open(jsonPath, 'w', encoding='utf-8') as m:
-                        m.write(json.dumps(jsonInfo, indent=4, ensure_ascii=False))
-                except Exception as reason:
-                    hasError = hasError + 1
-                    print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
-
-                lineList = data.get('lineList')
+                jsonInfo['option'] = option
+                jsonInfo['output'] = output
+                # 写入
                 if opName != None:
-                    scriptFilePath = None
+                    opJsonName = opName + '.json'
+                    jsonPath = ''
                     if catalogPath != None and catalogPath != '':
-                        #scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
-                        scriptFilePath = os.path.join(pathStr, catalogPath, opName)
+                        catalogFullDir = os.path.join(pathStr, catalogPath)
+                        #jsonPath = pathStr + '/' + catalogPath + '/' + opName + '.json'
+                        jsonPath = os.path.join(catalogFullDir, opJsonName)
+                        if not os.path.exists(catalogFullDir):
+                            os.makedirs(catalogFullDir)
                     else:
-                        #scriptFilePath = pathStr + '/' + opName
-                        scriptFilePath = os.path.join(pathStr, opName)
-
+                        #jsonPath = pathStr + '/' + opName + '.json'
+                        jsonPath = os.path.join(pathStr, opJsonName)
+                        if not os.path.exists(pathStr):
+                            os.makedirs(pathStr)
                     try:
-                        with open(scriptFilePath, 'w', encoding='utf8') as scriptFile:
-                            print("INFO: Try to export {}".format(opName))
-                            for line in lineList:
-                                if line.__contains__('content'):
-                                    content = line.get('content')
-                                    scriptFile.write(content)
-                                scriptFile.write('\n')
-                            print("INFO: {} exported to {}.\n".format(opName, scriptFilePath))
+                        with open(jsonPath, 'w', encoding='utf-8') as m:
+                            m.write(json.dumps(jsonInfo, indent=4, ensure_ascii=False))
                     except Exception as reason:
                         hasError = hasError + 1
                         print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
-        except StopIteration as e:
-            break
+
+                    lineList = data.get('lineList')
+                    if opName != None:
+                        scriptFilePath = None
+                        if catalogPath != None and catalogPath != '':
+                            #scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
+                            scriptFilePath = os.path.join(pathStr, catalogPath, opName)
+                        else:
+                            #scriptFilePath = pathStr + '/' + opName
+                            scriptFilePath = os.path.join(pathStr, opName)
+
+                        try:
+                            with open(scriptFilePath, 'w', encoding='utf8') as scriptFile:
+                                print("INFO: Try to export {}".format(opName))
+                                for line in lineList:
+                                    if line.__contains__('content'):
+                                        content = line.get('content')
+                                        scriptFile.write(content)
+                                    scriptFile.write('\n')
+                                print("INFO: {} exported to {}.\n".format(opName, scriptFilePath))
+                        except Exception as reason:
+                            hasError = hasError + 1
+                            print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
+            except StopIteration as e:
+                break
 
 
 def parseArgs():
@@ -180,6 +188,7 @@ def parseArgs():
     parser.add_argument("--user", default='', help="username")
     parser.add_argument("--password", default='', help="passWord")
     parser.add_argument("--dir", default='', help="Script's directory")
+    parser.add_argument('catalogs', nargs=argparse.REMAINDER, help="Sub direcgory in script direcgory")
     args = parser.parse_args()
 
     params = Utils.parseCmdArgs(args)
