@@ -1,0 +1,73 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Unix安装JDK",
+    "option": [
+        {
+            "opt": "action",
+            "name": "动作",
+            "help": "动作",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "安装",
+                        "value": "install"
+                    },
+                    {
+                        "text": "卸载",
+                        "value": "uninstall"
+                    },
+                    {
+                        "text": "重新安装",
+                        "value": "reinstall"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "install",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "path",
+            "name": "安装文件路径",
+            "help": "存放jdk安装tar.gz包路径，如：/tmp/jdk-8u341-linux-aarch64.tar.gz",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "file",
+            "name": "安装包文件",
+            "help": "jdk安装tar.gz包，如：jdk-8u341-linux-aarch64.tar.gz",
+            "type": "file",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "home",
+            "name": "安装目录",
+            "help": "软件安装目录，如：/opt",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "user",
+            "name": "安装用户",
+            "help": "为软件安装指定特定的用户，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
