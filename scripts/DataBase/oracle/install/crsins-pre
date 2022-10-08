@@ -317,8 +317,8 @@ parseOpts "$@"
 
 ps -p1 | grep systemd >/dev/null && INIT_TYPE="systemd" || INIT_TYPE="sysvinit"
 
-echo "--Turning NetworkManager off-------------"
-disableNetworkManager
+#echo "--Turning NetworkManager off-------------"
+#disableNetworkManager
 
 echo "--Stop iptables--------------------------"
 disableIptables
