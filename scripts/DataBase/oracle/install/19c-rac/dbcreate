@@ -23,7 +23,7 @@ function SUDO_ORA_CMD() {
         #负数返回码，大于127就是负数的补码
         echo "ERROR: Installation failed, exitCode:$exitCode."
         exit $exitCode
-        elif [ $exitCode -gt 0 ]; then
+    elif [ $exitCode -gt 0 ]; then
         echo "WARN: Installation has some warning, exitCode:$exitCode."
     else
         echo "FINE: All installations were successful."
@@ -60,91 +60,91 @@ function parseOpts() {
     OPT_SPEC=":h-:"
     while getopts "$OPT_SPEC" optchar; do
         case "${optchar}" in
-            -)
-                case "${OPTARG}" in
-                    CV_ASSUME_DISTID)
-                        CV_ASSUME_DISTID="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    RESPONSE_FILE)
-                        RESPONSE_FILE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    EXEC_ENV)
-                        EXEC_ENV="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    NODE_LIST)
-                        NODE_LIST="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    DATA_DISKGROUP)
-                        DATA_DISKGROUP="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    ARCH_DISKGROUP)
-                        ARCH_DISKGROUP="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    STORAGE_TYPE)
-                        STORAGE_TYPE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    DATABASE_TYPE)
-                        DATABASE_TYPE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    CONFIG_TYPE)
-                        CONFIG_TYPE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    CHARSET)
-                        CHARSET="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    CDB_PWD)
-                        CDB_PWD="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    PDB_PWD)
-                        PDB_PWD="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    IS_CDB)
-                        IS_CDB="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    DB_UNIQUE_NAME)
-                        DB_UNIQUE_NAME="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    PDB_NAME)
-                        PDB_NAME="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    AUTO_MEMORY)
-                        AUTO_MEMORY="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    MEM_PERCENTAGE)
-                        MEM_PERCENTAGE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    *)
-                        if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
-                            echo "Unknown option --${OPTARG}" >&2
-                        fi
-                    ;;
-                esac
-            ;;
-            h)
-                usage
-                exit 2
-            ;;
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            RESPONSE_FILE)
+                RESPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            NODE_LIST)
+                NODE_LIST="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATA_DISKGROUP)
+                DATA_DISKGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ARCH_DISKGROUP)
+                ARCH_DISKGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            STORAGE_TYPE)
+                STORAGE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATABASE_TYPE)
+                DATABASE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CONFIG_TYPE)
+                CONFIG_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CHARSET)
+                CHARSET="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CDB_PWD)
+                CDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_PWD)
+                PDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            IS_CDB)
+                IS_CDB="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_NAME)
+                PDB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            AUTO_MEMORY)
+                AUTO_MEMORY="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            MEM_PERCENTAGE)
+                MEM_PERCENTAGE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
-                if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
-                    echo "Non-option argument: '-${OPTARG}'" >&2
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
                 fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
             ;;
         esac
     done
@@ -196,33 +196,68 @@ fi
 #创建数据库
 #su - oracle
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
--responseFile $REAL_RESPONSE_FILE \
--variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
--createDatabase \
--templateName General_Purpose.dbc \
--gdbname $DB_UNIQUE_NAME \
--sid $DB_UNIQUE_NAME \
--nodelist $NODE_LIST \
--databaseConfigType $CONFIG_TYPE \
--databaseType $DATABASE_TYPE \
--createAsContainerDatabase $IS_CDB \
--numberOfPDBs $PDB_COUNT \
--pdbName "$PDB_NAME" \
--characterSet $CHARSET \
--nationalCharacterSet AL16UTF16 \
--sysPassword "$CDB_PWD" \
--systemPassword "$CDB_PWD" \
--pdbAdminPassword "$PDB_PWD" \
--dbsnmpPassword "$CDB_PWD" \
--asmsnmpPassword "$CDB_PWD" \
--automaticMemoryManagement $AUTO_MEMORY \
--memoryPercentage $MEM_PERCENTAGE \
--emConfiguration NONE \
--ignorePreReqs \
--storageType $STORAGE_TYPE \
--diskGroupName "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
--datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
--recoveryAreaDestination "+$ARCH_DISKGROUP" \
--recoveryGroupName "+$ARCH_DISKGROUP"
+    -responseFile $REAL_RESPONSE_FILE \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
+    -createDatabase \
+    -templateName General_Purpose.dbc \
+    -gdbname $DB_UNIQUE_NAME \
+    -sid $DB_UNIQUE_NAME \
+    -nodelist $NODE_LIST \
+    -databaseConfigType $CONFIG_TYPE \
+    -databaseType $DATABASE_TYPE \
+    -createAsContainerDatabase $IS_CDB \
+    -numberOfPDBs $PDB_COUNT \
+    -pdbName "$PDB_NAME" \
+    -characterSet $CHARSET \
+    -nationalCharacterSet AL16UTF16 \
+    -sysPassword "$CDB_PWD" \
+    -systemPassword "$CDB_PWD" \
+    -pdbAdminPassword "$PDB_PWD" \
+    -dbsnmpPassword "$CDB_PWD" \
+    -asmsnmpPassword "$CDB_PWD" \
+    -automaticMemoryManagement $AUTO_MEMORY \
+    -memoryPercentage $MEM_PERCENTAGE \
+    -emConfiguration NONE \
+    -ignorePreReqs \
+    -storageType $STORAGE_TYPE \
+    -diskGroupName "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -recoveryAreaDestination "+$ARCH_DISKGROUP" \
+    -recoveryGroupName "+$ARCH_DISKGROUP"
+
+echo "******************************************************************************"
+echo "Save state of PDB to enable auto-start." $(date)
+echo "******************************************************************************"
+sqlplus / as sysdba <<EOF
+ALTER PLUGGABLE DATABASE ${PDB_NAME} SAVE STATE;
+EXIT;
+EOF
+
+echo "******************************************************************************"
+echo "Check cluster configuration." $(date)
+echo "******************************************************************************"
+
+echo "******************************************************************************"
+echo "Output from crsctl stat res -t" $(date)
+echo "******************************************************************************"
+${GRID_HOME}/bin/crsctl stat res -t
+
+echo "******************************************************************************"
+echo "Output from srvctl config database -d ${DB_UNIQUE_NAME}" $(date)
+echo "******************************************************************************"
+srvctl config database -d ${DB_UNIQUE_NAME}
+
+echo "******************************************************************************"
+echo "Output from srvctl status database -d ${DB_UNIQUE_NAME}" $(date)
+echo "******************************************************************************"
+srvctl status database -d ${DB_UNIQUE_NAME}
+
+echo "******************************************************************************"
+echo "Output from v\$active_instances" $(date)
+echo "******************************************************************************"
+sqlplus / as sysdba <<EOF
+SELECT inst_name FROM v\$active_instances;
+EXIT;
+EOF
 
 exit $HAS_ERROR

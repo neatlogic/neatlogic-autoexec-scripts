@@ -133,7 +133,7 @@ function manualUnInstall() {
     fi
 
     if [ -n "$ORACLE_HOME" ]; then
-        sed -i "/${ORACLE_HOME//\//\\\/}/"d /etc/rc.local
+        sed -i "\|$ORACLE_HOME|"d /etc/rc.local
     fi
 
     rm -f /etc/init.d/init.ohasd

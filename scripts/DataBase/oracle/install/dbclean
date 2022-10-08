@@ -109,7 +109,7 @@ function manualUnInstall() {
 
     #stop and disable service
     if [ -n "$ORACLE_HOME" ]; then
-        sed -i "/${ORACLE_HOME//\//\\\/}/"d /etc/rc.local
+        sed -i "\|$ORACLE_HOME|"d /etc/rc.local
     fi
 
     if [ "$DEL_USER" == "1" ]; then
