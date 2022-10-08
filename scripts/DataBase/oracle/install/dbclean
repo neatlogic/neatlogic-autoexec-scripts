@@ -65,10 +65,9 @@ function removeUserAndGroups() {
         return
     fi
 
-    usermod -g10 $ORACLE_USER
-
     #delete group id bigger than 1000
     groups=$(id -G $ORACLE_USER)
+    usermod -g10 $ORACLE_USER
     for oraGid in $(id -G $ORACLE_USER); do
         if [ $oraGid -gt 1000 ]; then
             groupName=$(getent group $oraGid | cut -d: -f1)

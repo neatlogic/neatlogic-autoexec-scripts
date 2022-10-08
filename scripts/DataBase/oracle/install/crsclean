@@ -65,11 +65,9 @@ function removeUserAndGroups() {
         return
     fi
 
-    #delete GRID_USER
-    usermod -g10 $GRID_USER
-
     #delete group id bigger than 1000
     groups=$(id -G $GRID_USER)
+    usermod -g10 $GRID_USER
     for oraGid in $(id -G $GRID_USER); do
         if [ $oraGid -gt 1000 ]; then
             groupName=$(getent group $oraGid | cut -d: -f1)
@@ -87,8 +85,14 @@ function manualUnInstall() {
         SUCALL_ORA_CMD $GRID_USER shutdown immediate
         SUCALL_ORA_CMD $GRID_USER lsnrctl stop
         pkill -u $GRID_USER
+        sleep 3
+        pkill -u $GRID_USER
+        sleep 3
+        pkill -u $GRID_USER
         exitCode=$?
         if [ $exitCode == 0 ]; then
+            sleep 5
+            pkill -9 -u $GRID_USER
             sleep 5
             pkill -9 -u $GRID_USER
         fi
