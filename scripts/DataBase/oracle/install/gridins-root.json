@@ -3,10 +3,8 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "OracleGRID安装执行root脚本(root用户执行)",
-    "enabled": 1,
-    "option": [],
-    "output": [],
     "argument": {
         "name": "GRID_HOME",
         "type": "text",
@@ -15,5 +13,7 @@
         "count": 1,
         "validate": "",
         "required": "true"
-    }
+    },
+    "option": [],
+    "output": []
 }

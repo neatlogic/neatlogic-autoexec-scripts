@@ -3,9 +3,10 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "Oracle RAC 安装OS其他前置工作(root用户执行服务配置)",
-    "enabled": 1,
-    "option": [{
+    "option": [
+        {
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "GRID安装用户",

@@ -3,6 +3,7 @@
     "typeName": "TEMP",
     "riskName": "LOW",
     "interpreter": "perl",
+    "defaultProfile": null,
     "description": "Perl simple script",
     "argument": {
         "name": "参数",

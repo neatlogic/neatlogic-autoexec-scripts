@@ -35,7 +35,7 @@
         {
             "opt": "path",
             "name": "安装文件路径",
-            "help": "存放jdk安装tar.gz包路径，如：/mnt/nas/jdk-8u341-linux-aarch64.tar.gz",
+            "help": "存放jdk安装tar.gz包路径，如：/tmp/jdk-8u341-linux-aarch64.tar.gz",
             "type": "text",
             "defaultValue": "",
             "required": "false",
@@ -69,14 +69,5 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
-            "opt": "JAVA_HOME",
-            "name": "java安装路径",
-            "help": "java安装路径,JAVA_HOME",
-            "type": "text",
-            "defaultValue": null,
-            "required": "false"
-        }
-    ]
+    "output": []
 }

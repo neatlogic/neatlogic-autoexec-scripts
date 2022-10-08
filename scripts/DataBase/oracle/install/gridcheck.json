@@ -3,10 +3,8 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "集群状态检查(在root用户下执行, 会su到grid用户执行)",
-    "enabled": 1,
-    "option": [],
-    "output": [],
     "argument": {
         "name": "GRID_USER",
         "type": "text",
@@ -15,5 +13,7 @@
         "count": 1,
         "validate": "",
         "required": "true"
-    }
+    },
+    "option": [],
+    "output": []
 }

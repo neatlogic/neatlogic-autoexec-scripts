@@ -3,9 +3,10 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "Zip安装介质解压(roo用户执行)",
-    "enabled": 1,
-    "option": [{
+    "option": [
+        {
             "opt": "ZIP_FILE",
             "name": "ZIP文件",
             "help": "在服务器上的Oracle安装文件路径",
@@ -29,7 +30,8 @@
             "help": "是否强制覆盖已存在的文件",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "1"
                     },

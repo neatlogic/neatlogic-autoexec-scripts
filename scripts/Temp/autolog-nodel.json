@@ -3,6 +3,7 @@
     "typeName": "TEST",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "",
     "option": [],
     "output": []

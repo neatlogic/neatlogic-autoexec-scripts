@@ -3,6 +3,7 @@
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "在远程target OS执行工具的Demo",
     "argument": {
         "name": "自由参数",
@@ -13,7 +14,8 @@
         "validate": "",
         "required": "true"
     },
-    "option": [{
+    "option": [
+        {
             "opt": "tinput",
             "name": "普通输入",
             "help": "普通输入测试",
@@ -39,7 +41,8 @@
             "help": "单选输入测试",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -60,7 +63,8 @@
             "help": "多选输入测试",
             "type": "multiselect",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "选择1",
                         "value": "sel1"
                     },
@@ -137,7 +141,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "outtext",
             "name": "普通输出1",
             "help": "普通输出测试",

@@ -3,6 +3,7 @@
     "typeName": "TEMP",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "简单Shell脚本",
     "argument": {
         "name": "参数",

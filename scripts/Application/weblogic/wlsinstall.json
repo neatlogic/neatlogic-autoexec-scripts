@@ -1,59 +1,65 @@
 {
-	"opType": "target",
-	"typeName": "INSTALL",
-	"riskName": "LOW",
-	"interpreter": "bash",
-	"description": "weblogic软件安装",
-	"argument": null,
-	"option": [
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "weblogic软件安装",
+    "option": [
         {
-			"opt": "file_path",
-			"name": "安装文件路径",
-			"help": "存放weblogic安装包路径，如：/mnt/nas/weblogic/fmw_12.1.3.0.0_wls.jar",
-			"type": "text",
-			"required": "true",
-			"validate": "",
-			"defaultValue": ""
-		}, {
-			"opt": "java_home",
-			"name": "JAVA_HOME",
-			"help": "jdk安装路径",
-			"type": "text",
-			"required": "true",
-			"validate": "",
-			"defaultValue": ""
-		}, {
-			"opt": "run_user",
-			"name": "软件安装用户",
-			"help": "为软件安装指定特定的用户，如：weblogic",
-			"type": "text",
-			"required": "true",
-			"validate": "",
-			"defaultValue": ""
-		}, {
-			"opt": "run_group",
-			"name": "软件安装用户组",
-			"help": "为软件安装指定特定的用户组，如：weblogic",
-			"type": "text",
-			"required": "true",
-			"validate": "",
-			"defaultValue": ""
-		}, {
-			"opt": "install_path",
-			"name": "软件安装路径",
-			"help": "软件安装路径，如：/home/weblogic",
-			"type": "text",
-			"required": "true",
-			"validate": "",
-			"defaultValue": ""
-		}
-	],
-	"output": [
-		{
-			"opt": "weblogic_home",
-			"name": "weblogic安装路径",
-			"help": "weblogic安装路径",
-			"type": "text"
-		}
-	]
+            "opt": "file_path",
+            "name": "安装文件路径",
+            "help": "存放weblogic安装包路径，如：/mnt/nas/weblogic/fmw_12.1.3.0.0_wls.jar",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "java_home",
+            "name": "JAVA_HOME",
+            "help": "jdk安装路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "install_path",
+            "name": "软件安装路径",
+            "help": "软件安装路径，如：/home/weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "weblogic_home",
+            "name": "weblogic安装路径",
+            "help": "weblogic安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
 }

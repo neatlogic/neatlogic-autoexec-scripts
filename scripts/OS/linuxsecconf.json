@@ -3,16 +3,18 @@
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
+    "defaultProfile": null,
     "description": "Linux安全加固设置",
-    "argument": null,
-    "option": [{
-        "opt": "syslogsrv",
-        "name": "SYSLOG服务IP",
-        "help": "SYSLOG Server的地址",
-        "type": "text",
-        "defaultValue": "",
-        "required": "false",
-        "validate": ""
-    }],
+    "option": [
+        {
+            "opt": "syslogsrv",
+            "name": "SYSLOG服务IP",
+            "help": "SYSLOG Server的地址",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
     "output": []
 }
