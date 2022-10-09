@@ -81,9 +81,12 @@ function removeUserAndGroups() {
 
 function manualUnInstall() {
     if [ -n "$ORACLE_UID" ]; then
+        INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
         #kill oracle process
         SUCALL_ORA_CMD $ORACLE_USER shutdown immediate
         SUCALL_ORA_CMD $ORACLE_USER lsnrctl stop
+        pkill -u $ORACLE_USER
+        sleep 3
         pkill -u $ORACLE_USER
         exitCode=$?
         if [ $exitCode == 0 ]; then
@@ -93,6 +96,18 @@ function manualUnInstall() {
     fi
 
     #remove ORACLE_HOME
+    #remove ORACLE_HOME
+    if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
+        rm -rf "$ORACLE_HOME"
+    fi
+
+    if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE" ]; then
+        rm -rf "$ORACLE_BASE"
+    fi
+
+    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
+        rm -rf "$INVENTORY_LOCATION"
+    fi
 
     #remove script in /usr/local/bin
     rm -f /usr/local/bin/dbhome
@@ -109,6 +124,10 @@ function manualUnInstall() {
     #stop and disable service
     if [ -n "$ORACLE_HOME" ]; then
         sed -i "\|$ORACLE_HOME|"d /etc/rc.local
+    fi
+
+    if [ -n "$ORACLE_UID" ]; then
+        pkill -9 -u $ORACLE_USER
     fi
 
     if [ "$DEL_USER" == "1" ]; then

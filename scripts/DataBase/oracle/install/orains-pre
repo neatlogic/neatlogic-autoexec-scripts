@@ -185,6 +185,7 @@ function createOraDir() {
 
     P_ORACLE_BASE=$(dirname "$ORACLE_BASE")
     P_ORACLE_HOME=$(dirname "$ORACLE_HOME")
+    P_INVENTORY_LOCATION=$(dirname "$INVENTORY_LOCATION")
     if [ -n "$P_ORACLE_BASE" ] && [ "$P_ORACLE_BASE" != '/' ]; then
         chgrp $UNIX_GROUP_NAME "$P_ORACLE_BASE"
         chmod g+rwx "$P_ORACLE_BASE"
@@ -192,6 +193,10 @@ function createOraDir() {
     if [ -n "$P_ORACLE_HOME" ] && [ "$P_ORACLE_HOME" != '/' ]; then
         chgrp $UNIX_GROUP_NAME "$P_ORACLE_HOME"
         chmod g+rwx "$P_ORACLE_HOME"
+    fi
+    if [ -n "$P_INVENTORY_LOCATION" ] && [ "$P_INVENTORY_LOCATION" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_INVENTORY_LOCATION"
+        chmod g+rwx "$P_INVENTORY_LOCATION"
     fi
 }
 

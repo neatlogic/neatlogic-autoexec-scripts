@@ -14,6 +14,21 @@ function DO_CMD() {
     fi
 }
 
+function SUDO_CMD() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
 function CALL_ORA_CMD() {
     echo Exec ommand: $@
     $@
@@ -81,24 +96,32 @@ function removeUserAndGroups() {
 
 function manualUnInstall() {
     if [ -n "$GRID_UID" ]; then
+        INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+
         #kill oracle process
         SUCALL_ORA_CMD $GRID_USER shutdown immediate
         SUCALL_ORA_CMD $GRID_USER lsnrctl stop
         pkill -u $GRID_USER
-        sleep 3
+        sleep 5
         pkill -u $GRID_USER
-        sleep 3
-        pkill -u $GRID_USER
-        exitCode=$?
         if [ $exitCode == 0 ]; then
-            sleep 5
-            pkill -9 -u $GRID_USER
             sleep 5
             pkill -9 -u $GRID_USER
         fi
     fi
 
     #remove ORACLE_HOME
+    if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
+        rm -rf "$ORACLE_HOME"
+    fi
+
+    if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE" ]; then
+        rm -rf "$ORACLE_BASE"
+    fi
+
+    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
+        rm -rf "$INVENTORY_LOCATION"
+    fi
 
     #remove script in /usr/local/bin
     rm -f /usr/local/bin/dbhome
@@ -141,6 +164,10 @@ function manualUnInstall() {
     fi
 
     rm -f /etc/init.d/init.ohasd
+
+    if [ -n "$GRID_UID" ]; then
+        pkill -9 -u $GRID_USER
+    fi
 
     if [ "$DEL_USER" == "1" ]; then
         removeUserAndGroups
@@ -190,7 +217,7 @@ function parseOpts() {
 parseOpts "$@"
 
 if [ -z "$GRID_USER" ]; then
-    GRID_USER=oracle
+    GRID_USER=grid
 fi
 
 GRID_UID=$(id -u $GRID_USER 2>/dev/null)
