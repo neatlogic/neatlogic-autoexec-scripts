@@ -134,6 +134,7 @@ EOF
     else
        echo "FINE:: install Jdk $filename succeed."
        rm -f "$current_path/output.json"
+       rm -f $file
 cat <<EOF > "$current_path/output.json"
 { "JAVA_HOME":"$JAVA_HOME" }
 EOF

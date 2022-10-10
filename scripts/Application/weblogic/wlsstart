@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 usage() {
     pname=$(basename $0)
-    echo "$pname --weblogic_path <install path> --domain_path <domain path> --run_user <run user> --listen_port <adminserver listen port>"
+    echo "$pname --weblogic_path <install path> --domain_path <domain path> --run_user <run user> --listen_port <adminserver listen port> --timeout <timeout>"
     exit -1
 }
 
@@ -26,6 +26,10 @@ parseOpts() {
                 ;;
             listen_port)
                 listen_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            timeout)
+                timeout="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -60,26 +64,39 @@ if [[  ! -n "$domain_path" ]] ; then
     usage
 fi 
 
-cd $domain_path/user_projects/domains/base_domain/bin/
+if [[ ! -n "$timeout" ]] ; then 
+    timeout=60
+fi 
+
+cd $domain_path/bin/
 #后台启动WebLogic
 sudo -u $run_user nohup ./startWebLogic.sh > $weblogic_path/weblogic_run.log 2>&1 &
 if [ $? != 0 ]
 then
-    echo "ERROR:: start WebLogic failed."
+    echo "ERROR:: Start WebLogic failed."
 else
-    echo "INFO:: start WebLogic success."
+    echo "INFO:: Start WebLogic success."
 fi
 
 #判断adminserver是否启动
-n=1
-while [ $n != 0 ]
+exitCode=1
+loopcount=$((timeout/5))
+while [ $exitCode != 0 ]
 do
+    loopcount=$((loopcount-1))
     port=`netstat -anp|grep $listen_port`
     if [ -n "$port" ]; then
-        n=0
-        echo "INFO:: adminserver launch succeed."
+        exitCode=0
+        echo "INFO:: Weblogic AdminServer launch success."
     else
-        echo "ERROR:: adminserver didn't launch yet."
+        echo "WARN:: Weblogic AdminServer didn't launch yet."
     fi
     sleep 5
+    
+    if [[ $loopcount == 0 ]] ; then 
+        echo "ERROR:: Start Weblogic AdminServer failed."
+        exitCode=2
+        break
+    fi
 done
+exit $exitCode

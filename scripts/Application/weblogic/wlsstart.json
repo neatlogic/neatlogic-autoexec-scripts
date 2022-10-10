@@ -41,6 +41,15 @@
             "defaultValue": "7001",
             "required": "true",
             "validate": ""
+        },
+        {
+            "opt": "timeout",
+            "name": "超时时间",
+            "help": "检测AdminServer启动的timeout时间",
+            "type": "text",
+            "defaultValue": "60",
+            "required": "true",
+            "validate": ""
         }
     ],
     "output": []

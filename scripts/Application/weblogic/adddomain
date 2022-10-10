@@ -117,6 +117,7 @@ if [[  ! -n "$weblogic_user"  && ! -n "$weblogic_password"  ]] ; then
     weblogic_user="weblogic"
     weblogic_password="weblogic"
 fi
+current_path=`pwd`
 
 cd $weblogic_path
 rm -f create_domain.rsp
@@ -177,6 +178,6 @@ fi
 #输出安装路径
 cat <<EOF > "$current_path/output.json"
 { 
-    "domain_home":"$domain_path" 
+    "base_domain":"$base_domain" 
 }
 EOF
