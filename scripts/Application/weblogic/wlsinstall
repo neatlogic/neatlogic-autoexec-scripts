@@ -103,6 +103,7 @@ EOF
 
 rm -f wls.rsp
 touch wls.rsp
+#ORACLE_HOME必须是空目录
 ORACLE_HOME=$install_path/Middleware
 cat <<EOF >> "wls.rsp"
 [ENGINE]
@@ -122,10 +123,10 @@ is_success=0
 sudo -u $run_user $JAVA_HOME/bin/java -jar $file_path -silent -responseFile $install_path/wls.rsp -invPtrLoc $install_path/oraInst.loc
 if [ $? != 0 ]
 then
-    echo "ERROR:: silent install weblogic failed."
+    echo "ERROR:: Weblogic silent install failed."
     is_success=1
 else
-    echo "INFO:: silent install weblogic success."
+    echo "INFO:: Weblogic silent install success."
     rm -f wls.rsp
     rm -f oraInst.loc
 fi
@@ -138,10 +139,10 @@ fi
 sudo -u $run_user  $ORACLE_HOME/wlserver/server/bin/setWLSEnv.sh
 if [ $? != 0 ]
 then
-    echo "ERROR:: set weblogic envionment variables failed."
+    echo "ERROR:: Set weblogic envionment variables failed."
     is_success=1
 else
-    echo "INFO:: set weblogic envionment variables succeed."
+    echo "INFO:: Set weblogic envionment variables succeed."
 fi
 
 #jdk创建随机数Bug
