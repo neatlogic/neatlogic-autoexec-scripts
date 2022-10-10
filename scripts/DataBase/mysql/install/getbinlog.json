@@ -1,0 +1,35 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "mysql获取主从master bin-log",
+    "option": [
+        {
+            "opt": "rootpwd",
+            "name": "rootpwd",
+            "help": "",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [{
+        "opt": "binLogOffset",
+        "name": "binlog offsetPos位置开始",
+        "help": "配置mysql主从同步位置",
+        "type": "textarea",
+        "defaultValue": "",
+        "required": "false"
+    },
+    {
+        "opt": "binLogFile",
+        "name": "binlog file文件名",
+        "help": "配置mysql主从同步binlog文件名",
+        "type": "textarea",
+        "defaultValue": "",
+        "required": "false"
+    }]
+}
