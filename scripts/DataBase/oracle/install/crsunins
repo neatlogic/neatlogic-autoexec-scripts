@@ -172,10 +172,15 @@ rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed 
 rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
 uninsDir=$(echo $rspFile | cut -d/ -f3)
 
-rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
-lastNodeCmd="$rootCmd -lastnode"
-if [ -f "/tmp/$uninsDir/rootdeinstall.sh" ]; then
-    lastNodeCmd="/tmp/$uninsDir/rootdeinstall.sh"
+if [ -n "$rootCmd" ]; then
+    rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
+    lastNodeCmd="$rootCmd -lastnode"
+    if [ -f "/tmp/$uninsDir/rootdeinstall.sh" ]; then
+        lastNodeCmd="/tmp/$uninsDir/rootdeinstall.sh"
+    fi
+else
+    rootCmd="echo No root command found"
+    lastNodeCmd="echo No root command found"
 fi
 
 gridEnv=${oraEnv//$'\n'/\\n}
