@@ -81,6 +81,7 @@ if [ -z "$INVENTORY_LOCATION" ]; then
     exit 3
 fi
 
+echo $INVENTORY_LOCATION/orainstRoot.sh
 $INVENTORY_LOCATION/orainstRoot.sh
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
@@ -93,6 +94,7 @@ else
     echo "FINE: Execute $INVENTORY_LOCATION/orainstRoot.sh successful."
 fi
 
+echo $GRID_HOME/root.sh
 $GRID_HOME/root.sh
 exitCode=$?
 if [ $exitCode -ge 128 ]; then

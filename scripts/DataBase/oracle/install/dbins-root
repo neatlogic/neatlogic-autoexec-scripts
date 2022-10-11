@@ -68,6 +68,7 @@ if [ -z "$ORACLE_HOME" ]; then
     exit 2
 fi
 
+echo $ORACLE_HOME/root.sh
 $ORACLE_HOME/root.sh
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
