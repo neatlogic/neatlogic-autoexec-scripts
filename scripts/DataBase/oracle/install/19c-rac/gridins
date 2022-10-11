@@ -197,7 +197,7 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
 fi
 
 #安装前检查
-#SUDO_CMD_CONT $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
 #执行安装
 SUDO_ORA_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
