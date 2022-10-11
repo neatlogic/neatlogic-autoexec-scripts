@@ -1,0 +1,28 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "mysql配置slave节点",
+    "option": [
+        {
+            "opt": "rootpwd",
+            "name": "rootpwd",
+            "help": "",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },{
+            "opt": "masterip",
+            "name": "master节点",
+            "help": "master节点信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
