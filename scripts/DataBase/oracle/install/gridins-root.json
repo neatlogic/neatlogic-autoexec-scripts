@@ -5,15 +5,25 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "OracleGRID安装执行root脚本(root用户执行)",
-    "argument": {
-        "name": "GRID_HOME",
-        "type": "text",
-        "defaultValue": "",
-        "help": "",
-        "count": 1,
-        "validate": "",
-        "required": "true"
-    },
-    "option": [],
+    "argument": null,
+    "option": [{
+            "opt": "GRID_HOME",
+            "name": "GRID_HOME",
+            "help": "GRID_HOME目录",
+            "type": "text",
+            "defaultValue": "${GRID_HOME}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INVENTORY_LOCATION",
+            "name": "INVENTORY目录",
+            "help": "INVENTORY目录",
+            "type": "text",
+            "defaultValue": "${INVENTORY_LOCATION}",
+            "required": "true",
+            "validate": ""
+        }
+    ],
     "output": []
 }

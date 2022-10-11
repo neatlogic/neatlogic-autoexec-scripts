@@ -28,14 +28,53 @@ function SUDO_CMD() {
     fi
 }
 
-GRID_HOME=$1
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            GRID_HOME)
+                GRID_HOME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            INVENTORY_LOCATION)
+                INVENTORY_LOCATION="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
 if [ -z "$GRID_HOME" ]; then
-    echo "ERROR: Argument not provided."
-    echo "Usage: dbins-root <Oracle Home dir>"
+    echo "ERROR: GRID_HOME not defined."
+    echo "Usage: dbins-root --GRID_HOME <grid home> --INVENTORY_LOCATION <inventory dir>"
     exit 2
 fi
 
-INVENTORY_LOCATION=$(cat $GRID_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+if [ -z "$INVENTORY_LOCATION" ]; then
+    INVENTORY_LOCATION=$(cat $GRID_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+fi
 
 if [ -z "$INVENTORY_LOCATION" ]; then
     echo "ERROR: Can not determin invertory directory by file:$GRID_HOME/oraInst.loc."
@@ -65,4 +104,3 @@ elif [ $exitCode -gt 0 ]; then
 else
     echo "FINE: Execute $GRID_HOME/root.sh successful."
 fi
-
