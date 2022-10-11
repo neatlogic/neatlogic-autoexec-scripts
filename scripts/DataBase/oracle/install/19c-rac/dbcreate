@@ -228,7 +228,7 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
 echo "******************************************************************************"
 echo "Save state of PDB to enable auto-start." $(date)
 echo "******************************************************************************"
-sqlplus / as sysdba <<EOF
+su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
 ALTER PLUGGABLE DATABASE ${PDB_NAME} SAVE STATE;
 EXIT;
 EOF
@@ -240,22 +240,22 @@ echo "**************************************************************************
 echo "******************************************************************************"
 echo "Output from crsctl stat res -t" $(date)
 echo "******************************************************************************"
-${GRID_HOME}/bin/crsctl stat res -t
+SUDO_CMD_CONT $ORACLE_USER ${GRID_HOME}/bin/crsctl stat res -t
 
 echo "******************************************************************************"
 echo "Output from srvctl config database -d ${DB_UNIQUE_NAME}" $(date)
 echo "******************************************************************************"
-srvctl config database -d ${DB_UNIQUE_NAME}
+SUDO_CMD $ORACLE_USER srvctl config database -d ${DB_UNIQUE_NAME}
 
 echo "******************************************************************************"
 echo "Output from srvctl status database -d ${DB_UNIQUE_NAME}" $(date)
 echo "******************************************************************************"
-srvctl status database -d ${DB_UNIQUE_NAME}
+SUDO_CMD_CONT $ORACLE_USER srvctl status database -d ${DB_UNIQUE_NAME}
 
 echo "******************************************************************************"
 echo "Output from v\$active_instances" $(date)
 echo "******************************************************************************"
-sqlplus / as sysdba <<EOF
+su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
 SELECT inst_name FROM v\$active_instances;
 EXIT;
 EOF
