@@ -92,7 +92,7 @@ do
         echo "WARN:: Weblogic AdminServer didn't launch yet."
     fi
     sleep 5
-    
+
     if [[ $loopcount == 0 ]] ; then 
         echo "ERROR:: Start Weblogic AdminServer failed."
         exitCode=2

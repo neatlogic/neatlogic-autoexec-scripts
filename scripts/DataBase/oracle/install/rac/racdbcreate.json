@@ -5,7 +5,8 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "创建OracleRAC DB库(在root用户下执行, 会su到oracle用户执行)",
-    "option": [{
+    "option": [
+        {
             "opt": "EXEC_ENV",
             "name": "变量设置",
             "help": "执行前的变量设（使用${}引用作业参数）",
@@ -20,7 +21,8 @@
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -80,7 +82,8 @@
             "help": "DB配置类型",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "RAC",
                         "value": "RAC"
                     },
@@ -105,7 +108,8 @@
             "help": "DB目的类型",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "多用途",
                         "value": "MULTIPURPOSE"
                     },
@@ -130,7 +134,8 @@
             "help": "是否CDB",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "true"
                     },
@@ -160,7 +165,8 @@
             "help": "安装DB字符集",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "UTF8",
                         "value": "AL32UTF8"
                     },
@@ -225,7 +231,8 @@
             "help": "存储类型",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "ASM",
                         "value": "ASM"
                     },

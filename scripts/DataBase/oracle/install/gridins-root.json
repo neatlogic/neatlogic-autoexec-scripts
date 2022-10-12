@@ -5,8 +5,8 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "OracleGRID安装执行root脚本(root用户执行)",
-    "argument": null,
-    "option": [{
+    "option": [
+        {
             "opt": "GRID_HOME",
             "name": "GRID_HOME",
             "help": "GRID_HOME目录",
