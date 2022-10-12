@@ -1,0 +1,89 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+
+use AutoExecUtils;
+use SqlplusExec;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --griduser <Grid os user name> --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
+    exit(1);
+}
+
+sub cerateDiskGroup {
+    my ( $gridUser, $dgName, $dgDisks ) = @_;
+
+    my $sqlplus = SqlplusExec->new( osUser => $gridUser, sysasm => 1 );
+
+    my @disks = ();
+    foreach my $diskPath ( split( /\s*[,|\\n]\s*/, $dgDisks ) ) {
+        $diskPath =~ s/^\s*|\s*$//g;
+        if ( $diskPath ne '' ) {
+            push( @disks, "'$diskPath'" );
+        }
+    }
+    my $disksStr = join( ',', @disks );
+
+    my $rows = $sqlplus->do(
+        sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'},
+        verbose => 1
+    );
+
+    my $exitCode = system("srvctl start diskgroup -diskgroup $dgName");
+
+    return $exitCode;
+}
+
+sub main {
+    my ( $isHelp, $dgName, $dgDisks );
+    my $gridUser = 'grid';
+    GetOptions(
+        'h|help'     => \$isHelp,
+        'griduser=s' => \$gridUser,
+        'name=s'     => \$dgName,
+        'disks=s'    => \$dgDisks
+    );
+
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($dgName) or $dgName eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined disk group name by option --name.\n");
+    }
+    if ( not defined($dgDisks) or $dgDisks eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined disk paths by option --disks.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    #create diskgroup archdg external redundancy disk '/dev/oracleasm/arch-disk1','/dev/oracleasm/arch-disk2' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+    #create diskgroup datadg external redundancy disk '/dev/oracleasm/data-disk1','/dev/oracleasm/data-disk2' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+
+    my $out      = {};
+    my $exitCode = cerateDiskGroup( $gridUser, $dgName, $dgDisks );
+    if ( $exitCode != 0 ) {
+        print("ERROR: Create disk group:$dgName:$dgDisks failed.\n");
+    }
+    else {
+        $out->{diskGroupName} = $dgName;
+    }
+
+    AutoExecUtils::saveOutput($out);
+
+    print("------All disk groups------------------\n");
+    system("asmcmd lsdg");
+
+    return $exitCode;
+}
+
+exit main();
