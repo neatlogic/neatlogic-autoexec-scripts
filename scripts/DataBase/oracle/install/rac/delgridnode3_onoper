@@ -1,0 +1,122 @@
+#!/bin/bash
+#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$ORACLE_USER" ]; then
+    ORACLE_USER=oracle
+fi
+
+ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
+if [ -z "$ORACLE_UID" ]; then
+    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+oraEnv=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
+echo "$oraEnv"
+EXEC_ENV=$oraEnv
+setInstallEnv
+
+SUDO_ORA_CMD crsctl delete node -n $NODE
+
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    echo "WARN: Update inventory failed."
+    exit $exitCode
+fi
+
+su - $GRID_USER olsnodes -s -t
+su - $GRID_USER cluvfy stage -post nodedel -n node_list -verbose
+
+#补充执行清除vip
+su - $GRID_USER srvctl stop vip -i $NODE
+su - $GRID_USER srvctl remove vip -i $NODE -f
+su - $GRID_USER crsctl stat res -t
+
+exit $HAS_ERROR
