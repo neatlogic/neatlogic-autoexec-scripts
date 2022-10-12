@@ -1,0 +1,97 @@
+{
+    "opDesc": "获取DB的参数",
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "参数包括：库名（主备一致），实例名：RAC集群内一致，主备不一样，同步的sequence等",
+    "option": [{
+        "opt": "sid",
+        "name": "SID",
+        "help": "如不设置则直接使用环境变量ORACLE_SID",
+        "type": "text",
+        "required": "false",
+        "validate": "",
+        "defaultValue": ""
+    }],
+    "output": [{
+            "opt": "isRAC",
+            "name": "是否RAC",
+            "help": "是否是Oracle RAC",
+            "type": "text"
+        },
+        {
+            "opt": "nodeName",
+            "name": "Grid节点名",
+            "help": "集群节点名称",
+            "type": "text"
+        },
+        {
+            "opt": "instanceName",
+            "name": "实例名",
+            "help": "实例名, SID",
+            "type": "text"
+        },
+        {
+            "opt": "dbName",
+            "name": "DB库名",
+            "help": "库名，主备是一致的",
+            "type": "text"
+        },
+        {
+            "opt": "dbUniqueName",
+            "name": "DB实例名",
+            "help": "实例名，RAC集群内一致，主备不一样",
+            "type": "text"
+        },
+        {
+            "opt": "dbSequence",
+            "name": "同步Sequence号",
+            "help": "同步的归档日志的Sequence号",
+            "type": "text"
+        },
+        {
+            "opt": "tempFilesCount",
+            "name": "临时文件数量",
+            "help": "临时文件数量",
+            "type": "text"
+        },
+        {
+            "opt": "racNodeIpTxt",
+            "name": "集群节点IP信息",
+            "help": "集群节点IP对应关系",
+            "type": "textarea"
+        },
+        {
+            "opt": "hostsConfTxt",
+            "name": "/etc/hosts配置",
+            "help": "集群/etc/hosts文件配置内容",
+            "type": "textarea"
+        },
+        {
+            "opt": "allGridNodesInfo",
+            "name": "集群所有节点",
+            "help": "所有集群成员的执行节点信息",
+            "type": "node"
+        },
+        {
+            "opt": "otherGridNodesInfo",
+            "name": "当前节点以外节点",
+            "help": "除当前节点以外的其他集群成员节点信息",
+            "type": "node"
+        },
+        {
+            "opt": "thisNodesInfo",
+            "name": "当前节点信息",
+            "help": "当前节点信息",
+            "type": "node"
+        },
+        {
+            "opt": "operNodeInfo",
+            "name": "集群操作节点",
+            "help": "除当前节点外可以执行集群操作的节点",
+            "type": "node"
+        }
+    ]
+}

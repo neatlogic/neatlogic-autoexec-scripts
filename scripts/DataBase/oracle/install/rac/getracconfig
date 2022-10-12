@@ -1,0 +1,224 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Socket;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+#input：
+#db主机节点（DB主机节点可用的RAC其中一个节点）主备都要运行，获取主备的dbUniqueName和dbName和isRAC，两个参数分别传递给下一个步骤
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+
+#output:
+#dbName: xxx  (库名，主备是一致的)
+#dbUniqueName: yyy (实例名，RAC集群内一致，主备不一样)
+#dbSequence: zzz (同步的sequence)
+#tempFilesCount: (临时文件数量)
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --GRID_HOME <GRID_HOME> --ORACLE_HOME <ORACLE_HOME> --ORACLE_SID <ORACLE_SID>\n");
+    exit(1);
+}
+
+sub isRac {
+    my ($sqlplus) = @_;
+
+    #SELECT VALUE FROM V$PARAMETER WHERE NAME='cluster_database';
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT VALUE FROM V$PARAMETER WHERE NAME='cluster_database'},
+        verbose => 1
+    );
+    my $isCluster = 'FALSE';
+    if ($rows) {
+        $isCluster = $$rows[0]->{VALUE};
+    }
+
+    my $clustered = 0;
+
+    if ( $isCluster eq 'TRUE' ) {
+        $clustered = 1;
+    }
+    else {
+        my $israc = `ps -ef |grep crsd.bin |grep -v "grep crsd.bin" |sed -n '$='`;
+        if ( $israc eq '' ) {
+            $clustered = 0;
+        }
+        else {
+            $clustered = 1;
+        }
+    }
+
+    return $clustered;
+}
+
+sub getConfig {
+    my ( $osUser, $sid ) = @_;
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT NAME,VALUE FROM V$PARAMETER WHERE NAME IN ('db_name', 'db_unique_name')},
+        verbose => 1
+    );
+
+    my $parameters = {};
+    if ( defined($rows) ) {
+        foreach my $row (@$rows) {
+            $parameters->{ $row->{NAME} } = $row->{VALUE};
+        }
+    }
+
+    my $DB_NAME        = $parameters->{db_name};
+    my $DB_UNIQUE_NAME = $parameters->{db_unique_name};
+
+    #SELECT SEQUENCE# FROM V$THREAD where THREAD#='1'
+    $rows = $sqlplus->query(
+        sql     => q{SELECT SEQUENCE# as SEQUENCE FROM V$THREAD where THREAD#='1'},
+        verbose => 1
+    );
+    my $SEQUENCE;
+    if ( defined($rows) ) {
+        $SEQUENCE = $$rows[0]->{SEQUENCE};
+    }
+
+    #SELECT COUNT(1) AS TEMP_FILES_COUNT FROM DBA_TEMP_FILES;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT COUNT(1) AS TEMP_FILES_COUNT FROM DBA_TEMP_FILES},
+        verbose => 1
+    );
+    my $TEMP_FILES_COUNT;
+    if ( defined($rows) ) {
+        $TEMP_FILES_COUNT = $$rows[0]->{TEMP_FILES_COUNT};
+    }
+
+    my $isRAC = isRac($sqlplus);
+
+    return ( $DB_NAME, $isRAC, $DB_UNIQUE_NAME, $SEQUENCE, $TEMP_FILES_COUNT );
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            GRID_USER=s
+            ORACLE_USER=s
+            ORACLE_SID=s
+        }
+    );
+
+    my $hasOptErr   = 0;
+    my $ORACLE_SID  = $opts->{ORACLE_SID};
+    my $ORACLE_USER = $opts->{ORACLE_USER};
+    my $GRID_USER   = $opts->{GRID_USER};
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($GRID_USER) or $GRID_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined GRID_USER by option --GRID_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    my ( $dbName, $isRAC, $dbUniqueName, $dbSequence, $tempFilesCount ) = getConfig( $ORACLE_USER, $ORACLE_SID );
+    my $out = {};
+    $out->{dbName}         = $dbName;
+    $out->{isRAC}          = $isRAC;
+    $out->{dbUniqueName}   = $dbUniqueName;
+    $out->{dbSequence}     = $dbSequence;
+    $out->{tempFilesCount} = $tempFilesCount;
+
+    my $nodeName = `su - '$GRID_USER' -c 'olsnodes -l'`;
+    $nodeName =~ s/^\s*|\s*$//g;
+    $out->{nodeName} = $nodeName;
+
+    my $nodeNames = `su - '$GRID_USER' -c 'olsnodes'`;
+    $nodeNames =~ s/^\s*|\s*$//g;
+    $out->{allNodeNames} = $nodeNames;
+
+    my @nodeNamesArray = sort ( split( "\n", $nodeNames ) );
+
+    my $racNodeIpTxt       = '';
+    my @allGridNodesInfo   = ();
+    my @otherGridNodesInfo = ();
+    my @thisNodesInfo      = ();
+
+    my $otherNodeNames = '';
+    foreach my $gridNode (@nodeNamesArray) {
+        my $ipAddr;
+        my $packedIp = gethostbyname($gridNode);
+        if ( defined($packedIp) ) {
+            $ipAddr       = inet_ntoa($packedIp);
+            $racNodeIpTxt = $racNodeIpTxt . $ipAddr . "\n";
+            push( @allGridNodesInfo, { 'ip' => $ipAddr } );
+        }
+        else {
+            $hasError = 1;
+            print("ERROR: Can not determine ip for node:$gridNode.\n");
+        }
+        $gridNode =~ s/^\s*|\s*$//g;
+        if ( $gridNode eq $nodeName ) {
+            push( @thisNodesInfo, { 'ip' => $ipAddr } );
+        }
+        else {
+            $otherNodeNames = $otherNodeNames . $gridNode . "\n";
+            push( @otherGridNodesInfo, { 'ip' => $ipAddr } );
+        }
+    }
+
+    $out->{allGridNodesInfo}   = \@allGridNodesInfo;
+    $out->{otherGridNodesInfo} = \@otherGridNodesInfo;
+    $out->{thisNodesInfo}      = \@thisNodesInfo;
+    $out->{racNodeIpTxt}       = $racNodeIpTxt;
+
+    if ( scalar(@otherGridNodesInfo) > 0 ) {
+        $out->{operNodeInfo} = [ $otherGridNodesInfo[0] ];
+    }
+
+    $otherNodeNames =~ s/^\s*|\s*$//g;
+    $out->{otherNodeNames} = $otherNodeNames;
+
+    if ( defined($ORACLE_SID) and $ORACLE_SID ne '' ) {
+        $out->{instanceName} = $ORACLE_SID;
+    }
+    else {
+        my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
+        $oraSid =~ s/^\s*|\s*$//g;
+        $out->{instanceName} = $oraSid;
+    }
+
+    my $hostsConfTxt;
+    my $hostsFh = IO::File->new("</etc/hosts");
+    if ( defined($hostsFh) ) {
+        while ( my $line = $hostsFh->getline() ) {
+            $hostsConfTxt = $hostsConfTxt . $line;
+        }
+        $hostsFh->close();
+    }
+    $out->{hostsConfTxt} = $hostsConfTxt;
+
+    AutoExecUtils::saveOutput($out);
+
+    if ( defined($dbName) and defined($dbUniqueName) and defined($dbSequence) ) {
+        print("INFO: Get db base config success.\n");
+    }
+    else {
+        print("ERROR: Get db base config failed.\n");
+        exit(-1);
+    }
+
+    return 0;
+}
+
+exit( main() );

@@ -1,0 +1,243 @@
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import re
+import argparse
+import json
+import ipaddress
+
+import AutoExecUtils
+
+
+def usage():
+    # 帮助信息
+    pname = os.path.basename(__file__)
+    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --scanip <scan ip> --nodesipinfo <all nodes ip json obj>")
+
+
+if __name__ == "__main__":
+    # 参数处理
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--racname', default='', help='Oracle rac name')
+    parser.add_argument('--scanname', default='', help='Oracle scan name')
+    parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
+    parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
+    parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
+    parser.add_argument('--scaniplist', default='', help='Scan IP, example: 10.10.10.128')
+    parser.add_argument('--nodesipinfo', default='{}', help='All nodes ip information')
+
+    args = parser.parse_args()
+
+    hasOptError = 0
+    if args.racname == '':
+        print("ERROR: Must defined rac name by option --racname")
+        hasOptError = 1
+    if args.scanname == '':
+        print("ERROR: Must defined scan name by option --scanname")
+        hasOptError = 1
+    if args.pubnet == '':
+        print("ERROR: Must defined public net by option --pubnet, example: --pubnet 10.10.10.0/24\n")
+        hasOptError = 1
+    if args.privnet == '':
+        print("ERROR: Must defined private net by option --privnet, example: --privnet 192.168.10.0/24\n")
+        hasOptError = 1
+    if args.viplist == '':
+        print("ERROR: Must defined scan ip by option --viplist, example: --viplist 10.10.10.110,10.10.10.111\n")
+        hasOptError = 1
+    if args.scaniplist == '':
+        print("ERROR: Must defined scan ip by option --scaniplist, example: --scaniplist 10.10.10.120,10.10.10.121\n")
+        hasOptError = 1
+
+    if hasOptError == 1:
+        usage()
+
+    racName = args.racname
+    scanName = args.scanname
+
+    pubNetTxt = args.pubnet
+    pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
+
+    privNetTxt = args.privnet
+    privNet = ipaddress.ip_network(privNetTxt, strict=False)
+
+    # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
+    nodesIpInfo = json.loads(args.nodesipinfo)
+    nodes = list(nodesIpInfo.keys())
+    nodes.sort()
+    nodesCount = len(nodes)
+
+    # vip 地址参数分析和排序
+    vipList = []
+    vipListTxt = args.viplist
+    spaceReg = re.compile(r"\s+")
+    vipListTxt = spaceReg.sub('', vipListTxt)
+    vipListTxt = vipListTxt.replace('\\n', '\n')
+    splitReg = re.compile(r",|\n")
+    vipList = splitReg.split(vipListTxt)
+    vipList.sort()
+
+    vipsCount = len(vipList)
+
+    # scan ip 地址参数分析和排序
+    scanIpList = []
+    scanIpListTxt = args.scaniplist
+    spaceReg = re.compile(r"\s+")
+    scanIpListTxt = spaceReg.sub('', scanIpListTxt)
+    scanIpListTxt = scanIpListTxt.replace('\\n', '\n')
+    splitReg = re.compile(r",|\n")
+    scanIpList = splitReg.split(scanIpListTxt)
+    scanIpList.sort()
+
+    pubIpMap = {}
+    vipMap = {}
+
+    hasError = 0
+    # Check vip in public net
+    for vip in vipList:
+        vipMap[vip] = 1
+        if ipaddress.ip_address(vip) not in pubNet:
+            hasError = 1
+            print("ERROR: VIP:%s not in public network %s\n" % (vip, pubNetTxt))
+
+    # Check scanip in public net
+    for scanIp in scanIpList:
+        if ipaddress.ip_address(scanIp) not in pubNet:
+            hasError = 1
+            print("ERROR: SCAN IP:%s not in public network %s\n" % (scanIp, pubNetTxt))
+
+    if vipsCount != nodesCount:
+        hasError = 1
+        print("ERROR: VIP list count:%s, not equal nodes count:%s" % (vipsCount, nodesCount))
+        print("VIP:")
+        print("\n".join(vipList))
+        print("Nodes:")
+        print("\n".join(nodes))
+
+    if hasError != 0:
+        sys.exit(3)
+
+    hostConfTxt = ''
+
+    pubNicName = None
+    privNicName = None
+
+    hostNameMap = {}
+    pubNicNameMap = {}
+    privNicNameMap = {}
+    notusedNicNameMap = {}
+
+    pubIpConf = []
+    privIpConf = []
+    vipConf = []
+    dbClusterNodes = []
+    gridClusterNodes = []
+    networkInterfaceList = []
+
+    idx = 1
+    for node in nodes:
+        pubIp = None
+        privIp = None
+
+        for nodeIpInfo in nodesIpInfo.get(node):
+            ipType = nodeIpInfo.get('type')
+            if ipType != 'IPV4':
+                continue
+
+            nicName = nodeIpInfo.get('nic')
+            ip = nodeIpInfo.get('ip')
+            prefixLen = nodeIpInfo.get('netmask')
+
+            thisNet = ipaddress.ip_network('%s/%s' % (ip, prefixLen), strict=False)
+
+            if ipaddress.ip_address(ip) in pubNet:
+                if pubIp is None:
+                    pubIp = ip
+                    pubNicNameMap[nicName] = thisNet.network_address
+            elif ipaddress.ip_address(ip) in privNet:
+                if privIp is None:
+                    privIp = ip
+                    privNicNameMap[nicName] = thisNet.network_address
+            else:
+                notusedNicNameMap[nicName] = thisNet.network_address
+
+        if pubIp is None:
+            hasError = 1
+            print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
+        else:
+            pubIpMap[ip] = 1
+            pubIpConf.append('%s\t%s%s' % (pubIp, racName, idx))
+            hostNameMap[pubIp] = '%s%s' % (racName, idx)
+            vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
+            gridClusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
+            dbClusterNodes.append('%s%s' % (racName, idx))
+
+        if privIp is None:
+            hasError = 1
+            print("ERROR: Node:%s does not config private network:%s ip" % (node, privNetTxt))
+        else:
+            privIpConf.append("%s\t%s%s-priv" % (privIp, racName, idx))
+
+        idx = idx + 1
+
+    # 网卡名一致性检查，Oracle RAC安装要求所有节点的public和private网络的网卡名要一致
+    if len(pubNicNameMap) > 1:
+        hasError = 1
+        nicNames = list(pubNicNameMap.keys())
+        print("ERROR: Public Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (pubNetTxt, ','.join(nicNames)))
+    if len(privNicNameMap) > 1:
+        hasError = 1
+        nicNames = list(privNicNameMap.keys())
+        print("ERROR: Private Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (privNetTxt, ','.join(nicNames)))
+
+    # 拼接Oracle静默安装需要的配置oracle.install.crs.config.networkInterfaceList
+    for nicName in pubNicNameMap.keys():
+        netAddr = pubNicNameMap[nicName]
+        networkInterfaceList.append('%s:%s:1' % (nicName, netAddr))
+    for nicName in privNicNameMap.keys():
+        netAddr = privNicNameMap[nicName]
+        networkInterfaceList.append('%s:%s:5' % (nicName, netAddr))
+    for nicName in notusedNicNameMap.keys():
+        netAddr = notusedNicNameMap[nicName]
+        networkInterfaceList.append('%s:%s:3' % (nicName, netAddr))
+
+    for vip in vipList:
+        if vip in pubIpMap:
+            hasError = 1
+            print("ERROR: VIP:%s is public ip for rac node, conflict." % (vip))
+
+    scanIpConf = []
+    for scanIp in scanIpList:
+        if scanIp in pubIpMap:
+            hasError = 1
+            print("ERROR: SCAN IP:%s is public ip for rac node, conflict." % (scanIp))
+        if scanIp in vipMap:
+            hasError = 1
+            print("ERROR: SCAN IP:%s is vip for rac node, conflict." % (scanIp))
+
+        scanIpConf.append("%s\t%s" % (scanIp, scanName))
+
+    hostConfTxt = "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n" + "\n".join(scanIpConf)
+    hostConfTxt = "::1         localhost localhost.localdomain localhost6 localhost6.localdomain6\n" + hostConfTxt
+    hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
+
+    out = {}
+
+    out['ip2HostName'] = hostNameMap
+    out['hostsConfTxt'] = hostConfTxt
+
+    # oracle.install.crs.config.gridClusterNodes=rac1:rac1-vip,rac2:rac2-vip
+    out['gridClusterNodes'] = ','.join(gridClusterNodes)
+
+    # oracle.install.db.CLUSTER_NODES=rac1,rac23
+    # nodelist=rac1,rac2
+    out['dbClusterNodes'] = ','.join(dbClusterNodes)
+
+    # oracle.install.crs.config.networkInterfaceList=enp0s3:192.168.0.0:3,enp0s8:192.168.56.0:1,enp0s9:192.168.57.0:5
+    out['networkInterfaceList'] = ','.join(networkInterfaceList)
+
+    AutoExecUtils.saveOutput(out)
+
+    sys.exit(hasError)
