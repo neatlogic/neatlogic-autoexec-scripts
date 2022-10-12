@@ -39,18 +39,18 @@
         },
         {
             "opt": "mycnf",
-            "name": "mysql配置文件",
+            "name": "my.cnf文件路径",
             "help": "存放mysql配置文件my.cnf文件，如：my.cnf",
-            "type": "file",
+            "type": "text",
             "defaultValue": null,
             "required": "true",
             "validate": ""
         },
         {
             "opt": "inspkg",
-            "name": "安装包文件",
+            "name": "安装文件路径",
             "help": "mysql安装tar.gz包，如：inspkg.tar.gz",
-            "type": "file",
+            "type": "text",
             "defaultValue": null,
             "required": "true",
             "validate": ""
