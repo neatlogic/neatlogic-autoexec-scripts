@@ -1,0 +1,56 @@
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import re
+import argparse
+import json
+import ipaddress
+
+import AutoExecUtils
+
+
+def usage():
+    # 帮助信息
+    pname = os.path.basename(__file__)
+    print(pname + "--masterip <master ip> --slaveips <slave ips>")
+
+
+if __name__ == "__main__":
+    # 参数处理
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--masterip', default='', help='master ip')
+    parser.add_argument('--slaveips', default='', help='slave ips')
+
+    args = parser.parse_args()
+
+    hasOptError = 0
+    if args.masterip == '':
+        print("ERROR: Must defined master ip by option --masterip")
+        hasOptError = 1
+    if args.slaveips == '':
+        print("ERROR: Must defined slave ips by option --slaveips")
+        hasOptError = 1
+
+    if hasOptError == 1:
+        usage()
+
+    masterip = args.masterip
+    slaveips = args.slaveips
+
+    serverInfo = {}
+    servernum = 1
+    serverInfo[masterip[0].get('ip')] = servernum
+
+    for slaveip in slaveips:
+        servernum += 1
+        serverInfo[slaveip.get('ip')] = servernum
+    
+
+    out = {}
+
+    out['ip2server'] = serverInfo
+
+    AutoExecUtils.saveOutput(out)
