@@ -7,13 +7,23 @@
     "description": "OracleDB安装执行root脚本(root用户执行)",
     "argument": null,
     "option": [{
-        "opt": "ORACLE_HOME",
-        "name": "ORACLE_HOME",
-        "help": "ORACLE_HOME目录",
-        "type": "text",
-        "defaultValue": "${ORACLE_HOME}",
-        "required": "true",
-        "validate": ""
-    }],
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "ORACLE_HOME目录",
+            "type": "text",
+            "defaultValue": "${ORACLE_HOME}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INVENTORY_LOCATION",
+            "name": "INVENTORY目录",
+            "help": "INVENTORY目录",
+            "type": "text",
+            "defaultValue": "${INVENTORY_LOCATION}",
+            "required": "true",
+            "validate": ""
+        }
+    ],
     "output": []
 }

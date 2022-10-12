@@ -40,6 +40,10 @@ function parseOpts() {
                 ORACLE_HOME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            INVENTORY_LOCATION)
+                INVENTORY_LOCATION="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
                     echo "Unknown option --${OPTARG}" >&2
@@ -64,8 +68,30 @@ parseOpts "$@"
 
 if [ -z "$ORACLE_HOME" ]; then
     echo "ERROR: ORACLE_HOME not defined."
-    echo "Usage: dbins-root --ORACLE_HOME <oracle home>"
+    echo "Usage: dbins-root --ORACLE_HOME <grid home> --INVENTORY_LOCATION <inventory dir>"
     exit 2
+fi
+
+if [ -z "$INVENTORY_LOCATION" ]; then
+    INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+fi
+
+if [ -z "$INVENTORY_LOCATION" ]; then
+    echo "ERROR: Can not determin invertory directory by file:$ORACLE_HOME/oraInst.loc."
+    exit 3
+fi
+
+echo $INVENTORY_LOCATION/orainstRoot.sh
+$INVENTORY_LOCATION/orainstRoot.sh
+exitCode=$?
+if [ $exitCode -ge 128 ]; then
+    #负数返回码，大于127就是负数的补码
+    echo "ERROR: Execute $INVENTORY_LOCATION/orainstRoot.sh failed, exitCode:$exitCode."
+    exit $exitCode
+elif [ $exitCode -gt 0 ]; then
+    echo "WARN: Execute $INVENTORY_LOCATION/orainstRoot.sh has some warning, exitCode:$exitCode."
+else
+    echo "FINE: Execute $INVENTORY_LOCATION/orainstRoot.sh successful."
 fi
 
 echo $ORACLE_HOME/root.sh
