@@ -26,6 +26,7 @@ sub new {
 
     my @uname  = uname();
     my $osType = $uname[0];
+    $osType =~ s/\s.*$//;
     $self->{osType} = $osType;
 
     my $osUser  = $args{osUser};
@@ -86,7 +87,7 @@ sub new {
         $sqlplusCmd = 'sqlplus -s -R 1 -L / as sysasm';
     }
 
-    if ( $isRoot and defined( $args{osUser} ) ) {
+    if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows' ) {
         $sqlplusCmd = qq{su - $osUser -c "ORACLE_SID=$oraSid $sqlplusCmd"};
     }
 
@@ -109,9 +110,14 @@ sub new {
         }
 
         if ( defined( $args{dbname} ) ) {
-            $sqlplusCmd = qq(sqlplus -s -R 1 -L '$args{username}/"$args{password}"'@//$args{host}:$args{port}/$args{dbname});
-            if ( $isRoot and defined( $args{osUser} ) ) {
-                $sqlplusCmd = qq(su - $osUser -c "ORACLE_SID=$oraSid sqlplus -s -R 1 -L '$args{username}/\"$args{password}\"'@//$args{host}:$args{port}/$args{dbname}");
+            if ( $osType eq 'Windows' ) {
+                $sqlplusCmd = qq(sqlplus -s -R 1 -L "$args{username}/\\"$args{password}\\""@//$args{host}:$args{port}/$args{dbname});
+            }
+            else {
+                $sqlplusCmd = qq(sqlplus -s -R 1 -L '$args{username}/"$args{password}"'@//$args{host}:$args{port}/$args{dbname});
+                if ( $isRoot and defined( $args{osUser} ) ) {
+                    $sqlplusCmd = qq(su - $osUser -c "ORACLE_SID=$oraSid sqlplus -s -R 1 -L '$args{username}/\"$args{password}\"'@//$args{host}:$args{port}/$args{dbname}");
+                }
             }
         }
     }
@@ -145,7 +151,7 @@ sub getOraEnv {
     $SIG{ALRM} = sub { die "eval user profile failed" };
     alarm(10);
     my $evalOutput = `$evalCmd`;
-    my @envLines = split( /\n/, $evalOutput );
+    my @envLines   = split( /\n/, $evalOutput );
     alarm(0);
 
     foreach my $line (@envLines) {
@@ -185,7 +191,7 @@ sub evalProfile {
     $SIG{ALRM} = sub { die "eval user profile failed" };
     alarm(10);
     my $evalOutput = `$evalCmd`;
-    my @envLines = split( /\n/, $evalOutput );
+    my @envLines   = split( /\n/, $evalOutput );
     alarm(0);
 
     foreach my $line (@envLines) {
@@ -206,7 +212,7 @@ sub evalProfile {
 
 sub _parseOutput {
     my ( $self, $output, $isVerbose ) = @_;
-    my @lines = split( /\n/, $output );
+    my @lines      = split( /\n/, $output );
     my $linesCount = scalar(@lines);
 
     my $hasError        = 0;
@@ -413,14 +419,28 @@ sub _execSql {
         $sql = $sql . ';';
     }
 
-    my $cmd = qq{$self->{sqlplusCmd} << "EOF"
+    my $sqlFH;
+    my $cmd;
+    if ( $self->{osType} ne 'Windows' ) {
+        $cmd = qq{$self->{sqlplusCmd} << "EOF"
                set linesize 256 pagesize 9999 echo off feedback off tab off trimout on underline on wrap on;
                $sql
                exit;
                EOF
               };
+        $cmd =~ s/^\s*//mg;
+    }
+    else {
+        use File::Temp;
+        $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.sql' );
+        my $fname = $sqlFH->filename;
+        print $sqlFH ($sql);
+        print $sqlFH ("\nexit;\n");
+        $sqlFH->close();
 
-    $cmd =~ s/^\s*//mg;
+        my $sqlplusCmd = $self->{sqlplusCmd};
+        $cmd = qq{$sqlplusCmd @"$fname"};
+    }
 
     if ($isVerbose) {
         print("INFO: Execute sql:\n");

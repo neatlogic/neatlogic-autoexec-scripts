@@ -22,6 +22,7 @@ sub new {
     };
     my @uname  = uname();
     my $osType = $uname[0];
+    $osType =~ s/\s.*$//;
     $self->{osType} = $osType;
 
     my $osUser = $args{osUser};
@@ -71,7 +72,7 @@ sub new {
         $mongodbCmd = "$mongodbCmd -p '$args{password}'";
     }
 
-    if ( $isRoot and defined( $args{osUser} ) ) {
+    if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows') {
         $mongodbCmd = qq{su - $osUser -c "$mongodbCmd"};
     }
     $self->{mongodbCmd} = $mongodbCmd;
@@ -133,13 +134,29 @@ sub _execSql {
     my $isVerbose   = $args{verbose};
     my $parseOutput = $args{parseOutput};
 
-    my $cmd = qq{$self->{mongodbCmd} << EOF
-        $sql
-	    exit;
-        EOF
-    };
+    my $sqlFH;
+    my $cmd;
+    if ( $self->{osType} ne 'Windows' ) {
+        $cmd = qq{$self->{mongodbCmd} << EOF
+            $sql
+            exit;
+            EOF
+        };
+        $cmd =~ s/^\s*//mg;
+    }
+    else{
+        use File::Temp;
+        $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.sql' );
+        my $fname = $sqlFH->filename;
+        print $sqlFH ($sql);
+        print $sqlFH ("\nexit;\n");
+        $sqlFH->close();
 
-    $cmd =~ s/^\s*//mg;
+        my $mongodbCmd = $self->{mongodbCmd};
+        $mongodbCmd =~ s/'/"/g;
+        $cmd = qq{$mongodbCmd "$fname"};
+    }
+
     if ($isVerbose) {
         print("\nINFO: Execute sql:\n");
         print( $sql, "\n" );

@@ -24,6 +24,7 @@ sub new {
 
     my @uname  = uname();
     my $osType = $uname[0];
+    $osType =~ s/\s.*$//;
     $self->{osType} = $osType;
 
     my $osUser = $args{osUser};
@@ -81,7 +82,7 @@ sub new {
         $mysqlCmd = "$mysqlCmd -D'$args{dbname}'";
     }
 
-    if ( $isRoot and defined( $args{osUser} ) ) {
+    if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows' ) {
         $mysqlCmd = qq{su - $osUser -c "$mysqlCmd"};
     }
     $self->{mysqlCmd} = $mysqlCmd;
@@ -92,16 +93,16 @@ sub new {
 
 sub _parseOutput {
     my ( $self, $output, $isVerbose ) = @_;
-    my @lines = split( /\n/, $output );
+    my @lines      = split( /\n/, $output );
     my $linesCount = scalar(@lines);
 
     my $hasError   = 0;
     my @fieldNames = ();
 
     #字段描述信息，分析行头时一行对应一个字段描述数组
-    my @fieldDescs = ();
-    my @rowsArray  = ();
-    my $state      = 'heading';
+    my @fieldDescs   = ();
+    my @rowsArray    = ();
+    my $state        = 'heading';
     my $headingBegin = 0;
     for ( my $i = 0 ; $i < $linesCount ; $i++ ) {
         my $line = $lines[$i];
@@ -115,10 +116,10 @@ sub _parseOutput {
             print( $lines[ $i + 1 ], "\n" );
         }
 
-        if ( $headingBegin==0 and $line !~ /^[-\+]+$/ ) {
+        if ( $headingBegin == 0 and $line !~ /^[-\+]+$/ ) {
             next;
         }
-        else{
+        else {
             $headingBegin = 1;
         }
 
@@ -208,12 +209,27 @@ sub _execSql {
         $sql = $sql . ';';
     }
 
-    my $cmd = qq{$self->{mysqlCmd} << "EOF"
+    my $sqlFH;
+    my $cmd;
+    if ( $self->{osType} ne 'Windows' ) {
+        $cmd = qq{$self->{mysqlCmd} << "EOF"
                $sql
                EOF
               };
 
-    $cmd =~ s/^\s*//mg;
+        $cmd =~ s/^\s*//mg;
+    }
+    else {
+        use File::Temp;
+        $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.sql' );
+        my $fname = $sqlFH->filename;
+        print $sqlFH ($sql);
+        $sqlFH->close();
+
+        my $mysqlCmd = $self->{mysqlCmd};
+        $mysqlCmd =~ s/'/"/g;
+        $cmd = qq{$mysqlCmd < "$fname"};
+    }
 
     if ($isVerbose) {
         print("\nINFO: Execute sql:\n");

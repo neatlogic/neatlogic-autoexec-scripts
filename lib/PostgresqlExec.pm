@@ -23,6 +23,7 @@ sub new {
 
     my @uname  = uname();
     my $osType = $uname[0];
+    $osType =~ s/\s.*$//;
     $self->{osType} = $osType;
 
     my $osUser = $args{osUser};
@@ -71,7 +72,7 @@ sub new {
         $psqlCmd = "$psqlCmd -d'$args{dbname}'";
     }
 
-    if ( $isRoot and defined( $args{osUser} ) ) {
+    if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows' ) {
         $psqlCmd = qq{su - $osUser -c "$psqlCmd"};
     }
     $self->{psqlCmd} = $psqlCmd;
@@ -82,7 +83,7 @@ sub new {
 
 sub _parseOutput {
     my ( $self, $output, $isVerbose ) = @_;
-    my @lines = split( /\n/, $output );
+    my @lines      = split( /\n/, $output );
     my $linesCount = scalar(@lines);
 
     my $hasError   = 0;
@@ -187,12 +188,28 @@ sub _execSql {
         $sql = $sql . ';';
     }
 
-    my $cmd = qq{$self->{psqlCmd} << "EOF"
+    my $sqlFH;
+    my $cmd;
+    if ( $self->{osType} ne 'Windows' ) {
+        $cmd = qq{$self->{psqlCmd} << "EOF"
                $sql
                EOF
               };
 
-    $cmd =~ s/^\s*//mg;
+        $cmd =~ s/^\s*//mg;
+    }
+    else {
+        use File::Temp;
+        $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.sql' );
+        my $fname = $sqlFH->filename;
+        print $sqlFH ($sql);
+        print $sqlFH ("\n\\q\n");
+        $sqlFH->close();
+
+        my $psqlCmd = $self->{psqlCmd};
+        $psqlCmd =~ s/'/"/g;
+        $cmd = qq{$psqlCmd -f "$fname"};
+    }
 
     if ($isVerbose) {
         print("\nINFO: Execute sql:\n");
