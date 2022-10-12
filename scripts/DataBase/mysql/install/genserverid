@@ -40,11 +40,17 @@ if __name__ == "__main__":
     masterip = args.masterip
     slaveips = args.slaveips
 
-    print("masterip:%s" % (masterip))
-    print("masterip:%s" % (slaveips))
+    serverInfo = {}
+    servernum = 1
+    serverInfo[masterip[0].get('ip')] = servernum
+
+    for slaveip in slaveips:
+        servernum += 1
+        serverInfo[slaveip.get('ip')] = servernum
+    
 
     out = {}
 
-    out['ip2server'] = {}
+    out['ip2server'] = serverInfo
 
     AutoExecUtils.saveOutput(out)
