@@ -40,8 +40,8 @@ if __name__ == "__main__":
     masterip = args.masterip
     slaveips = args.slaveips
 
-    print("masterip:".format(masterip))
-    print("masterip:".format(slaveips))
+    print("masterip:%s" % (masterip))
+    print("masterip:%s" % (slaveips))
 
     out = {}
 
