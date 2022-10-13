@@ -4,6 +4,7 @@ server.username = autoexec
 server.password = {ENCRYPTED}c1b9ee364c474e59ba37ae4a744d42e9d40579ef27cf45b30709c13c01939974
 password.key = {ENCRYPTED}9a0221ee93e549f4b2d3ef2d870db731c064248ea68c0cae6b442a189d99e9cc
 tenant = develop
+catalogs.default = /
 
 [server-demo]
 server.baseurl = http://192.168.0.104:8282
@@ -11,6 +12,7 @@ server.username = autoexec
 server.password = {ENCRYPTED}c4bcef6346474201e934f2457d404ae8d00f2abc729b45e500599a6f04c99b2a
 password.key = {ENCRYPTED}9a0221ee93e549f4b2d3ef2d870db731c064248ea68c0cae6b442a189d99e9cc
 tenant = demo
+catalogs.default = /
 
 [server-ts]
 server.baseurl = http://192.168.0.104:8282
@@ -18,4 +20,5 @@ server.username = autoexec
 server.password = {ENCRYPTED}c4bcef6346474201e934f2457d404ae8d00f2abc729b45e500599a6f04c99b2a
 password.key = {ENCRYPTED}9a0221ee93e549f4b2d3ef2d870db731c064248ea68c0cae6b442a189d99e9cc
 tenant = ts
+catalogs.default = /
 

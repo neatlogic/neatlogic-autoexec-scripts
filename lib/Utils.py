@@ -6,6 +6,7 @@
 import os
 import sys
 import time
+import re
 import binascii
 import configparser
 from filelock import FileLock
@@ -117,6 +118,12 @@ def parseCmdArgs(args):
 
         if destDir == '':
             destDir = homePath + '/scripts'
+
+        if catalogList is None or len(catalogList) == 0:
+            catalogListStr = cfg.get('server', 'catalogs.default')
+            catalogListStr = catalogListStr.strip()
+            sepReg = re.compile('\s*,\s*')
+            catalogList = sepReg.split(catalogListStr)
 
     if tenant == '':
         print("INFO: Tenant not set, use default:develop.\n", end='')
