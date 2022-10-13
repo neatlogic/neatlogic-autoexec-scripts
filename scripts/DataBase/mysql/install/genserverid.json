@@ -11,7 +11,7 @@
             "name": "master节点",
             "help": "主从同步中主节点master",
             "type": "node",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "true",
             "validate": ""
         },
@@ -20,7 +20,7 @@
             "name": "slave节点",
             "help": "主从同步中备节点slave",
             "type": "node",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "true",
             "validate": ""
         }
@@ -31,7 +31,7 @@
             "name": "IP与salveserver映射",
             "help": "ip与server节点对应关系",
             "type": "json",
-            "defaultValue": "{}",
+            "defaultValue": {},
             "required": "true"
         }
     ]

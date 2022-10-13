@@ -1,6 +1,7 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
+from nis import match
 import os
 import sys
 import re
@@ -21,11 +22,10 @@ if __name__ == "__main__":
     # 参数处理
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--racname', default='', help='Oracle rac name')
+    parser.add_argument('--nodename', default='', help='Oracle rac name')
     parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
-    parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
-    parser.add_argument('--nodesipinfo', default='{}', help='All nodes ip information')
+    parser.add_argument('--vip', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
     parser.add_argument('--oldhosts', default='', help='Old nodes hosts config txt')
 
     args = parser.parse_args()
@@ -37,8 +37,8 @@ if __name__ == "__main__":
     if args.privnet == '':
         print("ERROR: Must defined private net by option --privnet, example: --privnet 192.168.10.0/24\n")
         hasOptError = 1
-    if args.viplist == '':
-        print("ERROR: Must defined scan ip by option --viplist, example: --viplist 10.10.10.110,10.10.10.111\n")
+    if args.vip == '':
+        print("ERROR: Must defined vip by option --vip, example: --vip 10.10.10.110,10.10.10.111\n")
         hasOptError = 1
     if args.oldhosts == '':
         print("ERROR: Must defined scan ip by option --oldhosts.\n")
@@ -47,7 +47,28 @@ if __name__ == "__main__":
     if hasOptError == 1:
         usage()
 
-    racName = args.racname
+    oldHostsTxt = args.oldhosts
+    possibleRacNameMap = {}
+    confMap = {}
+    nodeNameMap = {}
+    spaceReg = re.compile(r"\s+")
+    for line in oldHostsTxt.split("\n"):
+        line = line.strip()
+        if line == '' or line.startswith('#'):
+            continue
+        lineInfo = spaceReg.split(line, 2)
+        if len(lineInfo) > 1:
+            ip = lineInfo[0]
+            name = lineInfo[1]
+            confMap[ip] = name
+            nodeNameMap[name] = ip
+            matchObjs = re.findall(r'(\w+)\d+', name)
+            if len(matchObjs) > 0:
+                matchObj = matchObjs[0]
+                possibleRacName = matchObj[0]
+                if possibleRacName.lower() != 'localhost':
+                    matchCount = possibleRacNameMap.get(possibleRacName, 0)
+                    possibleRacNameMap[possibleRacName] = matchCount + 1
 
     pubNetTxt = args.pubnet
     pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
@@ -61,6 +82,35 @@ if __name__ == "__main__":
     nodes.sort()
     nodesCount = len(nodes)
 
+    # 对老的hosts配置进行分析，把出现次数最多的名称作为rac name
+    nodeNames = []
+    racName = None
+    racNameCount = 0
+    for possibleRacName, matchCount in possibleRacNameMap.items():
+        if matchCount > racNameCount:
+            racNameCount = matchCount
+            racName = possibleRacName
+
+    if racName is None:
+        print("ERROR: Can not determine rac name by hosts config text.")
+        sys.exit(-1)
+    else:
+        # 从hosts里的名称到ip映射中排除已经使用的nodename，计算出新增的nodename
+        findNodeNameCount = 0
+        for idx in range(1, racNameCount*2 + nodesCount):
+            nodeName = '%s%s' % (racName, idx)
+            if not nodeName in nodeNameMap:
+                nodeNames.append(nodeName)
+                findNodeNameCount = findNodeNameCount + 1
+                if findNodeNameCount == nodesCount:
+                    break
+
+    if nodeName is None:
+        print("ERROR: Can not determine node name by hosts config text.")
+        sys.exit(-1)
+    else:
+        print("Determine new node name:%s" % (nodeName))
+
     # vip 地址参数分析和排序
     vipList = []
     vipListTxt = args.viplist
@@ -73,16 +123,6 @@ if __name__ == "__main__":
 
     vipsCount = len(vipList)
 
-    # scan ip 地址参数分析和排序
-    scanIpList = []
-    scanIpListTxt = args.scaniplist
-    spaceReg = re.compile(r"\s+")
-    scanIpListTxt = spaceReg.sub('', scanIpListTxt)
-    scanIpListTxt = scanIpListTxt.replace('\\n', '\n')
-    splitReg = re.compile(r",|\n")
-    scanIpList = splitReg.split(scanIpListTxt)
-    scanIpList.sort()
-
     pubIpMap = {}
     vipMap = {}
 
@@ -93,12 +133,6 @@ if __name__ == "__main__":
         if ipaddress.ip_address(vip) not in pubNet:
             hasError = 1
             print("ERROR: VIP:%s not in public network %s\n" % (vip, pubNetTxt))
-
-    # Check scanip in public net
-    for scanIp in scanIpList:
-        if ipaddress.ip_address(scanIp) not in pubNet:
-            hasError = 1
-            print("ERROR: SCAN IP:%s not in public network %s\n" % (scanIp, pubNetTxt))
 
     if vipsCount != nodesCount:
         hasError = 1
@@ -128,7 +162,7 @@ if __name__ == "__main__":
     gridClusterNodes = []
     networkInterfaceList = []
 
-    idx = 1
+    idx = 0
     for node in nodes:
         pubIp = None
         privIp = None
@@ -160,17 +194,17 @@ if __name__ == "__main__":
             print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
         else:
             pubIpMap[ip] = 1
-            pubIpConf.append('%s\t%s%s' % (pubIp, racName, idx))
-            hostNameMap[pubIp] = '%s%s' % (racName, idx)
-            vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
-            gridClusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
-            dbClusterNodes.append('%s%s' % (racName, idx))
+            pubIpConf.append('%s\t%s' % (pubIp, nodeNames[idx]))
+            hostNameMap[pubIp] = '%s' % (nodeNames[idx])
+            vipConf.append('%s\t%s-vip' % (vipList[idx], nodeNames[idx]))
+            gridClusterNodes.append('%s:%s-vip' % (nodeNames[idx], nodeNames[idx]))
+            dbClusterNodes.append('%s' % (nodeNames[idx]))
 
         if privIp is None:
             hasError = 1
             print("ERROR: Node:%s does not config private network:%s ip" % (node, privNetTxt))
         else:
-            privIpConf.append("%s\t%s%s-priv" % (privIp, racName, idx))
+            privIpConf.append("%s\t%s-priv" % (privIp, nodeNames[idx]))
 
         idx = idx + 1
 
@@ -200,9 +234,7 @@ if __name__ == "__main__":
             hasError = 1
             print("ERROR: VIP:%s is public ip for rac node, conflict." % (vip))
 
-    hostConfTxt = "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
-    hostConfTxt = "::1         localhost localhost.localdomain localhost6 localhost6.localdomain6\n" + hostConfTxt
-    hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
+    hostConfTxt = oldHostsTxt + "\n" + "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
 
     out = {}
 

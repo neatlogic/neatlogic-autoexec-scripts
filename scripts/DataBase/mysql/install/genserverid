@@ -47,7 +47,7 @@ if __name__ == "__main__":
     for slaveip in slaveips:
         servernum += 1
         serverInfo[slaveip.get('ip')] = servernum
-    
+
 
     out = {}
 
