@@ -1,0 +1,104 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "增加集群Grid节点(在某个老节点上执行)",
+    "option": [{
+            "opt": "CV_ASSUME_DISTID",
+            "name": "对应OS版本",
+            "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "自动",
+                        "value": "AUTO"
+                    },
+                    {
+                        "text": "OL7",
+                        "value": "OL7"
+                    },
+                    {
+                        "text": "OEL7.8",
+                        "value": "OEL7.8"
+                    },
+                    {
+                        "text": "OL8",
+                        "value": "OL8"
+                    },
+                    {
+                        "text": "OL9",
+                        "value": "OL9"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "AUTO",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "GRID_USER",
+            "name": "GRID用户",
+            "help": "Oracle Grid软件安装用户, 默认是grid",
+            "type": "text",
+            "defaultValue": "grid",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INVENTORY_LOCATION",
+            "name": "INVENTORY目录",
+            "help": "INVENTORY目录",
+            "type": "text",
+            "defaultValue": "${INVENTORY_LOCATION}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "NODE_NAME",
+            "name": "新增节点名",
+            "help": "新增加的节点名称",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "NODE_VIP_NAME",
+            "name": "新增节点VIP名",
+            "help": "新增加的节点VIP的名称",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "NODE_TYPE",
+            "name": "节点类型",
+            "help": "Oracle12以及以上增加了节点类型(HUB|LEAF)",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "HUB(连接共享存储)",
+                        "value": "HUB"
+                    },
+                    {
+                        "text": "LEAF(仅计算)",
+                        "value": "LEAF"
+                    },
+                    {
+                        "text": "不支持",
+                        "value": "none"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "none",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

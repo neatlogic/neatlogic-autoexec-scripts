@@ -22,22 +22,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--racname', default='', help='Oracle rac name')
-    parser.add_argument('--scanname', default='', help='Oracle scan name')
     parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
     parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
-    parser.add_argument('--scaniplist', default='', help='Scan IP, example: 10.10.10.128')
     parser.add_argument('--nodesipinfo', default='{}', help='All nodes ip information')
+    parser.add_argument('--oldhosts', default='', help='Old nodes hosts config txt')
 
     args = parser.parse_args()
 
     hasOptError = 0
-    if args.racname == '':
-        print("ERROR: Must defined rac name by option --racname")
-        hasOptError = 1
-    if args.scanname == '':
-        print("ERROR: Must defined scan name by option --scanname")
-        hasOptError = 1
     if args.pubnet == '':
         print("ERROR: Must defined public net by option --pubnet, example: --pubnet 10.10.10.0/24\n")
         hasOptError = 1
@@ -47,15 +40,14 @@ if __name__ == "__main__":
     if args.viplist == '':
         print("ERROR: Must defined scan ip by option --viplist, example: --viplist 10.10.10.110,10.10.10.111\n")
         hasOptError = 1
-    if args.scaniplist == '':
-        print("ERROR: Must defined scan ip by option --scaniplist, example: --scaniplist 10.10.10.120,10.10.10.121\n")
+    if args.oldhosts == '':
+        print("ERROR: Must defined scan ip by option --oldhosts.\n")
         hasOptError = 1
 
     if hasOptError == 1:
         usage()
 
     racName = args.racname
-    scanName = args.scanname
 
     pubNetTxt = args.pubnet
     pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
@@ -208,18 +200,7 @@ if __name__ == "__main__":
             hasError = 1
             print("ERROR: VIP:%s is public ip for rac node, conflict." % (vip))
 
-    scanIpConf = []
-    for scanIp in scanIpList:
-        if scanIp in pubIpMap:
-            hasError = 1
-            print("ERROR: SCAN IP:%s is public ip for rac node, conflict." % (scanIp))
-        if scanIp in vipMap:
-            hasError = 1
-            print("ERROR: SCAN IP:%s is vip for rac node, conflict." % (scanIp))
-
-        scanIpConf.append("%s\t%s" % (scanIp, scanName))
-
-    hostConfTxt = "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n" + "\n".join(scanIpConf)
+    hostConfTxt = "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
     hostConfTxt = "::1         localhost localhost.localdomain localhost6 localhost6.localdomain6\n" + hostConfTxt
     hostConfTxt = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n" + hostConfTxt
 

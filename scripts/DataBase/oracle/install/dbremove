@@ -1,6 +1,4 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
-
 HAS_ERROR=0
 function DO_CMD() {
     echo Exec ommand: $@
@@ -23,12 +21,12 @@ function SUDO_ORA_CMD() {
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
         exit $exitCode
     elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
     else
-        echo "FINE: All installations were successful."
+        echo "FINE: All operations were successful."
     fi
 }
 
@@ -58,20 +56,8 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            NODE)
-                NODE="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            ORACLE_SID)
-                ORACLE_SID="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
             DB_UNIQUE_NAME)
                 DB_UNIQUE_NAME="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            GRID_USER)
-                GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             ORACLE_USER)
@@ -127,25 +113,18 @@ echo "$oraEnv"
 EXEC_ENV=$oraEnv
 setInstallEnv
 
+#========开始执行删除操作==============================
+
 if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
     exit 0
 fi
 
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
-    -nodeList "$NODE" \
-    -gdbName "$DB_UNIQUE_NAME" \
-    -instanceName "$ORACLE_SID" \
+echo "Try to execute dbca command to remove database..."
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteDatabase \
+    -forceArchiveLogDeletion \
+    -sourceDB "$DB_UNIQUE_NAME" \
     -sysDBAUserName "$SYSDBA_USER" \
     -sysDBAPassword "$SYSDBA_PWD"
-
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Delete instance $ORACLE_SID failed."
-    exit $exitCode
-fi
-
-SUDO_ORA_CMD $GRID_USER srvctl disable listener -listener LISTENER -node "$NODE"
-SUDO_ORA_CMD $GRID_USER srvctl stop listener -listener LISTENER -node "$NODE"
 
 exit $HAS_ERROR

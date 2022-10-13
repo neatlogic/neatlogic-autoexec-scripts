@@ -23,12 +23,12 @@ function SUDO_ORA_CMD() {
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
         exit $exitCode
     elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
     else
-        echo "FINE: All installations were successful."
+        echo "FINE: All operations were successful."
     fi
 }
 
@@ -58,8 +58,8 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            ORACLE_USER)
-                ORACLE_USER="${!OPTIND}"
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -84,13 +84,13 @@ function parseOpts() {
 
 parseOpts "$@"
 
-if [ -z "$ORACLE_USER" ]; then
-    ORACLE_USER=oracle
+if [ -z "$GRID_USER" ]; then
+    GRID_USER=grid
 fi
 
-ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
-if [ -z "$ORACLE_UID" ]; then
-    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
+GRID_UID=$(id -u $GRID_USER 2>/dev/null)
+if [ -z "$GRID_UID" ]; then
+    echo "WARN: User $GRID_USER not exists, maybe already uninstalled."
 fi
 
 ENV_DISTID=""
@@ -98,36 +98,26 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
 fi
 
-oraEnv=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
+oraEnv=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
 echo "$oraEnv"
 EXEC_ENV=$oraEnv
 setInstallEnv
 
-if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
-    echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
-    exit 0
-fi
+#========开始执行删除操作==============================
 
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
-    "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$NODE}"
+echo "Try to delete $NODE from cluster config..."
+SUDO_ORA_CMD crsctl delete node -n $NODE
 
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Update inventory failed."
-    exit $exitCode
-fi
+#输出验证信息
+echo "Try to verify grid delete..."
+su - $GRID_USER -c "$ORACLE_HOME/bin/olsnodes -s -t"
+su - $GRID_USER -c "$ORACLE_HOME/bin/cluvfy stage -post nodedel -n node_list -verbose"
 
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/deinstall -local
-
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Update inventory failed."
-    exit $exitCode
-fi
-
-if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
-    rm -rf "$ORACLE_BASE/admin"
-fi
+echo "Try to ensure node vip deleted..."
+#补充执行清除vip，报错关系也不大
+su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl status vip -n $NODE"
+su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl stop vip -i $NODE"
+su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl remove vip -i $NODE -f"
+su - $GRID_USER -c "$ORACLE_HOME/bin/crsctl stat res -t"
 
 exit $HAS_ERROR

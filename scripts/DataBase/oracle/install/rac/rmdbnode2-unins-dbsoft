@@ -23,12 +23,12 @@ function SUDO_ORA_CMD() {
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
         exit $exitCode
     elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
     else
-        echo "FINE: All installations were successful."
+        echo "FINE: All operations were successful."
     fi
 }
 
@@ -46,6 +46,26 @@ function SUDO_CMD_CONT() {
     fi
 }
 
+function removeUserAndGroups() {
+    if [ -z "$ORACLE_UID" ]; then
+        return
+    fi
+
+    usermod -g10 $ORACLE_USER
+
+    #delete group id bigger than 1000
+    groups=$(id -G $ORACLE_USER)
+    for oraGid in $(id -G $ORACLE_USER); do
+        if [ $oraGid -gt 1000 ]; then
+            groupName=$(getent group GID | cut -d: -f1)
+            groupdel $groupName
+        fi
+    done
+
+    #delete oracle_user
+    userdel $ORACLE_USER
+}
+
 #参数处理,全部用长参数
 ######################################
 function parseOpts() {
@@ -58,8 +78,12 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            GRID_USER)
-                GRID_USER="${!OPTIND}"
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DEL_USER)
+                DEL_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -84,13 +108,13 @@ function parseOpts() {
 
 parseOpts "$@"
 
-if [ -z "$GRID_USER" ]; then
-    GRID_USER=oracle
+if [ -z "$ORACLE_USER" ]; then
+    ORACLE_USER=oracle
 fi
 
-ORACLE_UID=$(id -u $GRID_USER 2>/dev/null)
+ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
 if [ -z "$ORACLE_UID" ]; then
-    echo "WARN: User $GRID_USER not exists, maybe already uninstalled."
+    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
 fi
 
 ENV_DISTID=""
@@ -98,45 +122,32 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
 fi
 
-oraEnv=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
+oraEnv=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
 EXEC_ENV=$oraEnv
 setInstallEnv
+
+#========开始执行删除操作==============================
 
 if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
     exit 0
 fi
 
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
+echo "Try to update inventory on node $NODE..."
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$NODE}"
 
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Update inventory failed."
-    exit $exitCode
+echo "Try to deinstall oracle database software on node $NODE..."
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/deinstall -local
+
+if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
+    rm -rf "$ORACLE_BASE/admin"
 fi
 
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/deinstall -local | tee oragridunins.out
-
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Update inventory failed."
-    exit $exitCode
+if [ "$DEL_USER" == "1" ]; then
+    removeUserAndGroups
 fi
-
-#从日志中后去root命令行
-rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
-rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
-uninsDir=$(echo $rspFile | cut -d/ -f3)
-
-if [ -n "$rootCmd" ]; then
-    rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
-else
-    rootCmd="echo No root command found"
-fi
-
-DO_CMD $rootCmd
 
 exit $HAS_ERROR

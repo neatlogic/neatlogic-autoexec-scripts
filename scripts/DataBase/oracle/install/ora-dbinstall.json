@@ -5,8 +5,7 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "OracleRAC DB软件安装(在root用户下执行, 会su到oracle用户执行)",
-    "option": [
-        {
+    "option": [{
             "opt": "EXEC_ENV",
             "name": "变量设置",
             "help": "执行前的变量设（使用${}引用作业参数）",
@@ -21,8 +20,7 @@
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -53,7 +51,7 @@
             "opt": "INSTALLER_DIR",
             "name": "安装脚本目录",
             "help": "runInstaller脚本目录, 19C及以上版本, 解压在ORACLE_HOME下, 其他版本在解压目录的database子目录下",
-            "type": "file",
+            "type": "text",
             "defaultValue": "${ORACLE_HOME}",
             "required": "true",
             "validate": ""
@@ -64,15 +62,6 @@
             "help": "静默安装的响应文件",
             "type": "file",
             "defaultValue": null,
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "CLUSTER_NODES",
-            "name": "安装节点",
-            "help": "安装节点列表(genhossconf工具输出参数dbClusterNodes), 例如: rac1,rac2",
-            "type": "text",
-            "defaultValue": "",
             "required": "true",
             "validate": ""
         }

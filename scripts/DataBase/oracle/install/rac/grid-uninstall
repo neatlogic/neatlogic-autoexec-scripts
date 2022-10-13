@@ -124,7 +124,7 @@ function parseOpts() {
 parseOpts "$@"
 
 if [ -z "$GRID_USER" ]; then
-    GRID_USER=oracle
+    GRID_USER=grid
 fi
 
 GRID_UID=$(id -u $GRID_USER 2>/dev/null)

@@ -23,12 +23,12 @@ function SUDO_ORA_CMD() {
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
         exit $exitCode
     elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
     else
-        echo "FINE: All installations were successful."
+        echo "FINE: All operations were successful."
     fi
 }
 
@@ -62,6 +62,22 @@ function parseOpts() {
                 ORACLE_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            NODE_NAME)
+                NODE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYSDBA_USER)
+                SYSDBA_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYSDBA_PWD)
+                SYSDBA_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
                     echo "Unknown option --${OPTARG}" >&2
@@ -85,7 +101,7 @@ function parseOpts() {
 parseOpts "$@"
 
 if [ -z "$ORACLE_USER" ]; then
-    ORACLE_USER=oracle
+    ORACLE_USER=grid
 fi
 
 ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
@@ -103,19 +119,13 @@ echo "$oraEnv"
 EXEC_ENV=$oraEnv
 setInstallEnv
 
-if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
-    echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
-    exit 0
-fi
-
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
-    "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$LEFT_NODES}"
-
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Update inventory failed."
-    exit $exitCode
-fi
+#========开始执行删除操作==============================
+echo "Try to execute dbca command to add instance $ORACLE_SID(node:$NODE_NAME) to cluster..."
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \
+    -gdbName "$DB_UNIQUE_NAME" \
+    -nodeName "$NODE_NAME" \
+    -instanceName "$ORACLE_SID" \
+    -sysDBAUserName "$SYSDBA_USER" \
+    -sysDBAPassword "$SYSDBA_PWD"
 
 exit $HAS_ERROR

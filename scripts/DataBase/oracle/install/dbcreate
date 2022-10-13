@@ -1,0 +1,223 @@
+#!/bin/bash
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec ommand: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec ommand: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function setInstallEnv() {
+    EXEC_ENV_TXT=$(echo "$EXEC_ENV" | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ -n "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            RESPONSE_FILE)
+                RESPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATABASE_TYPE)
+                DATABASE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CONFIG_TYPE)
+                CONFIG_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CHARSET)
+                CHARSET="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CDB_PWD)
+                CDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_PWD)
+                PDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            IS_CDB)
+                IS_CDB="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_NAME)
+                PDB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            AUTO_MEMORY)
+                AUTO_MEMORY="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            MEM_PERCENTAGE)
+                MEM_PERCENTAGE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+oraEnv=$(SUCALL_ORA_CMD $ORACLE_USER env | grep ORACLE_)
+echo "$oraEnv"
+EXEC_ENV=$oraEnv
+setInstallEnv
+
+if [ -n "$RESPONSE_FILE" ]; then
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/assistants/dbca/dbca_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $ORACLE_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+fi
+
+PDB_COUNT="0"
+if [ "$IS_CDB" == "true" ] && [ -n "$PDB_NAME" ]; then
+    PDB_COUNT="1"
+fi
+
+if [ -z "$ORACLE_USER" ]; then
+    echo "ERROR: Must defined ORACLE_USER with option --ORACLE_USER."
+    exit 2
+fi
+
+if [ -z "$ORACLE_BASE" ]; then
+    echo "ERROR: Must defined ORACLE_BASE with option --ORACLE_BASE."
+    exit 2
+fi
+
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Must defined ORACLE_HOME with option --ORACLE_HOME."
+    exit 2
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+#创建数据库
+#su - oracle
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
+    -responseFile $REAL_RESPONSE_FILE \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
+    -createDatabase \
+    -templateName General_Purpose.dbc \
+    -gdbname $DB_UNIQUE_NAME \
+    -sid $DB_UNIQUE_NAME \
+    -databaseConfigType $CONFIG_TYPE \
+    -databaseType $DATABASE_TYPE \
+    -createAsContainerDatabase $IS_CDB \
+    -numberOfPDBs $PDB_COUNT \
+    -pdbName "$PDB_NAME" \
+    -characterSet $CHARSET \
+    -nationalCharacterSet AL16UTF16 \
+    -sysPassword "$CDB_PWD" \
+    -systemPassword "$CDB_PWD" \
+    -pdbAdminPassword "$PDB_PWD" \
+    -dbsnmpPassword "$CDB_PWD" \
+    -asmsnmpPassword "$CDB_PWD" \
+    -automaticMemoryManagement $AUTO_MEMORY \
+    -memoryPercentage $MEM_PERCENTAGE \
+    -emConfiguration NONE \
+    -ignorePreReqs \
+    -storageType FS \
+    -datafileDestination "${DATA_DIR}"
+
+echo "******************************************************************************"
+echo "Save state of PDB to enable auto-start."
+echo "******************************************************************************"
+su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
+alter system set db_create_file_dest='${DATA_DIR}';
+alter pluggable database ${PDB_NAME} save state;
+alter system set local_listener='localhost';
+exit;
+EOF
+
+echo "******************************************************************************"
+echo "Flip the auto-start flag."
+echo "******************************************************************************"
+cp /etc/oratab /tmp
+sed -i -e "s|${ORACLE_SID}:${ORACLE_HOME}:N|${ORACLE_SID}:${ORACLE_HOME}:Y|g" /tmp/oratab
+cp -f /tmp/oratab /etc/oratab
