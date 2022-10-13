@@ -152,11 +152,13 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
             newScriptArray = result.get('newScriptArray')
             updatedScriptArray = result.get('updatedScriptArray')
             if faultArray != None and len(faultArray) > 0:
+                hasError = 1
                 print("ERROR: Import {} failed:".format(scriptPath))
                 item = faultArray[0]
                 faultMessages = item['faultMessages']
                 for message in faultMessages:
                     print("\t", message)
+                return hasError
             else:
                 resultMessage = None
                 if newScriptArray != None and len(newScriptArray) > 0:
