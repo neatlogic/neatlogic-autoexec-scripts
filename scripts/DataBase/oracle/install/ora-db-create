@@ -64,6 +64,10 @@ function parseOpts() {
                 ORACLE_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            DATA_DIR)
+                DATA_DIR="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DATABASE_TYPE)
                 DATABASE_TYPE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -126,6 +130,11 @@ function parseOpts() {
 
 parseOpts "$@"
 
+if [ -z "$ORACLE_USER" ]; then
+    echo "ERROR: Must defined ORACLE_USER with option --ORACLE_USER."
+    exit 2
+fi
+
 oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
 eval "$oraEnv"
@@ -133,11 +142,6 @@ eval "$oraEnv"
 PDB_COUNT="0"
 if [ "$IS_CDB" == "true" ] && [ -n "$PDB_NAME" ]; then
     PDB_COUNT="1"
-fi
-
-if [ -z "$ORACLE_USER" ]; then
-    echo "ERROR: Must defined ORACLE_USER with option --ORACLE_USER."
-    exit 2
 fi
 
 if [ -z "$ORACLE_BASE" ]; then

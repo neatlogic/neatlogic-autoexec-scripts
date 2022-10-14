@@ -116,7 +116,7 @@
             "name": "DATA目录",
             "help": "存放表数据的数据目录",
             "type": "text",
-            "defaultValue": "$ORACLE_BASE/oradata",
+            "defaultValue": "${ORACLE_BASE}/oradata",
             "required": "true",
             "validate": ""
         },
