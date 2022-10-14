@@ -185,7 +185,7 @@
                 ],
                 "dataType": "static"
             },
-            "defaultValue": "UTF8",
+            "defaultValue": "AL32UTF8",
             "required": "true",
             "validate": ""
         },

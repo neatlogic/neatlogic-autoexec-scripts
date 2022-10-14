@@ -75,21 +75,13 @@
             "dataSource": {
                 "dataList": [
                     {
-                        "text": "RAC",
-                        "value": "RAC"
-                    },
-                    {
-                        "text": "RACONENODE",
-                        "value": "RACONENODE"
-                    },
-                    {
                         "text": "SI",
                         "value": "SI"
                     }
                 ],
                 "dataType": "static"
             },
-            "defaultValue": "RAC",
+            "defaultValue": "SI",
             "required": "true",
             "validate": ""
         },
@@ -124,7 +116,7 @@
             "name": "DATA目录",
             "help": "存放表数据的数据目录",
             "type": "text",
-            "defaultValue": "$ORACLE_HOME/oradata",
+            "defaultValue": "$ORACLE_BASE/oradata",
             "required": "true",
             "validate": ""
         },
@@ -185,7 +177,7 @@
                 ],
                 "dataType": "static"
             },
-            "defaultValue": "UTF8",
+            "defaultValue": "AL32UTF8",
             "required": "true",
             "validate": ""
         },
