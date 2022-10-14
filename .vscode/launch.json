@@ -1,0 +1,80 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [{
+            "name": "demo-local.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/Demo/demo-local.py",
+            "env": {
+                "RUNNER_ID": "1",
+                "AUTOEXEC_TENANT": "develop",
+                "AUTOEXEC_JOBID": "736961878614016",
+                "AUTOEXEC_NODE": "{\"nodeName\":\"myrac4\",\"protocol\":\"tagent\",\"password\":\"\",\"resourceId\":733926947348487,\"host\":\"192.168.0.117\",\"runnerId\":1,\"nodeType\":\"Linux\",\"protocolPort\":3939,\"username\":\"root\"}",
+                "HISTSIZE": "0",
+                "NODE_HOST": "192.168.0.117",
+                "NODE_PORT": "",
+                "NODE_NAME": "test1"
+            },
+            "args": [
+                "--tinput",
+                "myinputtext",
+                "--tselect",
+                "myselecttext"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "demo-simple.pl",
+            "type": "perl",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/Demo/demo-simple.pl",
+            "inc": [
+                "${workspaceFolder}/lib"
+            ],
+            "env": {
+                "OUTPUT_PATH": "/tmp/output.json",
+                "RUNNER_ID": "1",
+                "AUTOEXEC_TENANT": "develop",
+                "AUTOEXEC_JOBID": "736961878614016",
+                "AUTOEXEC_NODE": "{\"nodeName\":\"myrac4\",\"protocol\":\"tagent\",\"password\":\"\",\"resourceId\":733926947348487,\"host\":\"192.168.0.117\",\"runnerId\":1,\"nodeType\":\"Linux\",\"protocolPort\":3939,\"username\":\"root\"}",
+                "HISTSIZE": "0",
+                "NODE_HOST": "192.168.0.117",
+                "NODE_PORT": "",
+                "NODE_NAME": "test1"
+            },
+            "args": [
+                "freearg1",
+                "freearg2"
+            ],
+            "reloadModules": true,
+            "stopOnEntry": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "gen-addnode-hosts",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/DataBase/oracle/install/rac/gen-addnode-hosts",
+            "env": {
+                "OUTPUT_PATH": "/tmp/output.json",
+                "PYTHONPATH": "${workspaceFolder}/lib:${workspaceFolder}/plib"
+            },
+            "args": [
+                "--pubnet",
+                "192.168.0.0/24",
+                "--privnet",
+                "192.168.20.0/24",
+                "--viplist",
+                "192.168.0.118,192.168.0.120",
+                "--oldhosts",
+                "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\\n::1 localhost localhost.localdomain localhost6 localhost6.localdomain6\\n192.168.0.111   myrac1\\n192.168.0.113   myrac2\\n192.168.0.115   myrac3\\n192.168.0.112   myrac1-vip\\n192.168.0.114   myrac2-vip\\n192.168.0.116   myrac3-vip\\n192.168.20.111  myrac1-priv\\n192.168.20.113  myrac2-priv\\n192.168.20.115  myrac3-priv\\n192.168.0.110   myrac-scan",
+                "--nodesipinfo",
+                "{\"192.168.0.117\":[{\"netmask\":24,\"ip\":\"192.168.122.1\",\"nic\":\"virbr0\",\"type\":\"IPV4\",\"mac\":\"52:54:00:e5:35:03\"},{\"netmask\":24,\"ip\":\"192.168.20.117\",\"nic\":\"ens224\",\"type\":\"IPV4\",\"mac\":\"00:50:56:86:9b:de\"},{\"netmask\":23,\"ip\":\"192.168.0.117\",\"nic\":\"ens192\",\"type\":\"IPV4\",\"mac\":\"00:50:56:86:07:aa\"}],\"192.168.0.119\":[{\"netmask\":24,\"ip\":\"192.168.122.1\",\"nic\":\"virbr0\",\"type\":\"IPV4\",\"mac\":\"52:54:00:e5:35:03\"},{\"netmask\":24,\"ip\":\"192.168.20.119\",\"nic\":\"ens224\",\"type\":\"IPV4\",\"mac\":\"00:50:56:86:9b:de\"},{\"netmask\":23,\"ip\":\"192.168.0.119\",\"nic\":\"ens192\",\"type\":\"IPV4\",\"mac\":\"00:50:56:86:07:aa\"}]}"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}

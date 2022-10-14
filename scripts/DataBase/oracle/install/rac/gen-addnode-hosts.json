@@ -5,7 +5,8 @@
     "interpreter": "python",
     "defaultProfile": null,
     "description": "根据增加节点的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
-    "option": [{
+    "option": [
+        {
             "opt": "racname",
             "name": "RAC名",
             "help": "作为节点命名的前缀, 节点名称: RAC名+序号, 留空则自动计算",
@@ -60,7 +61,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "newNodesIp2HostName",
             "name": "新增节点IP到主机名映射",
             "help": "public网卡IP到主机名的映射(仅包括新增节点)",
