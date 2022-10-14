@@ -38,12 +38,12 @@ UNIX_GROUP_NAME=oinstall
 # This is an optional parameter if installing on
 # Windows based Operating System.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/u01/app/oraInventory
+INVENTORY_LOCATION=
 
 #-------------------------------------------------------------------------------
 # Specify the complete path of the Oracle Base. 
 #-------------------------------------------------------------------------------
-ORACLE_BASE=/u01/app/oracle
+ORACLE_BASE=
 
 #-------------------------------------------------------------------------------
 # Specify the installation edition of the component.                     
@@ -152,7 +152,7 @@ oracle.install.db.rootconfig.sudoUserName=
 # 
 # Example : oracle.install.db.CLUSTER_NODES=node1,node2
 #------------------------------------------------------------------------------
-oracle.install.db.CLUSTER_NODES=rac1,rac2
+oracle.install.db.CLUSTER_NODES=
 
 ###############################################################################
 #                                                                             #
@@ -322,7 +322,7 @@ oracle.install.db.config.starterdb.enableRecovery=false
 #   - FILE_SYSTEM_STORAGE
 #   - ASM_STORAGE
 #-------------------------------------------------------------------------------
-oracle.install.db.config.starterdb.storageType=
+oracle.install.db.config.starterdb.storageType=FILE_SYSTEM_STORAGE
 
 #-------------------------------------------------------------------------------
 # Specify the database file location which is a directory for datafiles, control

@@ -5,13 +5,12 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "非Grid的Oracle安装OS其他前置工作(root用户执行服务配置)",
-    "option": [
-        {
+    "option": [{
             "opt": "ORACLE_USER",
             "name": "ORACLE_USER",
             "help": "GRID安装用户",
             "type": "text",
-            "defaultValue": "grid",
+            "defaultValue": "oracle",
             "required": "true",
             "validate": ""
         },
