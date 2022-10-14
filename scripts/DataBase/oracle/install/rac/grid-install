@@ -24,7 +24,7 @@
 #NETWORK_INTERFACE_LIST=ens160:172.16.200.0:1,ens192:192.168.0.0:5
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -41,7 +41,7 @@ function SUDO_ORA_CMD() {
     shift
     #echo命令行隐藏密码
     CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g')
-    echo "Exec ommand: su - '$USER' -c '$CMD_SECTXT'"
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
     eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
@@ -58,7 +58,7 @@ function SUDO_ORA_CMD() {
 function SUDO_CMD_CONT() {
     USER=$1
     shift
-    echo "Exec ommand: su - '$USER' -c '$@'"
+    echo "Exec command: su - '$USER' -c '$@'"
     eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then

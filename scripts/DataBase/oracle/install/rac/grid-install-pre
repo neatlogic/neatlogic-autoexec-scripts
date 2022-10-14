@@ -4,7 +4,7 @@
 #上述的处理需要使用自动化的基础工具来完成
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -19,7 +19,7 @@ function DO_CMD() {
 function SUDO_CMD() {
     USER=$1
     shift
-    echo "Exec ommand: su - '$USER' -c '$@'"
+    echo "Exec command: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then

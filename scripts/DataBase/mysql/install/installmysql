@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage(){
+usage() {
     pname=$(basename $0)
     echo "Usage:"
     echo "$pname --rootpwd <root password> --reinstall <Uninstall first and then install> --mycnf <mysql config file> --inspkg <install rpm pkg>"
@@ -51,7 +51,7 @@ parseOpts() {
 parseOpts "$@"
 
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
 
     if [ $? != 0 ]; then
@@ -63,11 +63,9 @@ function DO_CMD() {
     fi
 }
 
-function install()
-{
+function install() {
     id mysql
-    if [ $? != 0 ]
-    then
+    if [ $? != 0 ]; then
         echo "INFO: Add user mysql"
         DO_CMD useradd mysql
     fi
@@ -79,7 +77,7 @@ function install()
 
     DO_CMD cp $inspkg .
 
-    filename=`echo $(basename $inspkg)`
+    filename=$(echo $(basename $inspkg))
 
     DO_CMD tar -xvzf $filename
 
@@ -93,80 +91,65 @@ function install()
     #mysql 脚本运行，注意密码处理
     echo "INFO: modify mysql user password and create new users."
     mysql_secret=$(awk '/password/{print $NF}' /root/.mysql_secret)
-mysql --connect-expired-password -uroot -p$mysql_secret <<EOF
+    mysql --connect-expired-password -uroot -p$mysql_secret <<EOF
 set password=password('$rootpwd');
 use mysql;
 select host,user,password from user;
 update user set host='%' where user='root' and host='localhost';
 flush privileges;
 EOF
-    if [ $? != 0 ]
-    then
+    if [ $? != 0 ]; then
         echo "ERROR: modify mysql password failed."
-        exit 1;
+        exit 1
     else
         echo "INFO: modify mysql password succeed."
     fi
 
     DO_CMD chkconfig mysql on
-    mysqlExists=`chkconfig --list | grep mysql`
-    if [ -z "$mysqlExists" ]
-    then
+    mysqlExists=$(chkconfig --list | grep mysql)
+    if [ -z "$mysqlExists" ]; then
         echo "ERROR: mysql service not exists, install failed."
-        exit 1;
+        exit 1
     fi
 
 }
 
-function uninstall()
-{
+function uninstall() {
     #卸载现有mysql
-    service mysql stop 2>&1 > /dev/null
-    mysqlPids=`ps -efww |grep mysql |grep -v grep |grep -v installmysql|awk '{print $2}'`
-    if [ ! -z "$mysqlPids" ]
-    then
+    service mysql stop 2>&1 >/dev/null
+    mysqlPids=$(ps -efww | grep mysql | grep -v grep | grep -v installmysql | awk '{print $2}')
+    if [ ! -z "$mysqlPids" ]; then
         DO_CMD kill -9 $mysqlPids
     fi
-    if [ -e "/root/.mysql_secret" ]
-    then
+    if [ -e "/root/.mysql_secret" ]; then
         DO_CMD rm /root/.mysql_secret
     fi
-    if [ -e "/var/lib/mysql" ]
-    then
+    if [ -e "/var/lib/mysql" ]; then
         DO_CMD rm -rf /var/lib/mysql
     fi
-    if [ -e "/home/mysql/data" ]
-    then
+    if [ -e "/home/mysql/data" ]; then
         DO_CMD rm -rf /home/mysql/data
     fi
-    if [ -e "/home/mysql/log" ]
-    then
+    if [ -e "/home/mysql/log" ]; then
         DO_CMD rm -rf /home/mysql/log
     fi
-    for mysqlRpm in `rpm -qa |grep -i mysql`
-    do
+    for mysqlRpm in $(rpm -qa | grep -i mysql); do
         DO_CMD rpm -e --nodeps $mysqlRpm
     done
-    for mariadbRpm in `rpm -qa |grep -i mariadb`
-    do
+    for mariadbRpm in $(rpm -qa | grep -i mariadb); do
         DO_CMD rpm -e --nodeps $mariadbRpm
     done
-    for numactlRpm in `rpm -qa |grep -i numactl`
-    do
+    for numactlRpm in $(rpm -qa | grep -i numactl); do
         DO_CMD rpm -e --nodeps $numactlRpm
     done
 
 }
 
-
-function checkInstalled()
-{
-    mysqlPids=`ps -efww |grep mysql |grep -v grep |grep -v installmysql|awk '{print $2}'`
-    if [ ! -z "$mysqlPids" ]
-    then
+function checkInstalled() {
+    mysqlPids=$(ps -efww | grep mysql | grep -v grep | grep -v installmysql | awk '{print $2}')
+    if [ ! -z "$mysqlPids" ]; then
         echo "INFO: mysql have already installed ."
-        if [ $reinstall == "0" ]
-        then
+        if [ $reinstall == "0" ]; then
             exit 0
         else
             uninstall
@@ -177,10 +160,9 @@ function checkInstalled()
     fi
 }
 
-
-if [[ ! -n "$rootpwd" || ! -n "$reinstall" || ! -n "$mycnf" || ! -n "$inspkg" ]] ; then
+if [[ ! -n "$rootpwd" || ! -n "$reinstall" || ! -n "$mycnf" || ! -n "$inspkg" ]]; then
     usage
-fi 
+fi
 
 checkInstalled
 

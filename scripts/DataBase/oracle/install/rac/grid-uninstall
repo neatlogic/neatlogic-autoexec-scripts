@@ -2,7 +2,7 @@
 
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -14,38 +14,21 @@ function DO_CMD() {
     fi
 }
 
-function CALL_ORA_CMD() {
-    echo Exec ommand: $@
-    $@
-    exitCode=$?
-    if [ $exitCode -ge 128 ]; then
-        #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
-    elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
-    else
-        echo "FINE: All installations were successful."
-    fi
-
-    return $exitCode
-}
-
-function SUCALL_ORA_CMD() {
+function SUDO_ORA_CMD() {
     USER=$1
     shift
-    echo "Exec ommand: su - '$USER' -c '$@'"
+    echo "Exec command: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
     elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
     else
-        echo "FINE: All installations were successful."
+        echo "FINE: All operations were successful."
     fi
-
-    return $exitCode
 }
 
 function removeUserAndGroups() {
@@ -67,18 +50,6 @@ function removeUserAndGroups() {
 
     #delete GRID_USER
     userdel $GRID_USER
-}
-
-function setInstallEnv() {
-    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
-    #然后eval为shell的变量
-    EXEC_ENV_TXT=$(echo "$EXEC_ENV" | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
-    if [ -n "$EXEC_ENV_TXT" ]; then
-        eval "$EXEC_ENV_TXT"
-    else
-        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
-        exit 2
-    fi
 }
 
 #参数处理,全部用长参数
@@ -137,17 +108,16 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
 fi
 
-oraEnv=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
+oraEnv=$(SUDO_ORA_CMD $GRID_USER env | grep ORACLE_)
 echo "$oraEnv"
-EXEC_ENV=$oraEnv
-setInstallEnv
+eval "$oraEnv"
 
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists."
     exit 0
 fi
 
-SUCALL_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
     echo "WARN: Uninstall failed"
@@ -156,7 +126,7 @@ fi
 
 rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
 
-SUCALL_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
 exitCode=$?
 if [ $exitCode -ge 128 ]; then
     echo "WARN: Uninstall failed"

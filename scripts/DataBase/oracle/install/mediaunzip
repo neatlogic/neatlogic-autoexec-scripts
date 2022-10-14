@@ -2,7 +2,7 @@
 
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -17,7 +17,7 @@ function DO_CMD() {
 function SUDO_CMD() {
     USER=$1
     shift
-    echo "Exec ommand: su - '$USER' -c '$@'"
+    echo "Exec command: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -35,43 +35,43 @@ function parseOpts() {
     OPT_SPEC=":h-:"
     while getopts "$OPT_SPEC" optchar; do
         case "${optchar}" in
-            -)
-                case "${OPTARG}" in
-                    ZIP_FILE)
-                        ZIP_FILE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    UNZIP_DEST_PATH)
-                        UNZIP_DEST_PATH="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    OVER_WRITE)
-                        OVER_WRITE="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    USER)
-                        USER="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    GROUP)
-                        GROUP="${!OPTIND}"
-                        OPTIND=$(($OPTIND + 1))
-                    ;;
-                    *)
-                        if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
-                            echo "Unknown option --${OPTARG}" >&2
-                        fi
-                    ;;
-                esac
-            ;;
-            h)
-                usage
-                exit 2
-            ;;
+        -)
+            case "${OPTARG}" in
+            ZIP_FILE)
+                ZIP_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            UNZIP_DEST_PATH)
+                UNZIP_DEST_PATH="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            OVER_WRITE)
+                OVER_WRITE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            USER)
+                USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GROUP)
+                GROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
-                if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
-                    echo "Non-option argument: '-${OPTARG}'" >&2
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
                 fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
             ;;
         esac
     done

@@ -11,12 +11,11 @@
 #OSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}
 #OSDGDBA_GROUP=${OSDGDBA_GROUP}
 #OSKMDBA_GROUP=${OSKMDBA_GROUP}
-#OSRACDBA_GROUP=${OSRACDBA_GROUP}
 
 #CLUSTER_NODES=oracle19crac01,oracle19crac02
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -33,7 +32,7 @@ function SUDO_ORA_CMD() {
     shift
     #echo命令行隐藏密码
     CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g')
-    echo "Exec ommand: su - '$USER' -c '$CMD_SECTXT'"
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
     eval "su - '$USER' -c '$@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
@@ -159,7 +158,6 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $INSTALLER_DIR/runInstaller -silent -force
     oracle.install.db.OSOPER_GROUP=$OSOPER_GROUP \
     oracle.install.db.OSBACKUPDBA_GROUP=$OSBACKUPDBA_GROUP \
     oracle.install.db.OSDGDBA_GROUP=$OSDGDBA_GROUP \
-    oracle.install.db.OSKMDBA_GROUP=$OSKMDBA_GROUP \
-    oracle.install.db.OSRACDBA_GROUP=$OSRACDBA_GROUP
+    oracle.install.db.OSKMDBA_GROUP=$OSKMDBA_GROUP
 
 exit $HAS_ERROR

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage(){
+usage() {
     pname=$(basename $0)
     echo "Usage:"
     echo "$pname --rootpwd <root login use password> --masterip <mysql master ip>"
@@ -20,7 +20,7 @@ parseOpts() {
             masterip)
                 masterIp="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
-            ;;
+                ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
                     echo "Unknown option -- ${OPTARG}" >&2
@@ -43,7 +43,7 @@ parseOpts() {
 parseOpts "$@"
 
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
 
     if [ $? != 0 ]; then
@@ -59,31 +59,29 @@ DO_CMD service mysql stop
 
 DO_CMD sed -bi 's/^\s*server_id\s*=.*$/server_id=2/g' /etc/my.cnf
 DO_CMD sed -bi 's/^\s*#\s*log-slave-updates\s*=.*$/log-slave-updates=1/g' /etc/my.cnf
-DO_CMD echo  "relay_log=relay-bin-log" >> /etc/my.cnf
+DO_CMD echo "relay_log=relay-bin-log" >>/etc/my.cnf
 
 DO_CMD service mysql start
 
-mysql -v --connect-expired-password  -uroot -p$rootpwd << EOF
+mysql -v --connect-expired-password -uroot -p$rootpwd <<EOF
         stop slave;
         CHANGE MASTER TO MASTER_HOST='$masterIp',MASTER_USER='root',MASTER_PASSWORD='$rootpwd',MASTER_LOG_FILE='$binLogFile',MASTER_LOG_POS=$binLogOffset;
         start slave;
         show slave status\\G;
 EOF
 
-if [ $? != 0 ]
-then
-	echo "ERROR: set slave bin-log start postion failed."
-	exit 1;
+if [ $? != 0 ]; then
+    echo "ERROR: set slave bin-log start postion failed."
+    exit 1
 fi
 
-errorState=`
-mysql -uroot -p$rootpwd 2>/dev/null << EOF | grep -i Last_IO_Errno: | awk '{print $2}'
-	show slave status\\G;
+errorState=$(
+    mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print $2}'
+	show slave status\G;
 EOF
-`
+)
 
-if [ ! -z "$errorState" ]
-then
-	echo "ERROR: error slave state."
-	exit 1;
+if [ ! -z "$errorState" ]; then
+    echo "ERROR: error slave state."
+    exit 1
 fi

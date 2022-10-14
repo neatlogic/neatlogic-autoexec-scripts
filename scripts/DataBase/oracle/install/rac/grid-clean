@@ -2,7 +2,7 @@
 
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -17,7 +17,7 @@ function DO_CMD() {
 function SUDO_CMD() {
     USER=$1
     shift
-    echo "Exec ommand: su - '$USER' -c '$@'"
+    echo "Exec command: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -29,38 +29,21 @@ function SUDO_CMD() {
     fi
 }
 
-function CALL_ORA_CMD() {
-    echo Exec ommand: $@
-    $@
-    exitCode=$?
-    if [ $exitCode -ge 128 ]; then
-        #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
-    elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
-    else
-        echo "FINE: All installations were successful."
-    fi
-
-    return $exitCode
-}
-
-function SUCALL_ORA_CMD() {
+function SUDO_ORA_CMD() {
     USER=$1
     shift
-    echo "Exec ommand: su - '$USER' -c '$@'"
+    echo "Exec command: su - '$USER' -c '$@'"
     eval "su - '$USER' -c '$@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
-        echo "ERROR: Installation failed, exitCode:$exitCode."
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
     elif [ $exitCode -gt 0 ]; then
-        echo "WARN: Installation has some warning, exitCode:$exitCode."
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
     else
-        echo "FINE: All installations were successful."
+        echo "FINE: All operations were successful."
     fi
-
-    return $exitCode
 }
 
 function setInstallEnv() {
@@ -99,8 +82,8 @@ function manualUnInstall() {
         INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
 
         #kill oracle process
-        SUCALL_ORA_CMD $GRID_USER shutdown immediate
-        SUCALL_ORA_CMD $GRID_USER lsnrctl stop
+        SUDO_ORA_CMD $GRID_USER shutdown immediate
+        SUDO_ORA_CMD $GRID_USER lsnrctl stop
         pkill -u $GRID_USER
         sleep 5
         pkill -u $GRID_USER
@@ -227,7 +210,7 @@ fi
 
 #如果没有给出环境变量，则可能是直接执行强制删除Oracle，直接获取用户环境变狼
 if [ -z "$EXEC_ENV" ] && [ -n "$GRID_UID" ]; then
-    EXEC_ENV=$(SUCALL_ORA_CMD $GRID_USER env | grep ORACLE_)
+    EXEC_ENV=$(SUDO_ORA_CMD $GRID_USER env | grep ORACLE_)
 fi
 if [ -n "$EXEC_ENV" ]; then
     setInstallEnv

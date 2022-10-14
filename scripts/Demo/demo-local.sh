@@ -2,7 +2,7 @@
 #显示帮助信息
 #####################################
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
 
     if [ $? != 0 ]; then
@@ -14,7 +14,7 @@ function DO_CMD() {
 }
 
 function DO_CMD_CONT() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
 
     if [ $? != 0 ]; then
@@ -26,7 +26,7 @@ function DO_CMD_CONT() {
 }
 
 function DO_CMD_IGNOR() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
 
     if [ $? != 0 ]; then

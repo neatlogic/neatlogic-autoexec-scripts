@@ -4,7 +4,7 @@
 HAS_WARN=0
 HAS_ERROR=0
 function DO_CMD() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -17,7 +17,7 @@ function DO_CMD() {
 }
 
 function DO_CMD_CONT() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -29,7 +29,7 @@ function DO_CMD_CONT() {
 }
 
 function DO_CMD_IGNOR() {
-    echo Exec ommand: $@
+    echo Exec command: $@
     $@
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
