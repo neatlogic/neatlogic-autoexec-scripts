@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+#使用集群工具crsctl从集群配置中彻底清除被删除节点
 
 HAS_ERROR=0
 function DO_CMD() {
@@ -106,7 +106,7 @@ setInstallEnv
 #========开始执行删除操作==============================
 
 echo "Try to delete $NODE from cluster config..."
-SUDO_ORA_CMD crsctl delete node -n $NODE
+SUDO_ORA_CMD $GRID_USER crsctl delete node -n $NODE
 
 #输出验证信息
 echo "Try to verify grid delete..."

@@ -4,16 +4,14 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
-    "description": "删除集群中某个Oracle实例(在非删除节点用root用户执行)",
-    "option": [
-        {
+    "description": "删除集群中某个Oracle实例(在非删除节点用root用户执行, 一次只能删除一个节点)",
+    "option": [{
             "opt": "CV_ASSUME_DISTID",
             "name": "对应OS版本",
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "自动",
                         "value": "AUTO"
                     },

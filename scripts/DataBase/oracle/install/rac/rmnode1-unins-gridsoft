@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+#卸载某个节点上的Oracle Grid软件
 
 HAS_ERROR=0
 function DO_CMD() {
@@ -173,5 +173,8 @@ SUDO_ORA_CMD $rootCmd
 if [ "$DEL_USER" == "1" ]; then
     removeUserAndGroups
 fi
+
+echo "Try to clean the .ssh rsa auhroized config..."
+SUDO_CMD_CONT $GRID_USER rm -rf "~/.ssh/*"
 
 exit $HAS_ERROR

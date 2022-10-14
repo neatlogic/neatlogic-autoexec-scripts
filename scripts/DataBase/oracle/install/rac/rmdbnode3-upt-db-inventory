@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+#没有被删除的其他节点都要更新Oracle inventory，从inventory中提出被删除节点
 
 HAS_ERROR=0
 function DO_CMD() {
@@ -56,6 +56,10 @@ function parseOpts() {
             case "${OPTARG}" in
             CV_ASSUME_DISTID)
                 CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            REMOVE_NODE)
+                REMOVE_NODE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             ORACLE_USER)
@@ -115,10 +119,9 @@ SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -loc
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$LEFT_NODES}"
 
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Update inventory failed."
-    exit $exitCode
+if [ -n "$REMOVE_NODE" ]; then
+    echo "Try to remove authorized keys for node deleted..."
+    SUDO_ORA_CMD $ORACLE_USER sed -i "/$REMOVE_NODE@/"d "~/.ssh/authorized_keys*"
 fi
 
 exit $HAS_ERROR

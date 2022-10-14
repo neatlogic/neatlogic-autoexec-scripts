@@ -1,6 +1,6 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
-
+# 生成Oracle集群需要的/etc/hosts，主机名配置，静默安装需要的节点和VIP名称文本，网卡等配置。
 import os
 import sys
 import re

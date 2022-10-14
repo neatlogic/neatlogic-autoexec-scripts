@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+#创建ASM磁盘组
+
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";

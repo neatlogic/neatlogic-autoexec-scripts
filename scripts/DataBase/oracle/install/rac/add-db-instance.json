@@ -5,15 +5,13 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "把当前Oracle实例加入集群",
-    "option": [
-        {
+    "option": [{
             "opt": "CV_ASSUME_DISTID",
             "name": "对应OS版本",
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -52,7 +50,7 @@
         {
             "opt": "DB_UNIQUE_NAME",
             "name": "全局DB名",
-            "help": "需删除实例的全局DB名称",
+            "help": "需增加实例的全局DB名称, 多个名称, 逗号相隔",
             "type": "text",
             "defaultValue": "",
             "required": "true",

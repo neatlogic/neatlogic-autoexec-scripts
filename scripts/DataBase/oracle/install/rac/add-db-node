@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+#增加Oracle Database实例，一次可以增加多个实例
 
 HAS_ERROR=0
 function DO_CMD() {
@@ -62,8 +62,8 @@ function parseOpts() {
                 ORACLE_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            NODE_NAME)
-                NODE_NAME="${!OPTIND}"
+            NODE_NAMES)
+                NODE_NAMES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -109,6 +109,6 @@ setInstallEnv
 
 #========开始执行删除操作==============================
 echo "Try to execute addnode command to add database node $NODE for cluster..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/addnode/addnode.sh -silent -ignorePrereq "CLUSTER_NEW_NODES={$NODE_NAME}"
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/addnode/addnode.sh -silent -ignorePrereq "CLUSTER_NEW_NODES={$NODE_NAMES}"
 
 exit $HAS_ERROR

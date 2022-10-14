@@ -4,16 +4,14 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
-    "description": "更新节点的Oracle Inventory(在非删除节点用root用户执行)",
-    "option": [
-        {
+    "description": "更新节点的Oracle Inventory(在非删除节点用root用户执行, 一次只能删除一个节点)",
+    "option": [{
             "opt": "CV_ASSUME_DISTID",
             "name": "对应OS版本",
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -41,6 +39,15 @@
             "validate": ""
         },
         {
+            "opt": "RMOVE_NODE",
+            "name": "删除节点名",
+            "help": "被删除的节点的名称",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "GRID_USER",
             "name": "GRID用户",
             "help": "Oracle Grid软件安装用户, 默认是grid",
@@ -55,8 +62,7 @@
             "help": "软件卸载后, 是否删除Oracle用户和相关的用户组",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "是",
                         "value": "1"
                     },
@@ -72,8 +78,7 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "gridEnv",
             "name": "Grid用户环境变量",
             "help": "Grid用户的ORACLE开头的环境变量",

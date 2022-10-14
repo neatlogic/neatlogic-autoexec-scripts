@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+#使用DBCA工具缩减某个实例，减少一个实例执行指定DB，一次执行只能减少一个实例
 
 HAS_ERROR=0
 function DO_CMD() {
@@ -128,19 +128,36 @@ EXEC_ENV=$oraEnv
 setInstallEnv
 
 #========开始执行删除操作==============================
+POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_UNIQUE_NAME" | grep 'policy managed')
 
-if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
-    echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
-    exit 0
+if [ ! -f "$ORACLE_HOME/bin/srvctl" ]; then
+    echo "WARN: $ORACLE_HOME/bin/srvctl not exists, maybe already uninstalled."
+    exit -1
 fi
 
-echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
-    -nodeList "$NODE" \
-    -gdbName "$DB_UNIQUE_NAME" \
-    -instanceName "$ORACLE_SID" \
-    -sysDBAUserName "$SYSDBA_USER" \
-    -sysDBAPassword "$SYSDBA_PWD"
+echo "Try to get database $DB_UNIQUE_NAME status..."
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_UNIQUE_NAME
+
+if [ -n "$POLICY_MANAGED" ]; then
+    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_UNIQUE_NAME -n $NODE
+    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -n $NODE -g Free
+else
+    echo "DB $DB_UNIQUE_NAME is administrator managed.\n"
+    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_UNIQUE_NAME -n $NODE
+
+    if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
+        echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
+        exit -1
+    fi
+
+    echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
+    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
+        -nodeList "$NODE" \
+        -gdbName "$DB_UNIQUE_NAME" \
+        -instanceName "$ORACLE_SID" \
+        -sysDBAUserName "$SYSDBA_USER" \
+        -sysDBAPassword "$SYSDBA_PWD"
+fi
 
 echo "Try to disable listener for $NODE..."
 SUDO_ORA_CMD $GRID_USER srvctl disable listener -listener LISTENER -node "$NODE"

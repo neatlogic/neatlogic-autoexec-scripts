@@ -4,20 +4,17 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "参数包括：库名（主备一致），实例名：RAC集群内一致，主备不一样，同步的sequence等",
-    "option": [
-        {
-            "opt": "sid",
-            "name": "SID",
-            "help": "如不设置则直接使用环境变量ORACLE_SID",
-            "type": "text",
-            "defaultValue": "",
-            "required": "false",
-            "validate": ""
-        }
-    ],
-    "output": [
-        {
+    "description": "在RAC集群中某个节点执行，获取集群相关的节点等信息",
+    "option": [{
+        "opt": "sid",
+        "name": "SID",
+        "help": "如不设置则直接使用环境变量ORACLE_SID",
+        "type": "text",
+        "defaultValue": "",
+        "required": "false",
+        "validate": ""
+    }],
+    "output": [{
             "opt": "isRAC",
             "name": "是否RAC",
             "help": "是否是Oracle RAC",

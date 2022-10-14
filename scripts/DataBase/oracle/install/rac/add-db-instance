@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ dbca -silent -deleteInstance -nodeList "rac1" -gdbName "orcl" -instanceName "orcl1" -sysDBAUserName "sys" -sysDBAPassword oracle
+#为DB增加实例，一次执行可以增加多个实例
 
 HAS_ERROR=0
 function DO_CMD() {
@@ -119,13 +119,14 @@ echo "$oraEnv"
 EXEC_ENV=$oraEnv
 setInstallEnv
 
-#========开始执行删除操作==============================
-echo "Try to execute dbca command to add instance $ORACLE_SID(node:$NODE_NAME) to cluster..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \
-    -gdbName "$DB_UNIQUE_NAME" \
-    -nodeName "$NODE_NAME" \
-    -instanceName "$ORACLE_SID" \
-    -sysDBAUserName "$SYSDBA_USER" \
-    -sysDBAPassword "$SYSDBA_PWD"
+for GDB_NAME in $(echo $DB_UNIQUE_NAME | sed 's/,/ /'); do
+    #========开始执行删除操作==============================
+    echo "Try to execute dbca command to add instance $ORACLE_SID(node:$NODE_NAME) to cluster..."
+    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \
+        -gdbName "$GDB_NAME" \
+        -nodeList "$NODE_NAME" \
+        -sysDBAUserName "$SYSDBA_USER" \
+        -sysDBAPassword "$SYSDBA_PWD"
+done
 
 exit $HAS_ERROR

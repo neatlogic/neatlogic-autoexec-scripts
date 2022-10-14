@@ -15,18 +15,20 @@ import AutoExecUtils
 def usage():
     # 帮助信息
     pname = os.path.basename(__file__)
-    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --scanip <scan ip> --nodesipinfo <all nodes ip json obj>")
+    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --nodesipinfo <all nodes ip json obj>")
+    sys.exit(-1)
 
 
 if __name__ == "__main__":
     # 参数处理
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--nodename', default='', help='Oracle rac name')
+    parser.add_argument('--racname', default='', help='Oracle rac node name prefix')
     parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
-    parser.add_argument('--vip', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
+    parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
     parser.add_argument('--oldhosts', default='', help='Old nodes hosts config txt')
+    parser.add_argument('--nodesipinfo', default='{}', help='All nodes ip information')
 
     args = parser.parse_args()
 
@@ -37,8 +39,8 @@ if __name__ == "__main__":
     if args.privnet == '':
         print("ERROR: Must defined private net by option --privnet, example: --privnet 192.168.10.0/24\n")
         hasOptError = 1
-    if args.vip == '':
-        print("ERROR: Must defined vip by option --vip, example: --vip 10.10.10.110,10.10.10.111\n")
+    if args.viplist == '':
+        print("ERROR: Must defined vip list by option --viplist, example: --vip 10.10.10.110,10.10.10.111\n")
         hasOptError = 1
     if args.oldhosts == '':
         print("ERROR: Must defined scan ip by option --oldhosts.\n")
@@ -47,16 +49,16 @@ if __name__ == "__main__":
     if hasOptError == 1:
         usage()
 
-    oldHostsTxt = args.oldhosts
+    oldHostsLines = args.oldhosts.split("\\n")
     possibleRacNameMap = {}
     confMap = {}
     nodeNameMap = {}
     spaceReg = re.compile(r"\s+")
-    for line in oldHostsTxt.split("\n"):
+    for line in oldHostsLines:
         line = line.strip()
         if line == '' or line.startswith('#'):
             continue
-        lineInfo = spaceReg.split(line, 2)
+        lineInfo = spaceReg.split(line, 1)
         if len(lineInfo) > 1:
             ip = lineInfo[0]
             name = lineInfo[1]
@@ -64,8 +66,7 @@ if __name__ == "__main__":
             nodeNameMap[name] = ip
             matchObjs = re.findall(r'(\w+)\d+', name)
             if len(matchObjs) > 0:
-                matchObj = matchObjs[0]
-                possibleRacName = matchObj[0]
+                possibleRacName = matchObjs[0]
                 if possibleRacName.lower() != 'localhost':
                     matchCount = possibleRacNameMap.get(possibleRacName, 0)
                     possibleRacNameMap[possibleRacName] = matchCount + 1
@@ -84,12 +85,19 @@ if __name__ == "__main__":
 
     # 对老的hosts配置进行分析，把出现次数最多的名称作为rac name
     nodeNames = []
-    racName = None
+    racName = args.racname
+    autoRacName = None
     racNameCount = 0
     for possibleRacName, matchCount in possibleRacNameMap.items():
         if matchCount > racNameCount:
             racNameCount = matchCount
-            racName = possibleRacName
+            autoRacName = possibleRacName
+
+    if racName != '' and racName != autoRacName:
+        print("ERROR: Rac nodes not config in hosts file.")
+        sys.exit(-1)
+
+    racName = autoRacName
 
     if racName is None:
         print("ERROR: Can not determine rac name by hosts config text.")
@@ -234,19 +242,19 @@ if __name__ == "__main__":
             hasError = 1
             print("ERROR: VIP:%s is public ip for rac node, conflict." % (vip))
 
-    hostConfTxt = oldHostsTxt + "\n" + "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
+    hostConfTxt = "\n".join(oldHostsLines) + "\n" + "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
 
     out = {}
 
-    out['ip2HostName'] = hostNameMap
+    out['newNodesIp2HostName'] = hostNameMap
     out['hostsConfTxt'] = hostConfTxt
 
     # oracle.install.crs.config.gridClusterNodes=rac1:rac1-vip,rac2:rac2-vip
-    out['gridClusterNodes'] = ','.join(gridClusterNodes)
+    out['newGridClusterNodes'] = ','.join(gridClusterNodes)
 
     # oracle.install.db.CLUSTER_NODES=rac1,rac23
     # nodelist=rac1,rac2
-    out['dbClusterNodes'] = ','.join(dbClusterNodes)
+    out['newDbClusterNodes'] = ','.join(dbClusterNodes)
 
     # oracle.install.crs.config.networkInterfaceList=enp0s3:192.168.0.0:3,enp0s8:192.168.56.0:1,enp0s9:192.168.57.0:5
     out['networkInterfaceList'] = ','.join(networkInterfaceList)

@@ -4,24 +4,14 @@
     "riskName": "LOW",
     "interpreter": "python",
     "defaultProfile": null,
-    "description": "根据getallnicip工具输出的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
-    "option": [
-        {
+    "description": "根据增加节点的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
+    "option": [{
             "opt": "racname",
             "name": "RAC名",
-            "help": "作为节点命名的前缀, 节点名称: RAC名+序号",
+            "help": "作为节点命名的前缀, 节点名称: RAC名+序号, 留空则自动计算",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "scanname",
-            "name": "SCAN名",
-            "help": "集群访问VIP, RAC名-SCAN",
-            "type": "text",
-            "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -52,9 +42,9 @@
             "validate": ""
         },
         {
-            "opt": "scaniplist",
-            "name": "ScanIP列表",
-            "help": "SCAN IP列表, 一个IP一行, 一到三个IP",
+            "opt": "oldhosts",
+            "name": "当前集群的hosts配置",
+            "help": "当前集群的/etc/hosts文件内容",
             "type": "textarea",
             "defaultValue": "",
             "required": "true",
@@ -70,11 +60,10 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
-            "opt": "ip2HostName",
-            "name": "IP到主机名映射",
-            "help": "public网卡IP到主机名的映射",
+    "output": [{
+            "opt": "newNodesIp2HostName",
+            "name": "新增节点IP到主机名映射",
+            "help": "public网卡IP到主机名的映射(仅包括新增节点)",
             "type": "json",
             "defaultValue": "",
             "required": "false"
@@ -82,23 +71,23 @@
         {
             "opt": "hostsConfTxt",
             "name": "hosts配置内容",
-            "help": "/etc/hosts配置内容",
+            "help": "/etc/hosts配置内容(包括集群所有节点配置)",
             "type": "textarea",
             "defaultValue": "",
             "required": "false"
         },
         {
-            "opt": "dbClusterNodes",
-            "name": "DB集群节点名配置",
-            "help": "DB集群节点名配置, 用于Oracle DB的静默安装配置",
+            "opt": "newDbClusterNodes",
+            "name": "DB新增节点名配置",
+            "help": "DB集群节点名配置, 用于Oracle DB的静默安装配置(仅包括新增节点)",
             "type": "text",
             "defaultValue": "",
             "required": "false"
         },
         {
-            "opt": "gridClusterNodes",
-            "name": "Grid集群节点名配置",
-            "help": "Grid集群节点名配置, 用于Orcle grid的静默安装配置",
+            "opt": "newGridClusterNodes",
+            "name": "Grid新增节点名配置",
+            "help": "Grid集群节点名配置, 用于Orcle grid的静默安装配置(仅包括新增节点)",
             "type": "text",
             "defaultValue": "",
             "required": "false"
