@@ -18,14 +18,6 @@
     ],
     "output": [
         {
-            "opt": "isRAC",
-            "name": "是否RAC",
-            "help": "是否是Oracle RAC",
-            "type": "text",
-            "defaultValue": null,
-            "required": "false"
-        },
-        {
             "opt": "nodeName",
             "name": "Grid节点名",
             "help": "集群节点名称",
@@ -66,14 +58,6 @@
             "required": "false"
         },
         {
-            "opt": "tempFilesCount",
-            "name": "临时文件数量",
-            "help": "临时文件数量",
-            "type": "text",
-            "defaultValue": null,
-            "required": "false"
-        },
-        {
             "opt": "gridNodeIpInfo",
             "name": "集群节点IP信息",
             "help": "集群节点IP对应关系",
@@ -83,7 +67,7 @@
         },
         {
             "opt": "gridNodeIpTxt",
-            "name": "集群节点IP信息",
+            "name": "集群节点IP列表",
             "help": "集群节点IP对应关系",
             "type": "textarea",
             "defaultValue": null,
