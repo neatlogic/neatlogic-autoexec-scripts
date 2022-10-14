@@ -139,7 +139,8 @@ sub main {
 
     my @nodeNamesArray = sort ( split( "\n", $nodeNames ) );
 
-    my $racNodeIpTxt       = '';
+    my $gridNodeIpTxt      = '';
+    my $gridNodeIpInfo     = {};
     my @allGridNodesInfo   = ();
     my @otherGridNodesInfo = ();
     my @thisNodesInfo      = ();
@@ -149,9 +150,10 @@ sub main {
         my $ipAddr;
         my $packedIp = gethostbyname($gridNode);
         if ( defined($packedIp) ) {
-            $ipAddr       = inet_ntoa($packedIp);
-            $racNodeIpTxt = $racNodeIpTxt . $ipAddr . "\n";
+            $ipAddr        = inet_ntoa($packedIp);
+            $gridNodeIpTxt = $gridNodeIpTxt . $gridNode . " " . $ipAddr . "\n";
             push( @allGridNodesInfo, { 'ip' => $ipAddr } );
+            $gridNodeIpInfo->{$gridNode} = $ipAddr;
         }
         else {
             $hasError = 1;
@@ -170,7 +172,8 @@ sub main {
     $out->{allGridNodesInfo}   = \@allGridNodesInfo;
     $out->{otherGridNodesInfo} = \@otherGridNodesInfo;
     $out->{thisNodesInfo}      = \@thisNodesInfo;
-    $out->{racNodeIpTxt}       = $racNodeIpTxt;
+    $out->{gridNodeIpInfo}     = $gridNodeIpInfo;
+    $out->{gridNodeIpTxt}      = $gridNodeIpTxt;
 
     if ( scalar(@otherGridNodesInfo) > 0 ) {
         $out->{operNodeInfo} = [ $otherGridNodesInfo[0] ];

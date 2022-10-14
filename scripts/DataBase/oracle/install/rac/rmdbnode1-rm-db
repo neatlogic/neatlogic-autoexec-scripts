@@ -127,6 +127,8 @@ echo "$oraEnv"
 eval "$oraEnv"
 
 #========开始执行删除操作==============================
+# 需要修改，参数--nodeList接收逗号相隔的多个节点
+# 其他进行循环处理
 POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_UNIQUE_NAME" | grep 'policy managed')
 
 if [ ! -f "$ORACLE_HOME/bin/srvctl" ]; then

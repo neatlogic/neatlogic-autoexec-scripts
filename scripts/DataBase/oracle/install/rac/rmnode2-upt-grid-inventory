@@ -112,7 +112,7 @@ if [ -z "$ORACLE_HOME" ]; then
 fi
 
 #========开始执行删除操作==============================
-
+#需要计算剩下的节点和需要删除的多个节点
 if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/oui/bin/runInstaller not exists."
     exit 0
