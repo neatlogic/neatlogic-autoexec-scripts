@@ -1,0 +1,67 @@
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+import os
+import sys
+import re
+import json
+import argparse
+
+import AutoExecUtils
+
+
+def usage():
+    # 帮助信息
+    pname = os.path.basename(__file__)
+    print(pname + "--allnodesinfo <all nodes json> --delnodesinfo <nodes to delete json>")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--nodenametoip', default='{}', help='节点到IP的映射')
+    parser.add_argument('--delnodestxt', default='', help='需要删除的节点名列表')
+
+    args = parser.parse_args()
+
+    hasError = 0
+
+    allNodesIpMap = json.loads(args.allnodesinfo)
+
+    delNodesIpMap = {}
+    leftNodesIpMap = allNodesIpMap.copy()
+    delNodesTxt = args.delnodesinfo
+    for line in delNodesTxt.split("\n"):
+        line = line.strip()
+        if line == '':
+            continue
+        nodeName = line
+        delNodesIpMap[nodeName] = allNodesIpMap[nodeName]
+        leftNodesIpMap.pop(nodeName)
+
+    delNodesStr = ','.join(delNodesIpMap.keys())
+    leftNodesStr = ','.join(leftNodesIpMap.keys())
+    allNodesStr = ','.join(allNodesIpMap.keys())
+
+    delNodesInfo = {}
+    for ip in delNodesIpMap.values():
+        delNodesInfo['ip'] = ip
+
+    leftNodesInfo = {}
+    for ip in leftNodesIpMap.values():
+        leftNodesInfo['ip'] = ip
+
+    allNodesInfo = {}
+    for ip in allNodesIpMap.values():
+        allNodesInfo['ip'] = ip
+
+    out = {
+        'allNodes': allNodesInfo,
+        'delNodes': delNodesInfo,
+        'leftNodes': leftNodesInfo,
+        'allNodesStr': allNodesStr,
+        'delNodesStr': delNodesStr,
+        'leftNodesStr': leftNodesStr
+    }
+
+    AutoExecUtils.saveOutput(out)
+
+    sys.exit(hasError)

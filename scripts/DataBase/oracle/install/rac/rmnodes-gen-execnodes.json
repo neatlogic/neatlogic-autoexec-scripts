@@ -1,0 +1,78 @@
+{
+    "opType": "runner",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "python",
+    "defaultProfile": null,
+    "description": "根据增加节点的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
+    "option": [
+        {
+            "opt": "nodenametoip",
+            "name": "所有RAC节点IP",
+            "help": "聚合好的所有节点名称到IP的映射, 例如: {\"myrac1\":\"10.10.10.1\",\"myrac2\":\"10.10.10.2\"}",
+            "type": "json",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "delnodestxt",
+            "name": "需要删除的节点名列表",
+            "help": "聚合好的准备删除的RAC节点, 例如: myrac1\nmyrac2\n",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "allNodes",
+            "name": "所有的节点",
+            "help": "所有的节点执行目标信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "delNodes",
+            "name": "准备删除的节点",
+            "help": "准备要删除的节点执行目标信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "leftNodes",
+            "name": "留存的节点",
+            "help": "留存的节点执行目标信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "allNodesStr",
+            "name": "所有节点名",
+            "help": "所有节点名，逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "delNodesStr",
+            "name": "删除的节点名",
+            "help": "准备删除的节点名，逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "leftNodesStr",
+            "name": "留存的节点名",
+            "help": "留存的节点名，逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        }
+    ]
+}
