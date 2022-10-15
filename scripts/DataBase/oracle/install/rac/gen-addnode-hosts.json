@@ -88,6 +88,14 @@
             "required": "false"
         },
         {
+            "opt": "allExecNodes",
+            "name": "Grid集群新老执行节点",
+            "help": "自动采集计算得到的准备新增的加上原有的集群执行节点",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "newNodesIp2HostName",
             "name": "新增节点IP到主机名映射",
             "help": "public网卡IP到主机名的映射(仅包括新增节点)",

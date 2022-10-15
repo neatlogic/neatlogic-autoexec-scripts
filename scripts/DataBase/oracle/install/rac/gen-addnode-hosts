@@ -260,8 +260,10 @@ if __name__ == "__main__":
 
     out['newNodesIp2HostName'] = hostNameMap
     out['hostsConfTxt'] = hostConfTxt
+
     out['gridClusterExecNodes'] = gridClusterExecNodes
     out['newGridExecNodes'] = newGridExecNodes
+    out['allExecNodes'] = gridClusterExecNodes + newGridExecNodes
 
     # oracle.install.crs.config.gridClusterNodes=rac1:rac1-vip,rac2:rac2-vip
     out['newGridClusterNodes'] = ','.join(newGridClusterNodes)
