@@ -15,7 +15,7 @@ import AutoExecUtils
 def usage():
     # 帮助信息
     pname = os.path.basename(__file__)
-    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --nodesipinfo <all nodes ip json obj>")
+    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --newnodesipinfo <new nodes ip json obj>")
     sys.exit(-1)
 
 
@@ -28,7 +28,8 @@ if __name__ == "__main__":
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
     parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
     parser.add_argument('--oldhosts', default='', help='Old nodes hosts config txt')
-    parser.add_argument('--nodesipinfo', default='{}', help='All nodes ip information')
+    parser.add_argument('--gridnodesipinfo', default='{}', help='Grid cluster nodes ip information')
+    parser.add_argument('--newnodesipinfo', default='{}', help='All nodes ip information')
 
     args = parser.parse_args()
 
@@ -77,14 +78,20 @@ if __name__ == "__main__":
     privNetTxt = args.privnet
     privNet = ipaddress.ip_network(privNetTxt, strict=False)
 
+    #gridNodesIpInfo
+    gridClusterExecNodes = []
+    gridNodesIpInfo = json.loads(args.gridnodesipinfo)
+    for ip in gridNodesIpInfo.values():
+        gridClusterExecNodes.append({'ip':ip})
+    
     # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
-    nodesIpInfo = json.loads(args.nodesipinfo)
-    nodes = list(nodesIpInfo.keys())
-    nodes.sort()
-    nodesCount = len(nodes)
+    newNodesIpInfo = json.loads(args.newnodesipinfo)
+    newNodes = list(newNodesIpInfo.keys())
+    newNodes.sort()
+    newNodesCount = len(newNodes)
 
     # 对老的hosts配置进行分析，把出现次数最多的名称作为rac name
-    nodeNames = []
+    newNodeNames = []
     racName = args.racname
     autoRacName = None
     racNameCount = 0
@@ -94,7 +101,7 @@ if __name__ == "__main__":
             autoRacName = possibleRacName
 
     if racName != '' and racName != autoRacName:
-        print("ERROR: Rac nodes not config in hosts file.")
+        print("ERROR: Can not find rac node names in hosts file.")
         sys.exit(-1)
 
     racName = autoRacName
@@ -105,19 +112,19 @@ if __name__ == "__main__":
     else:
         # 从hosts里的名称到ip映射中排除已经使用的nodename，计算出新增的nodename
         findNodeNameCount = 0
-        for idx in range(1, racNameCount*2 + nodesCount):
+        for idx in range(1, racNameCount*2 + newNodesCount):
             nodeName = '%s%s' % (racName, idx)
             if not nodeName in nodeNameMap:
-                nodeNames.append(nodeName)
+                newNodeNames.append(nodeName)
                 findNodeNameCount = findNodeNameCount + 1
-                if findNodeNameCount == nodesCount:
+                if findNodeNameCount == newNodesCount:
                     break
 
-    if nodeName is None:
+    if len(newNodeNames)==0:
         print("ERROR: Can not determine node name by hosts config text.")
         sys.exit(-1)
     else:
-        print("Determine new node name:%s" % (nodeName))
+        print("Determine new node name:" + ','.join(newNodeNames))
 
     # vip 地址参数分析和排序
     vipList = []
@@ -142,13 +149,13 @@ if __name__ == "__main__":
             hasError = 1
             print("ERROR: VIP:%s not in public network %s\n" % (vip, pubNetTxt))
 
-    if vipsCount != nodesCount:
+    if vipsCount != newNodesCount:
         hasError = 1
-        print("ERROR: VIP list count:%s, not equal nodes count:%s" % (vipsCount, nodesCount))
+        print("ERROR: VIP list count:%s, not equal nodes count:%s" % (vipsCount, newNodesCount))
         print("VIP:")
         print("\n".join(vipList))
         print("Nodes:")
-        print("\n".join(nodes))
+        print("\n".join(newNodes))
 
     if hasError != 0:
         sys.exit(3)
@@ -159,6 +166,7 @@ if __name__ == "__main__":
     privNicName = None
 
     hostNameMap = {}
+    newGridExecNodes = []
     pubNicNameMap = {}
     privNicNameMap = {}
     notusedNicNameMap = {}
@@ -166,16 +174,16 @@ if __name__ == "__main__":
     pubIpConf = []
     privIpConf = []
     vipConf = []
-    dbClusterNodes = []
-    gridClusterNodes = []
+    newDbClusterNodes = []
+    newGridClusterNodes = []
     networkInterfaceList = []
 
     idx = 0
-    for node in nodes:
+    for newNode in newNodes:
         pubIp = None
         privIp = None
 
-        for nodeIpInfo in nodesIpInfo.get(node):
+        for nodeIpInfo in newNodesIpInfo.get(newNode):
             ipType = nodeIpInfo.get('type')
             if ipType != 'IPV4':
                 continue
@@ -199,20 +207,20 @@ if __name__ == "__main__":
 
         if pubIp is None:
             hasError = 1
-            print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
+            print("ERROR: Node:%s does not config public network:%s ip" % (newNode, pubNetTxt))
         else:
             pubIpMap[ip] = 1
-            pubIpConf.append('%s\t%s' % (pubIp, nodeNames[idx]))
-            hostNameMap[pubIp] = '%s' % (nodeNames[idx])
-            vipConf.append('%s\t%s-vip' % (vipList[idx], nodeNames[idx]))
-            gridClusterNodes.append('%s:%s-vip' % (nodeNames[idx], nodeNames[idx]))
-            dbClusterNodes.append('%s' % (nodeNames[idx]))
+            pubIpConf.append('%s\t%s' % (pubIp, newNodeNames[idx]))
+            hostNameMap[pubIp] = '%s' % (newNodeNames[idx])
+            vipConf.append('%s\t%s-vip' % (vipList[idx], newNodeNames[idx]))
+            newGridClusterNodes.append('%s:%s-vip' % (newNodeNames[idx], newNodeNames[idx]))
+            newDbClusterNodes.append('%s' % (newNodeNames[idx]))
 
         if privIp is None:
             hasError = 1
-            print("ERROR: Node:%s does not config private network:%s ip" % (node, privNetTxt))
+            print("ERROR: Node:%s does not config private network:%s ip" % (newNode, privNetTxt))
         else:
-            privIpConf.append("%s\t%s-priv" % (privIp, nodeNames[idx]))
+            privIpConf.append("%s\t%s-priv" % (privIp, newNodeNames[idx]))
 
         idx = idx + 1
 
@@ -225,6 +233,10 @@ if __name__ == "__main__":
         hasError = 1
         nicNames = list(privNicNameMap.keys())
         print("ERROR: Private Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (privNetTxt, ','.join(nicNames)))
+
+    # 计算新增执行节点信息
+    for ip in hostNameMap.keys:
+        newGridExecNodes.append({'ip':ip})
 
     # 拼接Oracle静默安装需要的配置oracle.install.crs.config.networkInterfaceList
     for nicName in pubNicNameMap.keys():
@@ -248,13 +260,15 @@ if __name__ == "__main__":
 
     out['newNodesIp2HostName'] = hostNameMap
     out['hostsConfTxt'] = hostConfTxt
+    out['gridClusterExecNodes'] = gridClusterExecNodes
+    out['newGridExecNodes'] = newGridExecNodes
 
     # oracle.install.crs.config.gridClusterNodes=rac1:rac1-vip,rac2:rac2-vip
-    out['newGridClusterNodes'] = ','.join(gridClusterNodes)
+    out['newGridClusterNodes'] = ','.join(newGridClusterNodes)
 
     # oracle.install.db.CLUSTER_NODES=rac1,rac23
     # nodelist=rac1,rac2
-    out['newDbClusterNodes'] = ','.join(dbClusterNodes)
+    out['newDbClusterNodes'] = ','.join(newDbClusterNodes)
 
     # oracle.install.crs.config.networkInterfaceList=enp0s3:192.168.0.0:3,enp0s8:192.168.56.0:1,enp0s9:192.168.57.0:5
     out['networkInterfaceList'] = ','.join(networkInterfaceList)

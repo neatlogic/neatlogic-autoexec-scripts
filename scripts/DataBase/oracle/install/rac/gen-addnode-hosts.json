@@ -52,16 +52,41 @@
             "validate": ""
         },
         {
-            "opt": "nodesipinfo",
-            "name": "节点IP信息",
+            "opt": "newnodesipinfo",
+            "name": "新增节点IP信息",
             "help": "getallnicip工具输出的IP信息",
             "type": "json",
             "defaultValue": "",
             "required": "true",
             "validate": ""
+        },
+        {
+            "opt": "gridnodesipinfo",
+            "name": "原集群节点名与IP信息",
+            "help": "get-rac-config工具输出的节点名与IP对照的信息, 例如: {\"rac1\":\"10.10.10.1\",\"rac2\":\"10.10.10.2\"}",
+            "type": "json",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
         }
     ],
     "output": [
+        {
+            "opt": "gridClusterExecNodes",
+            "name": "Grid集群执行节点",
+            "help": "自动采集计算得到的现有集群执行节点(不包括新增节点)",
+            "type": "node",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "newGridExecNodes",
+            "name": "新增的Grid集群执行节点",
+            "help": "自动采集计算得到的准备新增的集群执行节点",
+            "type": "node",
+            "defaultValue": "",
+            "required": "false"
+        },
         {
             "opt": "newNodesIp2HostName",
             "name": "新增节点IP到主机名映射",
