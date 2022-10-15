@@ -83,7 +83,7 @@ if __name__ == "__main__":
     gridNodesIpInfo = json.loads(args.gridnodesipinfo)
     for ip in gridNodesIpInfo.values():
         gridClusterExecNodes.append({'ip':ip})
-    
+
     # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
     newNodesIpInfo = json.loads(args.newnodesipinfo)
     newNodes = list(newNodesIpInfo.keys())

@@ -76,7 +76,7 @@
             "name": "Grid集群执行节点",
             "help": "自动采集计算得到的现有集群执行节点(不包括新增节点)",
             "type": "node",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "false"
         },
         {
@@ -84,7 +84,7 @@
             "name": "新增的Grid集群执行节点",
             "help": "自动采集计算得到的准备新增的集群执行节点",
             "type": "node",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "false"
         },
         {
