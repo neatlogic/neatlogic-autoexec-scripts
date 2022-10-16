@@ -59,9 +59,18 @@
             "validate": ""
         },
         {
+            "opt": "DB_NAME",
+            "name": "全局DB名",
+            "help": "用于作为DB的服务名, DG主备库一致",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "DB_UNIQUE_NAME",
-            "name": "DB名",
-            "help": "全局DB名称",
+            "name": "DB唯一名",
+            "help": "DB唯一名称, 在DG同步和切换中确定主备库",
             "type": "text",
             "defaultValue": "",
             "required": "true",

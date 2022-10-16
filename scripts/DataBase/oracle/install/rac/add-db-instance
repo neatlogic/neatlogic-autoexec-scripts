@@ -66,8 +66,8 @@ function parseOpts() {
                 NODE_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            DB_UNIQUE_NAME)
-                DB_UNIQUE_NAME="${!OPTIND}"
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             SYSDBA_USER)
@@ -118,7 +118,7 @@ oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
 eval "$oraEnv"
 
-for GDB_NAME in $(echo $DB_UNIQUE_NAME | sed 's/,/ /'); do
+for GDB_NAME in $(echo $DB_NAME | sed 's/,/ /'); do
     #========开始执行删除操作==============================
     echo "Try to execute dbca command to add instance $ORACLE_SID(node:$NODE_NAME) to cluster..."
     SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \

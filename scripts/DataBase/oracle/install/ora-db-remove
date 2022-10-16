@@ -56,8 +56,8 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            DB_UNIQUE_NAME)
-                DB_UNIQUE_NAME="${!OPTIND}"
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             ORACLE_USER)
@@ -122,7 +122,7 @@ fi
 echo "Try to execute dbca command to remove database..."
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteDatabase \
     -forceArchiveLogDeletion \
-    -sourceDB "$DB_UNIQUE_NAME" \
+    -sourceDB "$DB_NAME" \
     -sysDBAUserName "$SYSDBA_USER" \
     -sysDBAPassword "$SYSDBA_PWD"
 

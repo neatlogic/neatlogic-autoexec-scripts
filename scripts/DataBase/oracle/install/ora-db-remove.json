@@ -50,9 +50,9 @@
             "validate": ""
         },
         {
-            "opt": "DB_UNIQUE_NAME",
+            "opt": "DB_NAME",
             "name": "全局DB名",
-            "help": "需删除实例的全局DB名称",
+            "help": "用于作为DB的服务名, DG主备库一致",
             "type": "text",
             "defaultValue": "",
             "required": "true",

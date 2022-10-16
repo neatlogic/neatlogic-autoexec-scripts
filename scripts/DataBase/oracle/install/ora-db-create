@@ -92,6 +92,10 @@ function parseOpts() {
                 IS_CDB="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DB_UNIQUE_NAME)
                 DB_UNIQUE_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -178,11 +182,11 @@ fi
 #su - oracle
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -responseFile $REAL_RESPONSE_FILE \
-    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
     -createDatabase \
     -templateName General_Purpose.dbc \
-    -gdbname $DB_UNIQUE_NAME \
-    -sid $DB_UNIQUE_NAME \
+    -gdbname $DB_NAME \
+    -sid $DB_NAME \
     -databaseConfigType $CONFIG_TYPE \
     -databaseType $DATABASE_TYPE \
     -createAsContainerDatabase $IS_CDB \

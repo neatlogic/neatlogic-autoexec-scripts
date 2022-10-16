@@ -66,8 +66,8 @@ function parseOpts() {
                 ORACLE_SID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            DB_UNIQUE_NAME)
-                DB_UNIQUE_NAME="${!OPTIND}"
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             GRID_USER)
@@ -129,22 +129,22 @@ eval "$oraEnv"
 #========开始执行删除操作==============================
 # 需要修改，参数--nodeList接收逗号相隔的多个节点
 # 其他进行循环处理
-POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_UNIQUE_NAME" | grep 'policy managed')
+POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_NAME" | grep 'policy managed')
 
 if [ ! -f "$ORACLE_HOME/bin/srvctl" ]; then
     echo "WARN: $ORACLE_HOME/bin/srvctl not exists, maybe already uninstalled."
     exit -1
 fi
 
-echo "Try to get database $DB_UNIQUE_NAME status..."
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_UNIQUE_NAME
+echo "Try to get database $DB_NAME status..."
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_NAME
 
 if [ -n "$POLICY_MANAGED" ]; then
-    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_UNIQUE_NAME -n $NODE
+    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
     SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -n $NODE -g Free
 else
-    echo "DB $DB_UNIQUE_NAME is administrator managed.\n"
-    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_UNIQUE_NAME -n $NODE
+    echo "DB $DB_NAME is administrator managed.\n"
+    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
 
     if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
         echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
@@ -154,7 +154,7 @@ else
     echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
     SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
         -nodeList "$NODE" \
-        -gdbName "$DB_UNIQUE_NAME" \
+        -gdbName "$DB_NAME" \
         -instanceName "$ORACLE_SID" \
         -sysDBAUserName "$SYSDBA_USER" \
         -sysDBAPassword "$SYSDBA_PWD"

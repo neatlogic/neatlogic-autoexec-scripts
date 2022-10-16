@@ -114,6 +114,10 @@ function parseOpts() {
                 IS_CDB="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DB_UNIQUE_NAME)
                 DB_UNIQUE_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -197,11 +201,11 @@ fi
 #su - oracle
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -responseFile $REAL_RESPONSE_FILE \
-    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_UNIQUE_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_UNIQUE_NAME" \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
     -createDatabase \
     -templateName General_Purpose.dbc \
-    -gdbname $DB_UNIQUE_NAME \
-    -sid $DB_UNIQUE_NAME \
+    -gdbname $DB_NAME \
+    -sid $DB_NAME \
     -nodelist $NODE_LIST \
     -databaseConfigType $CONFIG_TYPE \
     -databaseType $DATABASE_TYPE \
@@ -220,8 +224,8 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -emConfiguration NONE \
     -ignorePreReqs \
     -storageType $STORAGE_TYPE \
-    -diskGroupName "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
-    -datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -diskGroupName "+$DATA_DISKGROUP/{DB_NAME}/" \
+    -datafileDestination "+$DATA_DISKGROUP/{DB_NAME}/" \
     -recoveryAreaDestination "+$ARCH_DISKGROUP" \
     -recoveryGroupName "+$ARCH_DISKGROUP"
 
@@ -243,14 +247,14 @@ echo "**************************************************************************
 SUDO_CMD_CONT $ORACLE_USER ${GRID_HOME}/bin/crsctl stat res -t
 
 echo "******************************************************************************"
-echo "Output from srvctl config database -d ${DB_UNIQUE_NAME}" $(date)
+echo "Output from srvctl config database -d ${DB_NAME}" $(date)
 echo "******************************************************************************"
-SUDO_CMD $ORACLE_USER srvctl config database -d ${DB_UNIQUE_NAME}
+SUDO_CMD $ORACLE_USER srvctl config database -d ${DB_NAME}
 
 echo "******************************************************************************"
-echo "Output from srvctl status database -d ${DB_UNIQUE_NAME}" $(date)
+echo "Output from srvctl status database -d ${DB_NAME}" $(date)
 echo "******************************************************************************"
-SUDO_CMD_CONT $ORACLE_USER srvctl status database -d ${DB_UNIQUE_NAME}
+SUDO_CMD_CONT $ORACLE_USER srvctl status database -d ${DB_NAME}
 
 echo "******************************************************************************"
 echo "Output from v\$active_instances" $(date)
