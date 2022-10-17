@@ -37,8 +37,8 @@ if __name__ == "__main__":
     if hasOptError == 1:
         usage()
 
-    masterip = args.masterip
-    slaveips = args.slaveips
+    masterip = json.loads(args.masterip)
+    slaveips = json.loads(args.slaveips)
 
     serverInfo = {}
     servernum = 1
