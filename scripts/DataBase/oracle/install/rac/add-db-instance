@@ -120,7 +120,7 @@ eval "$oraEnv"
 
 for GDB_NAME in $(echo $DB_NAME | sed 's/,/ /'); do
     #========开始执行删除操作==============================
-    echo "Try to execute dbca command to add instance $ORACLE_SID(node:$NODE_NAME) to cluster..."
+    echo "Try to execute dbca command to add instance $GDB_NAME(node:$NODE_NAME) to cluster..."
     SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \
         -gdbName "$GDB_NAME" \
         -nodeList "$NODE_NAME" \

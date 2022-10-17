@@ -58,8 +58,8 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            REMOVE_NODE)
-                REMOVE_NODE="${!OPTIND}"
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             GRID_USER)
@@ -123,12 +123,16 @@ SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$LEFT_NODES}"
 
-if [ -n "$REMOVE_NODE" ]; then
+if [ -n "$REMOVE_NODES" ]; then
     echo "Try to remove authorized keys for node deleted..."
-    SUDO_ORA_CMD $GRID_USER sed -i "/$REMOVE_NODE@/"d "~/.ssh/authorized_keys*"
+    for RM_NODE_NAME in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        SUDO_ORA_CMD $GRID_USER sed -i "/$RM_NODE_NAME@/"d "~/.ssh/authorized_keys*"
+    done
 
     echo "Try to remove hosts config for node deleted..."
-    sed -i "/$REMOVE_NODE@/"d /etc/hosts
+    for RM_NODE_NAME in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        sed -i "/$REMOVE_NODES/"d /etc/hosts
+    done
 fi
 
 exit $HAS_ERROR

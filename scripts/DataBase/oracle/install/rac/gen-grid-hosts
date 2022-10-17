@@ -14,14 +14,14 @@ import AutoExecUtils
 def usage():
     # 帮助信息
     pname = os.path.basename(__file__)
-    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --scanip <scan ip> --nodesipinfo <all nodes ip json obj>")
+    print(pname + "--crsname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --scanip <scan ip> --nodesipinfo <all nodes ip json obj>")
 
 
 if __name__ == "__main__":
     # 参数处理
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--racname', default='', help='Oracle rac name')
+    parser.add_argument('--crsname', default='', help='Oracle rac name')
     parser.add_argument('--scanname', default='', help='Oracle scan name')
     parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
@@ -32,8 +32,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     hasOptError = 0
-    if args.racname == '':
-        print("ERROR: Must defined rac name by option --racname")
+    if args.crsname == '':
+        print("ERROR: Must defined rac name by option --crsname")
         hasOptError = 1
     if args.scanname == '':
         print("ERROR: Must defined scan name by option --scanname")
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     if hasOptError == 1:
         usage()
 
-    racName = args.racname
+    crsName = args.crsname
     scanName = args.scanname
 
     pubNetTxt = args.pubnet
@@ -168,17 +168,17 @@ if __name__ == "__main__":
             print("ERROR: Node:%s does not config public network:%s ip" % (node, pubNetTxt))
         else:
             pubIpMap[ip] = 1
-            pubIpConf.append('%s\t%s%s' % (pubIp, racName, idx))
-            hostNameMap[pubIp] = '%s%s' % (racName, idx)
-            vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], racName, idx))
-            gridClusterNodes.append('%s%s:%s%s-vip' % (racName, idx, racName, idx))
-            dbClusterNodes.append('%s%s' % (racName, idx))
+            pubIpConf.append('%s\t%s%s' % (pubIp, crsName, idx))
+            hostNameMap[pubIp] = '%s%s' % (crsName, idx)
+            vipConf.append('%s\t%s%s-vip' % (vipList[idx - 1], crsName, idx))
+            gridClusterNodes.append('%s%s:%s%s-vip' % (crsName, idx, crsName, idx))
+            dbClusterNodes.append('%s%s' % (crsName, idx))
 
         if privIp is None:
             hasError = 1
             print("ERROR: Node:%s does not config private network:%s ip" % (node, privNetTxt))
         else:
-            privIpConf.append("%s\t%s%s-priv" % (privIp, racName, idx))
+            privIpConf.append("%s\t%s%s-priv" % (privIp, crsName, idx))
 
         idx = idx + 1
 

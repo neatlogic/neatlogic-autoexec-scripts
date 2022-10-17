@@ -132,6 +132,9 @@ sub main {
     my $nodeName = `su - '$GRID_USER' -c 'olsnodes -l'`;
     $nodeName =~ s/^\s*|\s*$//g;
     $out->{nodeName} = $nodeName;
+    my $crsName = $nodeName;
+    $crsName =~ s/\d+$//;
+    $out->{crsName} = $crsName;
 
     my $nodeNames = `su - '$GRID_USER' -c 'olsnodes'`;
     $nodeNames =~ s/^\s*|\s*$//g;

@@ -12,7 +12,7 @@ import AutoExecUtils
 def usage():
     # 帮助信息
     pname = os.path.basename(__file__)
-    print(pname + "--allnodesinfo <all nodes json> --delnodesinfo <nodes to delete json>")
+    print(pname + "--nodenametoip <all nodes json> --delnodesinfo <nodes to delete json>")
 
 
 if __name__ == "__main__":
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     hasError = 0
 
-    allNodesIpMap = json.loads(args.allnodesinfo)
+    allNodesIpMap = json.loads(args.nodenametoip)
 
     delNodesIpMap = {}
     leftNodesIpMap = allNodesIpMap.copy()

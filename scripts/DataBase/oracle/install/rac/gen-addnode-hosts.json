@@ -5,11 +5,10 @@
     "interpreter": "python",
     "defaultProfile": null,
     "description": "根据增加节点的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
-    "option": [
-        {
-            "opt": "racname",
-            "name": "RAC名",
-            "help": "作为节点命名的前缀, 节点名称: RAC名+序号, 留空则自动计算",
+    "option": [{
+            "opt": "crsname",
+            "name": "集群名",
+            "help": "作为节点命名的前缀, 节点名称: 集群名+序号, 留空则自动计算",
             "type": "text",
             "defaultValue": "",
             "required": "false",
@@ -43,15 +42,6 @@
             "validate": ""
         },
         {
-            "opt": "oldhosts",
-            "name": "当前集群的hosts配置",
-            "help": "当前集群的/etc/hosts文件内容",
-            "type": "textarea",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
             "opt": "newnodesipinfo",
             "name": "新增节点IP信息",
             "help": "getallnicip工具输出的IP信息",
@@ -68,10 +58,18 @@
             "defaultValue": "",
             "required": "false",
             "validate": ""
+        },
+        {
+            "opt": "oldhosts",
+            "name": "当前集群的hosts配置",
+            "help": "当前集群的/etc/hosts文件内容",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "gridClusterExecNodes",
             "name": "Grid集群执行节点",
             "help": "自动采集计算得到的现有集群执行节点(不包括新增节点)",

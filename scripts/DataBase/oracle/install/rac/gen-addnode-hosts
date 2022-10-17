@@ -15,7 +15,7 @@ import AutoExecUtils
 def usage():
     # 帮助信息
     pname = os.path.basename(__file__)
-    print(pname + "--racname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --newnodesipinfo <new nodes ip json obj>")
+    print(pname + "--crsname <RAC name> --pubnet <public net> --privnet <private net> --viplist <vip json> --newnodesipinfo <new nodes ip json obj>")
     sys.exit(-1)
 
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # 参数处理
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--racname', default='', help='Oracle rac node name prefix')
+    parser.add_argument('--crsname', default='', help='Oracle rac node name prefix')
     parser.add_argument('--pubnet', default='', help='Public net, example: 10.10.10.0/24')
     parser.add_argument('--privnet', default='', help='Private net, example: 192.168.10.0/24')
     parser.add_argument('--viplist', default='', help='Vip list, example: 10.10.10.120,10.10.10.121')
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         usage()
 
     oldHostsLines = args.oldhosts.split("\\n")
-    possibleRacNameMap = {}
+    possibleCrsNameMap = {}
     confMap = {}
     nodeNameMap = {}
     spaceReg = re.compile(r"\s+")
@@ -67,10 +67,10 @@ if __name__ == "__main__":
             nodeNameMap[name] = ip
             matchObjs = re.findall(r'(\w+)\d+', name)
             if len(matchObjs) > 0:
-                possibleRacName = matchObjs[0]
-                if possibleRacName.lower() != 'localhost':
-                    matchCount = possibleRacNameMap.get(possibleRacName, 0)
-                    possibleRacNameMap[possibleRacName] = matchCount + 1
+                possibleCrsName = matchObjs[0]
+                if possibleCrsName.lower() != 'localhost':
+                    matchCount = possibleCrsNameMap.get(possibleCrsName, 0)
+                    possibleCrsNameMap[possibleCrsName] = matchCount + 1
 
     pubNetTxt = args.pubnet
     pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
@@ -78,11 +78,11 @@ if __name__ == "__main__":
     privNetTxt = args.privnet
     privNet = ipaddress.ip_network(privNetTxt, strict=False)
 
-    #gridNodesIpInfo
+    # gridNodesIpInfo
     gridClusterExecNodes = []
     gridNodesIpInfo = json.loads(args.gridnodesipinfo)
     for ip in gridNodesIpInfo.values():
-        gridClusterExecNodes.append({'ip':ip})
+        gridClusterExecNodes.append({'ip': ip})
 
     # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
     newNodesIpInfo = json.loads(args.newnodesipinfo)
@@ -92,35 +92,35 @@ if __name__ == "__main__":
 
     # 对老的hosts配置进行分析，把出现次数最多的名称作为rac name
     newNodeNames = []
-    racName = args.racname
-    autoRacName = None
-    racNameCount = 0
-    for possibleRacName, matchCount in possibleRacNameMap.items():
-        if matchCount > racNameCount:
-            racNameCount = matchCount
-            autoRacName = possibleRacName
+    crsName = args.crsname
+    autoCrsName = None
+    crsNameCount = 0
+    for possibleCrsName, matchCount in possibleCrsNameMap.items():
+        if matchCount > crsNameCount:
+            crsNameCount = matchCount
+            autoCrsName = possibleCrsName
 
-    if racName != '' and racName != autoRacName:
+    if crsName != '' and crsName != autoCrsName:
         print("ERROR: Can not find rac node names in hosts file.")
         sys.exit(-1)
 
-    racName = autoRacName
+    crsName = autoCrsName
 
-    if racName is None:
+    if crsName is None:
         print("ERROR: Can not determine rac name by hosts config text.")
         sys.exit(-1)
     else:
         # 从hosts里的名称到ip映射中排除已经使用的nodename，计算出新增的nodename
         findNodeNameCount = 0
-        for idx in range(1, racNameCount*2 + newNodesCount):
-            nodeName = '%s%s' % (racName, idx)
+        for idx in range(1, crsNameCount*2 + newNodesCount):
+            nodeName = '%s%s' % (crsName, idx)
             if not nodeName in nodeNameMap:
                 newNodeNames.append(nodeName)
                 findNodeNameCount = findNodeNameCount + 1
                 if findNodeNameCount == newNodesCount:
                     break
 
-    if len(newNodeNames)==0:
+    if len(newNodeNames) == 0:
         print("ERROR: Can not determine node name by hosts config text.")
         sys.exit(-1)
     else:
@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     # 计算新增执行节点信息
     for ip in hostNameMap.keys:
-        newGridExecNodes.append({'ip':ip})
+        newGridExecNodes.append({'ip': ip})
 
     # 拼接Oracle静默安装需要的配置oracle.install.crs.config.networkInterfaceList
     for nicName in pubNicNameMap.keys():
