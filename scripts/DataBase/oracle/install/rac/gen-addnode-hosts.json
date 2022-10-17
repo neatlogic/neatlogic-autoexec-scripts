@@ -5,7 +5,8 @@
     "interpreter": "python",
     "defaultProfile": null,
     "description": "根据增加节点的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
-    "option": [{
+    "option": [
+        {
             "opt": "crsname",
             "name": "集群名",
             "help": "作为节点命名的前缀, 节点名称: 集群名+序号, 留空则自动计算",
@@ -69,7 +70,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "gridClusterExecNodes",
             "name": "Grid集群执行节点",
             "help": "自动采集计算得到的现有集群执行节点(不包括新增节点)",

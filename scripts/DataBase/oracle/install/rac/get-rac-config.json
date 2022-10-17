@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "在RAC集群中某个节点执行，获取集群相关的节点等信息",
-    "option": [{
+    "option": [
+        {
             "opt": "ORACLE_USER",
             "name": "Oralce用户",
             "help": "Oracle Database软件的OS用户",
@@ -33,7 +34,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "crsName",
             "name": "集群名",
             "help": "不带数字序号的集群节点名称",

@@ -5,7 +5,8 @@
     "interpreter": "python",
     "defaultProfile": null,
     "description": "根据删除节点名和集群节点的IP信息, 生成删除节点需要的相关信息",
-    "option": [{
+    "option": [
+        {
             "opt": "nodenametoip",
             "name": "所有RAC节点IP",
             "help": "聚合好的所有节点名称到IP的映射, 例如: {\"myrac1\":\"10.10.10.1\",\"myrac2\":\"10.10.10.2\"}",
@@ -24,7 +25,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "allNodes",
             "name": "所有的节点",
             "help": "所有的节点执行目标信息",
