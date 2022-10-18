@@ -121,8 +121,9 @@ sub main {
 
     my $hasError = 0;
 
-    my ( $dbName, $isRAC, $dbUniqueName, $dbSequence, $tempFilesCount ) = getConfig( $ORACLE_USER, $ORACLE_SID );
     my $out = {};
+    
+    my ( $dbName, $isRAC, $dbUniqueName, $dbSequence, $tempFilesCount ) = getConfig( $ORACLE_USER, $ORACLE_SID );
     $out->{dbName}         = $dbName;
     $out->{isRAC}          = $isRAC;
     $out->{dbUniqueName}   = $dbUniqueName;
@@ -205,14 +206,6 @@ sub main {
     $out->{hostsConfTxt} = $hostsConfTxt;
 
     AutoExecUtils::saveOutput($out);
-
-    if ( defined($dbName) and defined($dbUniqueName) and defined($dbSequence) ) {
-        print("INFO: Get db base config success.\n");
-    }
-    else {
-        print("ERROR: Get db base config failed.\n");
-        exit(-1);
-    }
 
     return 0;
 }
