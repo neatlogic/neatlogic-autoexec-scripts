@@ -1,108 +1,51 @@
-#!/bin/bash
+#!/usr/bin/perl
+#配置mysql my.cnf文件
 
-usage() {
-    pname=$(basename $0)
-    echo "Usage:"
-    echo "$pname --ip2server <ip and server id relation>"
-    exit -1
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use Mojo::JSON qw(to_json from_json);
+
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ip2server <ip and server id relation> \n");
+    exit(1);
 }
 
-parseOpts() {
-    OPT_SPEC=":h-:"
-    while getopts "$OPT_SPEC" optchar; do
-        case "${optchar}" in
-        -)
-            case "${OPTARG}" in
-            ip2server)
-                ip2server="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            *)
-                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
-                    echo "Unknown option -- ${OPTARG}" >&2
-                fi
-                ;;
-            esac
-            ;;
-        h)
-            usage
-            exit 2
-            ;;
-        *)
-            if ["$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
-                echo "Non-option argument: '-${OPTARG}'" >&2
-            fi
-            ;;
-        esac
-    done
-}
-parseOpts "$@"
+sub main {
+    my ( $ip2server );
+    GetOptions(
+        'h|help'     => \$isHelp,
+        'ip2server=s' => \$ip2server
+    );
 
-function DO_CMD() {
-    echo Exec command: $@
-    $@
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($ip2server) or $ip2server eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ip and server id relation by option --ip2server.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
 
-    if [ $? != 0 ]; then
-        HAS_ERROR=$?
-        echo ERROR: Execute failed.
-        exit $HAS_ERROR
-    else
-        echo FINE: Execute success.
-    fi
+    my $ip2serverJson = from_json($ip2server);
+    my $nodehost = $ENV{NODE_HOST};
+    my $serverid = $ip2serverJson->{$nodehost};
+
+    my $exitCode = system("service mysql stop");
+    system("sed -bi 's/^#\s*server_id\s*=.*$/server_id='$serverid'/g' /etc/my.cnf")
+    system("echo \"log-slave-updates=1\" >>/etc/my.cnf");
+    system("echo \"relay_log=relay-bin-log\" >>/etc/my.cnf")
+    
+    return $exitCode;
 }
 
-function getJsonValuesByAwk() {
-    awk -v json="$1" -v key="$2" -v defaultValue="$3" 'BEGIN{
-        foundKeyCount = 0
-        while (length(json) > 0) {
-            pos = match(json, "\""key"\"[ \\t]*?:[ \\t]*");
-            if (pos == 0) {if (foundKeyCount == 0) {print defaultValue;} exit 0;}
-
-            ++foundKeyCount;
-            start = 0; stop = 0; layer = 0;
-            for (i = pos + length(key) + 1; i <= length(json); ++i) {
-                lastChar = substr(json, i - 1, 1)
-                currChar = substr(json, i, 1)
-
-                if (start <= 0) {
-                    if (lastChar == ":") {
-                        start = currChar == " " ? i + 1: i;
-                        if (currChar == "{" || currChar == "[") {
-                            layer = 1;
-                        }
-                    }
-                } else {
-                    if (currChar == "{" || currChar == "[") {
-                        ++layer;
-                    }
-                    if (currChar == "}" || currChar == "]") {
-                        --layer;
-                    }
-                    if ((currChar == "," || currChar == "}" || currChar == "]") && layer <= 0) {
-                        stop = currChar == "," ? i : i + 1 + layer;
-                        break;
-                    }
-                }
-            }
-
-            if (start <= 0 || stop <= 0 || start > length(json) || stop > length(json) || start >= stop) {
-                if (foundKeyCount == 0) {print defaultValue;} exit 0;
-            } else {
-                print substr(json, start, stop - start);
-            }
-
-            json = substr(json, stop + 1, length(json) - stop)
-        }
-    }'
-}
-
-serverid = getJsonValuesByAwk "$ip2server" "$NODE_HOST" ""
-
-DO_CMD service mysql stop
-
-DO_CMD sed -bi 's/^#\s*server_id\s*=.*$/server_id='$serverid'/g' /etc/my.cnf
-#DO_CMD sed -bi 's/^\s*#\s*log-slave-updates\s*=.*$/log-slave-updates=1/g' /etc/my.cnf
-DO_CMD echo "log-slave-updates=1" >>/etc/my.cnf
-DO_CMD echo "relay_log=relay-bin-log" >>/etc/my.cnf
-
-DO_CMD service mysql start
+exit main();
