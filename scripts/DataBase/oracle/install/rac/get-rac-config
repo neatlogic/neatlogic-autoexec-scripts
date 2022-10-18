@@ -36,7 +36,7 @@ sub isRac {
         $clustered = 1;
     }
     else {
-        my $israc = `ps -ef |grep crsd.bin |grep -v "grep crsd.bin" |sed -n '$='`;
+        my $israc = `ps -ef |grep crsd.bin |grep -v grep |sed -n '\$='`;
         if ( $israc eq '' ) {
             $clustered = 0;
         }
