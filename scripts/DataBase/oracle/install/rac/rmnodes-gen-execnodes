@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     delNodesIpMap = {}
     leftNodesIpMap = allNodesIpMap.copy()
-    delNodesTxt = args.delnodesinfo
+    delNodesTxt = args.delnodestxt
     for line in delNodesTxt.split("\n"):
         line = line.strip()
         if line == '':
