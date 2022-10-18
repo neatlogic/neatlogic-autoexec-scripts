@@ -62,10 +62,6 @@ function parseOpts() {
                 REMOVE_NODES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            ORACLE_SID)
-                ORACLE_SID="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
             DB_NAME)
                 DB_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))

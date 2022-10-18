@@ -68,15 +68,6 @@
             "validate": ""
         },
         {
-            "opt": "ORACLE_SID",
-            "name": "ORACLE_SID",
-            "help": "需删除实例的Oracle SID",
-            "type": "text",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
             "opt": "DB_NAME",
             "name": "全局DB名",
             "help": "用于作为DB的服务名, DG主备库一致",
