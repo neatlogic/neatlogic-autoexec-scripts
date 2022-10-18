@@ -3,7 +3,7 @@
 usage() {
     pname=$(basename $0)
     echo "Usage:"
-    echo "$pname --rootpwd <root login use password> --masterip <mysql master ip>"
+    echo "$pname --rootpwd <root login use password> --masterip <mysql master ip> --binLogFile <master binLogFile> --binLogOffset <master binLogOffset>"
     exit -1
 }
 
@@ -19,6 +19,14 @@ parseOpts() {
                 ;;
             masterip)
                 masterIp="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            binLogFile)
+                binLogFile="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            binLogOffset)
+                binLogOffset="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -41,27 +49,6 @@ parseOpts() {
     done
 }
 parseOpts "$@"
-
-function DO_CMD() {
-    echo Exec command: $@
-    $@
-
-    if [ $? != 0 ]; then
-        HAS_ERROR=$?
-        echo ERROR: Execute failed.
-        exit $HAS_ERROR
-    else
-        echo FINE: Execute success.
-    fi
-}
-
-DO_CMD service mysql stop
-
-DO_CMD sed -bi 's/^\s*server_id\s*=.*$/server_id=2/g' /etc/my.cnf
-DO_CMD sed -bi 's/^\s*#\s*log-slave-updates\s*=.*$/log-slave-updates=1/g' /etc/my.cnf
-DO_CMD echo "relay_log=relay-bin-log" >>/etc/my.cnf
-
-DO_CMD service mysql start
 
 mysql -v --connect-expired-password -uroot -p$rootpwd <<EOF
         stop slave;
