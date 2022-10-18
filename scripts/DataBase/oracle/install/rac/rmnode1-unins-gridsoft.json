@@ -50,6 +50,24 @@
             "validate": ""
         },
         {
+            "opt": "REMOVE_NODES",
+            "name": "删除节点名",
+            "help": "被删除的节点的名称, 逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "LEFT_NODES",
+            "name": "留存的节点名",
+            "help": "留存节点名称, 逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "DEL_USER",
             "name": "删除用户",
             "help": "软件卸载后, 是否删除Oracle用户和相关的用户组",

@@ -82,6 +82,10 @@ function parseOpts() {
                 ORACLE_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            LEFT_NODES)
+                LEFT_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DEL_USER)
                 DEL_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -133,18 +137,18 @@ if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
     exit 0
 fi
 
-echo "Try to update inventory on node $NODE..."
+echo "Try to update inventory on node $LEFT_NODES..."
 SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
     -local -updateNodeList \
     "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$NODE}"
+    "CLUSTER_NODES={$LEFT_NODES}"
 
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
     exit 0
 fi
 
-echo "Try to deinstall oracle database software on node $NODE..."
+echo "Try to deinstall oracle database software on node $LEFT_NODES..."
 SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/deinstall/deinstall -local
 
 if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then

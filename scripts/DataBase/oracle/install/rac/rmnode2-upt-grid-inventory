@@ -62,6 +62,10 @@ function parseOpts() {
                 REMOVE_NODES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            LEFT_NODES)
+                LEFT_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             GRID_USER)
                 GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))

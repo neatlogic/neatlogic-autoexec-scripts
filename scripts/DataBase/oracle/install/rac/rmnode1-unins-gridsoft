@@ -83,6 +83,14 @@ function parseOpts() {
                 GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            LEFT_NODES)
+                LEFT_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DEL_USER)
                 DEL_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -136,10 +144,12 @@ fi
 
 if [ -e "$ORACLE_HOME/bin/olsnodes" ]; then
     #Unpined not if pinned
-    IS_PINNED=$(su - grid -c "'$ORACLE_HOME/bin/olsnodes' -s -t" | grep "$NODE" | grep -v -i Unpinned)
-    if [ -n "$IS_PINNED" ]; then
-        SUDO_ORA_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" unpin css -n "$NODE"
-    fi
+    for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        IS_PINNED=$(su - grid -c "'$ORACLE_HOME/bin/olsnodes' -s -t" | grep "$NODE" | grep -v -i Unpinned)
+        if [ -n "$IS_PINNED" ]; then
+            SUDO_ORA_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" unpin css -n "$NODE"
+        fi
+    done
 fi
 
 if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
@@ -151,7 +161,7 @@ echo "Try to update inventory..."
 SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
     -updateNodeList -local \
     "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$NODE}"
+    "CLUSTER_NODES={$LEFT_NODES}"
 
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
