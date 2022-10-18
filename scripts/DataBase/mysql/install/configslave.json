@@ -23,6 +23,24 @@
             "defaultValue": null,
             "required": "true",
             "validate": ""
+        },
+        {
+            "opt": "binLogFile",
+            "name": "binLogFile",
+            "help": "masterbinLogFile",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "binLogOffset",
+            "name": "binLogOffset",
+            "help": "masterbinLogOffset",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
         }
     ],
     "output": []
