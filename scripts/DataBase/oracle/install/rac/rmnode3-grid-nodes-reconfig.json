@@ -48,6 +48,15 @@
             "defaultValue": "grid",
             "required": "true",
             "validate": ""
+        },
+        {
+            "opt": "REMOVE_NODES",
+            "name": "删除节点名",
+            "help": "被删除的节点的名称, 逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
         }
     ],
     "output": [

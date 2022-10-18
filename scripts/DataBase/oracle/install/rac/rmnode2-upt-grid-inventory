@@ -119,7 +119,8 @@ if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
 fi
 
 echo "Try to update nodes that is not deleted inventory..."
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
+SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
+    -updateNodeList -local \
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$LEFT_NODES}"
 

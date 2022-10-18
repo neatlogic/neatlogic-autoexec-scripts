@@ -58,8 +58,8 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            NODE)
-                NODE="${!OPTIND}"
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             ORACLE_SID)
@@ -152,18 +152,24 @@ else
     fi
 
     echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
-    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
-        -nodeList "$NODE" \
-        -gdbName "$DB_NAME" \
-        -instanceName "$ORACLE_SID" \
-        -sysDBAUserName "$SYSDBA_USER" \
-        -sysDBAPassword "$SYSDBA_PWD"
+    for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        SEQNO=$(echo $NODE | perl -pe 's/.*?(\d+)/$1/')
+        echo "Try to remove instance ${DB_NAME}${SEQNO}..."
+        SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
+            -gdbName "$DB_NAME" \
+            -instanceName "${DB_NAME}${SEQNO}"
+        #-sysDBAUserName "$SYSDBA_USER" \
+        #-sysDBAPassword "$SYSDBA_PWD"
+    done
 fi
 
-echo "Try to disable listener for $NODE..."
-SUDO_ORA_CMD $GRID_USER srvctl disable listener -listener LISTENER -node "$NODE"
+echo "Try to disable listener for nodes:$REMOVE_NODES..."
+for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+    echo "Try to disable listener for $NODE..."
+    SUDO_ORA_CMD $GRID_USER srvctl disable listener -listener LISTENER -node "$NODE"
 
-echo "Try to stop listener for $NODE..."
-SUDO_ORA_CMD $GRID_USER srvctl stop listener -listener LISTENER -node "$NODE"
+    echo "Try to stop listener for $NODE..."
+    SUDO_ORA_CMD $GRID_USER srvctl stop listener -listener LISTENER -node "$NODE"
+done
 
 exit $HAS_ERROR

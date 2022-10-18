@@ -118,7 +118,7 @@ if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
 fi
 
 echo "Try to update inventory on nodes $LEFT_NODES..."
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs -updateNodeList -local \
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$LEFT_NODES}"
 
