@@ -7,20 +7,20 @@
     "description": "在RAC集群中某个节点执行，获取集群相关的节点等信息",
     "option": [
         {
-            "opt": "ORACLE_USER",
-            "name": "Oralce用户",
-            "help": "Oracle Database软件的OS用户",
-            "type": "text",
-            "defaultValue": "oracle",
-            "required": "false",
-            "validate": ""
-        },
-        {
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "Oracle Grid软件的OS用户",
             "type": "text",
             "defaultValue": "grid",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_USER",
+            "name": "Oralce用户",
+            "help": "Oracle Database软件的OS用户",
+            "type": "text",
+            "defaultValue": "oracle",
             "required": "false",
             "validate": ""
         },
