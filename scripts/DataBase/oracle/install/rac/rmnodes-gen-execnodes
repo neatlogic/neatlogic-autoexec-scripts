@@ -41,22 +41,22 @@ if __name__ == "__main__":
     leftNodesStr = ','.join(leftNodesIpMap.keys())
     allNodesStr = ','.join(allNodesIpMap.keys())
 
-    delNodesInfo = {}
+    delNodes = []
     for ip in delNodesIpMap.values():
-        delNodesInfo['ip'] = ip
+        delNodes.append({'ip': ip})
 
-    leftNodesInfo = {}
+    leftNodes = []
     for ip in leftNodesIpMap.values():
-        leftNodesInfo['ip'] = ip
+        leftNodes.append({'ip': ip})
 
-    allNodesInfo = {}
+    allNodes = []
     for ip in allNodesIpMap.values():
-        allNodesInfo['ip'] = ip
+        allNodes.append({'ip': ip})
 
     out = {
-        'allNodes': allNodesInfo,
-        'delNodes': delNodesInfo,
-        'leftNodes': leftNodesInfo,
+        'allNodes': allNodes,
+        'delNodes': delNodes,
+        'leftNodes': leftNodes,
         'allNodesStr': allNodesStr,
         'delNodesStr': delNodesStr,
         'leftNodesStr': leftNodesStr

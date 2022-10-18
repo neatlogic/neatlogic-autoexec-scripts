@@ -2,6 +2,7 @@
 logs/*
 test/*
 tmp/*
+conf/config.ini
 plib/*
 .vscode/*
 .DS_Store
