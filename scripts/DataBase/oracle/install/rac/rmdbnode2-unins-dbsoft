@@ -132,13 +132,13 @@ eval "$oraEnv"
 
 #========开始执行删除操作==============================
 
-if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
-    echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists, maybe already uninstalled."
+if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
+    echo "WARN: Deinstall script $ORACLE_HOME/oui/bin/runInstaller not exists, maybe already uninstalled."
     exit 0
 fi
 
 echo "Try to update inventory on node $LEFT_NODES..."
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
     -local -updateNodeList \
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$LEFT_NODES}"
@@ -149,7 +149,7 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 echo "Try to deinstall oracle database software on node $LEFT_NODES..."
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/deinstall/deinstall -local
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/deinstall/deinstall -local
 
 if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
     rm -rf "$ORACLE_BASE/admin"

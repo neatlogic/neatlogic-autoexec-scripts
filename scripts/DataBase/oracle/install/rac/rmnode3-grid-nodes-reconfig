@@ -116,7 +116,7 @@ for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
     #输出验证信息
     echo "Try to verify grid delete..."
     su - $GRID_USER -c "$ORACLE_HOME/bin/olsnodes -s -t"
-    su - $GRID_USER -c "$ORACLE_HOME/bin/cluvfy stage -post nodedel -n node_list -verbose"
+    su - $GRID_USER -c "$ENV_DISTID $ORACLE_HOME/bin/cluvfy stage -post nodedel -n node_list -verbose"
 
     echo "Try to ensure node vip deleted..."
     #补充执行清除vip，报错关系也不大

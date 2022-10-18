@@ -135,20 +135,21 @@ fi
 echo "Try to get database $DB_NAME status..."
 SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_NAME
 
-if [ -n "$POLICY_MANAGED" ]; then
-    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
-    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -n $NODE -g Free
-else
-    echo "DB $DB_NAME is administrator managed.\n"
-    SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
+echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
 
-    if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
-        echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
-        exit -1
-    fi
+echo "Try to remove db $DB_NAME from nodes:$REMOVE_NODES..."
+for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+    if [ -n "$POLICY_MANAGED" ]; then
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -n $NODE -g Free
+    else
+        echo "DB $DB_NAME is administrator managed.\n"
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
 
-    echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
-    for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
+            echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
+        fi
+
         SEQNO=$(echo $NODE | perl -pe 's/.*?(\d+)/$1/')
         echo "Try to remove instance ${DB_NAME}${SEQNO}..."
         SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
@@ -156,11 +157,8 @@ else
             -instanceName "${DB_NAME}${SEQNO}"
         #-sysDBAUserName "$SYSDBA_USER" \
         #-sysDBAPassword "$SYSDBA_PWD"
-    done
-fi
+    fi
 
-echo "Try to disable listener for nodes:$REMOVE_NODES..."
-for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
     echo "Try to disable listener for $NODE..."
     SUDO_ORA_CMD $GRID_USER srvctl disable listener -listener LISTENER -node "$NODE"
 

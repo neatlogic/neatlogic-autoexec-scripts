@@ -158,7 +158,7 @@ if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
 fi
 
 echo "Try to update inventory..."
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
     -updateNodeList -local \
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$LEFT_NODES}"
@@ -169,7 +169,7 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 echo "Try to deinstall grid..."
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/deinstall/deinstall -local | tee oragridunins.out
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/deinstall/deinstall -local | tee oragridunins.out
 
 #从日志中获取root命令行
 rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
