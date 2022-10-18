@@ -149,7 +149,7 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 echo "Try to deinstall oracle database software on node $LEFT_NODES..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/deinstall/deinstall -local
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/deinstall/deinstall -local -silent
 
 if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
     rm -rf "$ORACLE_BASE/admin"
