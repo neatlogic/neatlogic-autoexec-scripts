@@ -86,6 +86,8 @@ function install() {
     echo "INFO: Begin to init mysql db"
     DO_CMD /usr/bin/mysql_install_db
 
+    DO_CMD chown -R mysql:mysql /var/lib/mysql
+
     DO_CMD service mysql start
 
     #mysql 脚本运行，注意密码处理
