@@ -1,0 +1,20 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "mysql配置slave节点",
+    "option": [
+        {
+            "opt": "ip2server",
+            "name": "ip2server",
+            "help": "",
+            "type": "json",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
