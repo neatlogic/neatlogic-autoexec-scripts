@@ -1,0 +1,20 @@
+{
+    "opType": "runner",
+    "typeName": "Basic",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Linux sleep",
+    "option": [
+        {
+            "opt": "time",
+            "name": "等待时间",
+            "help": "等待时间,如：10s",
+            "type": "text",
+            "defaultValue":"10" ,
+            "required": "true",
+            "validate": ["integer_p"]
+        }
+    ],
+    "output": []
+}
