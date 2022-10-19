@@ -104,6 +104,14 @@
             "required": "false"
         },
         {
+            "opt": "allNodesIp2HostName",
+            "name": "新老节点IP到主机名映射",
+            "help": "新老节点public网卡IP到主机名的映射(仅包括新增节点)",
+            "type": "json",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
             "opt": "hostsConfTxt",
             "name": "hosts配置内容",
             "help": "/etc/hosts配置内容(包括集群所有节点配置)",

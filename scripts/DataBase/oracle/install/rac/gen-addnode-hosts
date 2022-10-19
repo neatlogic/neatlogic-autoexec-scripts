@@ -256,9 +256,14 @@ if __name__ == "__main__":
 
     hostConfTxt = "\n".join(oldHostsLines) + "\n" + "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
 
+    allHostNameMap = hostNameMap.copy()
+    for nodeName, ip in gridNodesIpInfo.items():
+        allHostNameMap[nodeName] = ip
+
     out = {}
 
     out['newNodesIp2HostName'] = hostNameMap
+    out['newNodesIp2HostName'] = allHostNameMap
     out['hostsConfTxt'] = hostConfTxt
 
     out['gridClusterExecNodes'] = gridClusterExecNodes
