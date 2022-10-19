@@ -87,10 +87,6 @@ function parseOpts() {
                 REMOVE_NODES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            LEFT_NODES)
-                LEFT_NODES="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
             DEL_USER)
                 DEL_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -140,6 +136,7 @@ if [ -z "$ORACLE_HOME" ]; then
     exit -1
 fi
 
+MY_NODE=$(su - $GRID_USER -c 'olsnodes -l')
 #========开始执行删除操作==============================
 
 if [ -e "$ORACLE_HOME/bin/olsnodes" ]; then
@@ -152,16 +149,26 @@ if [ -e "$ORACLE_HOME/bin/olsnodes" ]; then
     done
 fi
 
+if [ -e "$ORACLE_HOME/crs/install" ]; then
+    DO_CMD "$ORACLE_HOME/perl/bin/perl" "$ORACLE_HOME/crs/install/rootcrs.pl" -deconfig -force
+fi
+
 if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/oui/bin/runInstaller not exists, maybe already uninstalled."
     exit -1
 fi
 
 echo "Try to update inventory..."
-SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
-    -updateNodeList -local \
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent \
+    -force \
+    -noconfig \
+    -ignorePrereq \
+    -ignoreSysPrereqs \
+    -updateNodeList \
+    -local \
+    CRS=TRUE \
     "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$LEFT_NODES}"
+    "CLUSTER_NODES={$MY_NODE}"
 
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
@@ -172,8 +179,13 @@ echo "Try to deinstall grid..."
 SUDO_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
 rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
 
-if [ -n "$rspFile" ] && [ -e "$rspFile" ]; then
+if [ -n "$rspFile" ]; then
     SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
+    #获取pipe管道前命令的exit code
+    exitStatus=${PIPESTATUS[0]}
+    if [ "$exitStatus"!="0" ]; then
+        exit $exitStatus
+    fi
 
     #从日志中获取root命令行
     rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
@@ -182,19 +194,28 @@ if [ -n "$rspFile" ] && [ -e "$rspFile" ]; then
 
     if [ -n "$rootCmd" ]; then
         rootCmd="$rootCmd -force -deconfig -paramfile $rspFile"
-    else
-        rootCmd="echo No root command found"
+
+        echo "Try to execute root command..."
+        DO_CMD $rootCmd
     fi
+
+    if [ -z "$rootCmd" ]; then
+        deinstallRootCmd=$(grep 'As the privileged user, execute' oragridunins.out | head -1 | sed s'/ /\n/g' | grep tmp | cut -d '"' -f2)
+        if [ -n "$deinstallRootCmd"]; then
+            echo $deinstallRootCmd
+            DO_CMD $deinstallRootCmd
+        fi
+    fi
+
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+
+    echo "Try to clean the .ssh rsa auhroized config..."
+    SUDO_CMD_CONT $GRID_USER rm -rf "~/.ssh/*"
+else
+    echo "ERROR: Can not find respose file directory from deinstall prepare log."
+    HAS_ERROR=1
 fi
-
-echo "Try to execute root command..."
-SUDO_ORA_CMD $rootCmd
-
-if [ "$DEL_USER" == "1" ]; then
-    removeUserAndGroups
-fi
-
-echo "Try to clean the .ssh rsa auhroized config..."
-SUDO_CMD_CONT $GRID_USER rm -rf "~/.ssh/*"
 
 exit $HAS_ERROR

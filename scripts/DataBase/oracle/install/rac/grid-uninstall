@@ -119,27 +119,37 @@ fi
 
 SUDO_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
 rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
-SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
+if [ -n "$rspFile" ]; then
+    SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
+    #获取pipe管道前命令的exit code
+    exitStatus=${PIPESTATUS[0]}
+    if [ "$exitStatus"!="0" ]; then
+        exit $exitStatus
+    fi
 
-if [ "$DEL_USER" == "1" ]; then
-    removeUserAndGroups
-fi
-echo "Uninstall success."
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+    echo "Uninstall success."
 
-#从日志中后去root命令行
-rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
-rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
-uninsDir=$(echo $rspFile | cut -d/ -f3)
+    #从日志中后去root命令行
+    rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
+    rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
+    uninsDir=$(echo $rspFile | cut -d/ -f3)
 
-if [ -n "$rootCmd" ]; then
-    rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
-    lastNodeCmd="$rootCmd -lastnode"
-    if [ -f "/tmp/$uninsDir/rootdeinstall.sh" ]; then
-        lastNodeCmd="/tmp/$uninsDir/rootdeinstall.sh"
+    if [ -n "$rootCmd" ]; then
+        rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
+        lastNodeCmd="$rootCmd -lastnode"
+        if [ -f "/tmp/$uninsDir/rootdeinstall.sh" ]; then
+            lastNodeCmd="/tmp/$uninsDir/rootdeinstall.sh"
+        fi
+    else
+        rootCmd="echo No root command found"
+        lastNodeCmd="echo No root command found"
     fi
 else
-    rootCmd="echo No root command found"
-    lastNodeCmd="echo No root command found"
+    echo "ERROR: Can not find respose file directory from deinstall prepare log."
+    HAS_ERROR=1
 fi
 
 gridEnv=${oraEnv//$'\n'/\\n}
@@ -153,3 +163,4 @@ cat <<EOF >"output.json"
 EOF
 
 echo "INFO: Use dbclean to clean process and directory to do clean."
+exit $HAS_ERROR

@@ -78,6 +78,10 @@ function parseOpts() {
                 CV_ASSUME_DISTID="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             ORACLE_USER)
                 ORACLE_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -130,6 +134,7 @@ oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
 eval "$oraEnv"
 
+MY_NODE=$(su - $GRID_USER -c 'olsnodes -l')
 #========开始执行删除操作==============================
 
 if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
@@ -137,34 +142,37 @@ if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
     exit 0
 fi
 
-echo "Try to update inventory on node $LEFT_NODES..."
+echo "Try to update inventory on node $MY_NODE..."
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
     -local -updateNodeList \
     "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$LEFT_NODES}"
+    "CLUSTER_NODES={$MY_NODE}"
 
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
     exit 0
 fi
 
-echo "Try to deinstall oracle database software on node $LEFT_NODES..."
+echo "Try to deinstall oracle database software on node $MY_NODE..."
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oradbunins_check.out
 rspFile=$(grep "Location of response file generated:" oradbunins_check.out | cut -d: -f 2)
 
-if [ -n "$rspFile" ] && [ -e "$rspFile" ]; then
+if [ -n "$rspFile" ]; then
     SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile
-fi
 
-if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
-    rm -rf "$ORACLE_BASE/admin"
-fi
+    if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
+        rm -rf "$ORACLE_BASE/admin"
+    fi
 
-if [ "$DEL_USER" == "1" ]; then
-    removeUserAndGroups
-fi
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
 
-echo "Try to clean the .ssh rsa auhroized config..."
-SUDO_CMD_CONT $ORACLE_USER rm -rf "~/.ssh/*"
+    echo "Try to clean the .ssh rsa auhroized config..."
+    SUDO_CMD_CONT $ORACLE_USER rm -rf "~/.ssh/*"
+else
+    echo "ERROR: Can not find respose file directory from deinstall prepare log."
+    HAS_ERROR=1
+fi
 
 exit $HAS_ERROR

@@ -50,11 +50,11 @@
             "validate": ""
         },
         {
-            "opt": "LEFT_NODES",
-            "name": "留存的节点名",
-            "help": "留存节点名称, 逗号相隔",
+            "opt": "ORACLE_USER",
+            "name": "Oracle用户",
+            "help": "Oracle Database软件安装用户, 默认是oracle",
             "type": "text",
-            "defaultValue": "",
+            "defaultValue": "oracle",
             "required": "true",
             "validate": ""
         },

@@ -134,12 +134,17 @@ fi
 
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oradbunins_check.out
 rspFile=$(grep "Location of response file generated:" oradbunins_check.out | cut -d: -f 2)
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile
+if [ -n "$rspFile" ]; then
+    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile
 
-if [ "$DEL_USER" == "1" ]; then
-    removeUserAndGroups
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+    echo "Uninstall success."
+else
+    echo "ERROR: Can not find respose file directory from deinstall prepare log."
+    HAS_ERROR=1
 fi
-echo "Uninstall success."
 
 oracleEnv=${oraEnv//$'\n'/\\n}
 #Save oracle env
@@ -150,3 +155,5 @@ cat <<EOF >"output.json"
 EOF
 
 echo "INFO: Use dbclean to clean process and directory to do clean."
+
+exit $HAS_ERROR
