@@ -48,7 +48,7 @@
             "help": "软件安装路径，如：/home/weblogic",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -101,19 +101,19 @@
             "name": "console登录账户密码",
             "help": "console登录账户密码",
             "type": "password",
-            "defaultValue": "{RC4}9a46f0f58789ccd7",
+            "defaultValue": "weblogic",
             "required": "true",
             "validate": ""
         }
     ],
     "output": [
         {
-            "opt": "domain_home",
+            "opt": "base_domain",
             "name": "domain路径",
             "help": "domain路径",
             "type": "text",
             "defaultValue": null,
-            "required": "false"
+            "required": "true"
         }
     ]
 }

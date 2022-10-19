@@ -4,7 +4,7 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
-    "description": "Unix安装JDK",
+    "description": "Unix安装vmtools",
     "option": [
         {
             "opt": "file_path",

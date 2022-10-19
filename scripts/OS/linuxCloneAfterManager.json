@@ -1,5 +1,5 @@
 {
-    "opType": "runner",
+    "opType": "target",
     "typeName": "INSTALL",
     "riskName": "LOW",
     "interpreter": "bash",
