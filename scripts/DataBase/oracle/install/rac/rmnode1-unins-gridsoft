@@ -169,17 +169,22 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 echo "Try to deinstall grid..."
-SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/deinstall/deinstall -local -silent | tee oragridunins.out
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
+rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
 
-#从日志中获取root命令行
-rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
-rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
-uninsDir=$(echo $rspFile | cut -d/ -f3)
+if [ -n "$rspFile" ] && [ -e "$rspFile" ]; then
+    SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
 
-if [ -n "$rootCmd" ]; then
-    rootCmd="$rootCmd -force  -deconfig -paramfile $rspFile"
-else
-    rootCmd="echo No root command found"
+    #从日志中获取root命令行
+    rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
+    rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
+    uninsDir=$(echo $rspFile | cut -d/ -f3)
+
+    if [ -n "$rootCmd" ]; then
+        rootCmd="$rootCmd -force -deconfig -paramfile $rspFile"
+    else
+        rootCmd="echo No root command found"
+    fi
 fi
 
 echo "Try to execute root command..."

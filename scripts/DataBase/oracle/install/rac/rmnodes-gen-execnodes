@@ -34,7 +34,9 @@ if __name__ == "__main__":
         if line == '':
             continue
         nodeName = line
-        delNodesIpMap[nodeName] = allNodesIpMap[nodeName]
+        nodeIp = allNodesIpMap.get(nodeName)
+        if nodeIp is not None:
+            delNodesIpMap[nodeName] = nodeIp
         leftNodesIpMap.pop(nodeName)
 
     delNodesStr = ','.join(delNodesIpMap.keys())

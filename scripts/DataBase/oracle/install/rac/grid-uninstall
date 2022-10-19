@@ -118,24 +118,13 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 SUDO_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Uninstall failed"
-    exit $exitCode
-fi
-
 rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
-
 SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Uninstall failed"
-else
-    if [ "$DEL_USER" == "1" ]; then
-        removeUserAndGroups
-    fi
-    echo "Uninstall success."
+
+if [ "$DEL_USER" == "1" ]; then
+    removeUserAndGroups
 fi
+echo "Uninstall success."
 
 #从日志中后去root命令行
 rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)

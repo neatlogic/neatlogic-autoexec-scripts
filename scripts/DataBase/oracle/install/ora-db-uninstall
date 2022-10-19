@@ -133,24 +133,13 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oradbunins_check.out
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Uninstall failed"
-    exit $exitCode
-fi
-
 rspFile=$(grep "Location of response file generated:" oradbunins_check.out | cut -d: -f 2)
-
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile
-exitCode=$?
-if [ $exitCode -ge 128 ]; then
-    echo "WARN: Uninstall failed"
-else
-    if [ "$DEL_USER" == "1" ]; then
-        removeUserAndGroups
-    fi
-    echo "Uninstall success."
+
+if [ "$DEL_USER" == "1" ]; then
+    removeUserAndGroups
 fi
+echo "Uninstall success."
 
 oracleEnv=${oraEnv//$'\n'/\\n}
 #Save oracle env
