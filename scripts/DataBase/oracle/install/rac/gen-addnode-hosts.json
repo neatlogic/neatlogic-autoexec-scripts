@@ -57,7 +57,7 @@
             "help": "get-rac-config工具输出的节点名与IP对照的信息, 例如: {\"rac1\":\"10.10.10.1\",\"rac2\":\"10.10.10.2\"}",
             "type": "json",
             "defaultValue": "",
-            "required": "false",
+            "required": "true",
             "validate": ""
         },
         {
