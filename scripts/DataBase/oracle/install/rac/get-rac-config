@@ -162,6 +162,7 @@ sub main {
         else {
             $hasError = 1;
             print("ERROR: Can not determine ip for node:$gridNode.\n");
+            next;
         }
         $gridNode =~ s/^\s*|\s*$//g;
         if ( $gridNode eq $nodeName ) {

@@ -107,7 +107,18 @@ echo "$oraEnv"
 eval "$oraEnv"
 
 #========开始执行删除操作==============================
-echo "Try to execute addnode command to add database node $NODE for cluster..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/addnode/addnode.sh -silent -ignorePrereq "CLUSTER_NEW_NODES={$NODE_NAMES}"
+echo "Try to execute addnode command to add database node $NODE_NAMES for cluster..."
+ADD_NODE_CMD=$ORACLE_HOME/addnode/addnode.sh
+if [ ! -e "$ADD_NODE_CMD" ]; then
+    if [ -e "$ORACLE_HOME/oui/bin/addNode.sh" ]; then
+        #Oracle 11 12
+        ADD_NODE_CMD=$ORACLE_HOME/oui/bin/addNode.sh
+    fi
+fi
+
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID IGNORE_PREADDNODE_CHECKS=Y $ADD_NODE_CMD \
+    -silent \
+    -ignorePrereq -ignoreSysPrereqs \
+    "CLUSTER_NEW_NODES={$NODE_NAMES}"
 
 exit $HAS_ERROR

@@ -59,19 +59,10 @@
             "validate": ""
         },
         {
-            "opt": "SYSDBA_USER",
-            "name": "SYSDBA用户",
-            "help": "具有SYSDBA角色的DB用户",
+            "opt": "NODE_NAMES",
+            "name": "新增节点名",
+            "help": "新增加的节点名称, 多个节点逗号相隔, 例如: myrac4,myrac5",
             "type": "text",
-            "defaultValue": "sys",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "SYSDBA_PWD",
-            "name": "SYSDBA用户密码",
-            "help": "具有SYSDBA角色的DB用户的密码",
-            "type": "password",
             "defaultValue": "",
             "required": "true",
             "validate": ""

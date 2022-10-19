@@ -235,7 +235,7 @@ if __name__ == "__main__":
         print("ERROR: Private Nework(%s) has more than one interface name:%s in all nodes, will cause RAC install failed." % (privNetTxt, ','.join(nicNames)))
 
     # 计算新增执行节点信息
-    for ip in hostNameMap.keys:
+    for ip in hostNameMap.keys():
         newGridExecNodes.append({'ip': ip})
 
     # 拼接Oracle静默安装需要的配置oracle.install.crs.config.networkInterfaceList
