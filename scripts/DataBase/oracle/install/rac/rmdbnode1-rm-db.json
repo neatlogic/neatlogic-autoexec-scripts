@@ -41,9 +41,9 @@
             "validate": ""
         },
         {
-            "opt": "NODE",
+            "opt": "REMOVE_NODES",
             "name": "删除节点名",
-            "help": "需要删除的Oracle Grid节点名称",
+            "help": "被删除的节点的名称, 逗号相隔",
             "type": "text",
             "defaultValue": "",
             "required": "true",
@@ -68,37 +68,10 @@
             "validate": ""
         },
         {
-            "opt": "ORACLE_SID",
-            "name": "ORACLE_SID",
-            "help": "需删除实例的Oracle SID",
-            "type": "text",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
             "opt": "DB_NAME",
             "name": "全局DB名",
             "help": "用于作为DB的服务名, DG主备库一致",
             "type": "text",
-            "defaultValue": "",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "SYSDBA_USER",
-            "name": "SYSDBA用户",
-            "help": "具有SYSDBA角色的DB用户",
-            "type": "text",
-            "defaultValue": "sys",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "SYSDBA_PWD",
-            "name": "SYSDBA用户密码",
-            "help": "具有SYSDBA角色的DB用户的密码",
-            "type": "password",
             "defaultValue": "",
             "required": "true",
             "validate": ""

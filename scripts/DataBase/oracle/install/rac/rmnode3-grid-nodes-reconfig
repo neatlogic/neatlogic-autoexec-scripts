@@ -62,6 +62,10 @@ function parseOpts() {
                 GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
                     echo "Unknown option --${OPTARG}" >&2
@@ -104,20 +108,22 @@ eval "$oraEnv"
 
 #========开始执行删除操作==============================
 #需要计算需要删除的多个节点
+echo "Try to delete nodes:$REMOVE_NODES..."
+for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+    echo "Try to delete $NODE from cluster config..."
+    $ORACLE_HOME/bin/crsctl delete node -n $NODE
 
-echo "Try to delete $NODE from cluster config..."
-SUDO_ORA_CMD $GRID_USER crsctl delete node -n $NODE
+    #输出验证信息
+    echo "Try to verify grid delete..."
+    su - $GRID_USER -c "$ORACLE_HOME/bin/olsnodes -s -t"
+    su - $GRID_USER -c "$ENV_DISTID $ORACLE_HOME/bin/cluvfy stage -post nodedel -n node_list -verbose"
 
-#输出验证信息
-echo "Try to verify grid delete..."
-su - $GRID_USER -c "$ORACLE_HOME/bin/olsnodes -s -t"
-su - $GRID_USER -c "$ORACLE_HOME/bin/cluvfy stage -post nodedel -n node_list -verbose"
-
-echo "Try to ensure node vip deleted..."
-#补充执行清除vip，报错关系也不大
-su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl status vip -n $NODE"
-su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl stop vip -i $NODE"
-su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl remove vip -i $NODE -f"
-su - $GRID_USER -c "$ORACLE_HOME/bin/crsctl stat res -t"
+    echo "Try to ensure node vip deleted..."
+    #补充执行清除vip，报错关系也不大
+    su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl status vip -n $NODE"
+    su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl stop vip -i $NODE"
+    su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl remove vip -i $NODE -f"
+    su - $GRID_USER -c "$ORACLE_HOME/bin/crsctl stat res -t"
+done
 
 exit $HAS_ERROR

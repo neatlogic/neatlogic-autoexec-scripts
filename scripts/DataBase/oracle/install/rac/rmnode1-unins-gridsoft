@@ -83,6 +83,14 @@ function parseOpts() {
                 GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            LEFT_NODES)
+                LEFT_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DEL_USER)
                 DEL_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -136,24 +144,32 @@ fi
 
 if [ -e "$ORACLE_HOME/bin/olsnodes" ]; then
     #Unpined not if pinned
-    IS_PINNED=$(su - grid -c "'$ORACLE_HOME/bin/olsnodes' -s -t" | grep "$NODE" | grep -v -i Unpinned)
-    if [ -n "$IS_PINNED" ]; then
-        SUDO_ORA_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" unpin css -n "$NODE"
-    fi
+    for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        IS_PINNED=$(su - grid -c "'$ORACLE_HOME/bin/olsnodes' -s -t" | grep "$NODE" | grep -v -i Unpinned)
+        if [ -n "$IS_PINNED" ]; then
+            SUDO_ORA_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" unpin css -n "$NODE"
+        fi
+    done
 fi
 
 if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
-    echo "WARN: Deinstall script $ORACLE_HOME/oui/bin/runInstaller not exists."
+    echo "WARN: Deinstall script $ORACLE_HOME/oui/bin/runInstaller not exists, maybe already uninstalled."
     exit -1
 fi
 
 echo "Try to update inventory..."
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/oui/bin/runInstaller -updateNodeList -local \
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
+    -updateNodeList -local \
     "ORACLE_HOME=$ORACLE_HOME" \
-    "CLUSTER_NODES={$NODE}"
+    "CLUSTER_NODES={$LEFT_NODES}"
+
+if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
+    echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
+    exit 0
+fi
 
 echo "Try to deinstall grid..."
-SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/deinstall -local | tee oragridunins.out
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/deinstall/deinstall -local -silent | tee oragridunins.out
 
 #从日志中获取root命令行
 rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)

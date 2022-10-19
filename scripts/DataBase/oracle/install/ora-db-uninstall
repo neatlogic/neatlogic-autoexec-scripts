@@ -128,7 +128,7 @@ echo "$oraEnv"
 eval "$oraEnv"
 
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
-    echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists."
+    echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
     exit 0
 fi
 
