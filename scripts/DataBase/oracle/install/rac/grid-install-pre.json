@@ -47,7 +47,7 @@
             "name": "ORACLE_USER",
             "help": "GRID安装用户",
             "type": "text",
-            "defaultValue": "grid",
+            "defaultValue": "oracle",
             "required": "true",
             "validate": ""
         },

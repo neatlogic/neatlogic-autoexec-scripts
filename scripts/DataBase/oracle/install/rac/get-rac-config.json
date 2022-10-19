@@ -76,6 +76,46 @@
             "required": "false"
         },
         {
+            "opt": "GRID_BASE",
+            "name": "GRID_BASE",
+            "help": "GRID_BASE",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "GRID_HOME",
+            "name": "GRID_HOME",
+            "help": "GRID_HOME",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "INVENTORY_DIR",
+            "name": "INVENTORY_DIR",
+            "help": "INVENTORY_DIR",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "ORACLE_BASE",
+            "name": "ORACLE_BASE",
+            "help": "ORACLE_BASE",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "ORACLE_HOME",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "dbSequence",
             "name": "同步Sequence号",
             "help": "同步的归档日志的Sequence号",

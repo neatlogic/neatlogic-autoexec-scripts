@@ -196,6 +196,52 @@ sub main {
         $out->{instanceName} = $oraSid;
     }
 
+    my $gridEnvTxt = `su - '$GRID_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $gridEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+
+            if ( $name eq 'ORACLE_HOME' ) {
+                $out->{GRID_HOME} = $val;
+                my $oraInstFh = IO::File->new("<$val/oraInst.loc");
+                if ( defined($oraInstFh) ) {
+                    while ( my $line = $oraInstFh->getline() ) {
+
+                        #inventory_loc=/db/oracle/app/oraInventory
+                        if ( $line =~ /inventory_loc=\s*(.*?)\s*$/ ) {
+                            $out->{INVENTORY_DIR} = $1;
+                        }
+                    }
+                    $oraInstFh->close();
+                }
+            }
+            elsif ( $name eq 'ORACLE_BASE' ) {
+                $out->{GRID_BASE} = $val;
+            }
+        }
+    }
+
+    my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+
+            if ( $name eq 'ORACLE_HOME' ) {
+                $out->{ORACLE_HOME} = $val;
+            }
+            elsif ( $name eq 'ORACLE_BASE' ) {
+                $out->{ORACLE_BASE} = $val;
+            }
+            elsif ( $name eq 'ORACLE_SID' ) {
+                if ( not defined( $out->{instanceName} ) ) {
+                    $out->{instanceName} = $val;
+                }
+            }
+        }
+    }
+
     my $hostsConfTxt;
     my $hostsFh = IO::File->new("</etc/hosts");
     if ( defined($hostsFh) ) {
