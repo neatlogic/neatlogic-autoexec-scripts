@@ -1,0 +1,116 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --operat <operat type> --run_user <run user> --domain_path <domain path> --http_url <admin http url> --server_name <manager server name>" 
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            operat)
+                operat="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            http_url)
+                http_url="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_name)
+                server_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi 
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user."
+    usage
+fi 
+
+if [[  ! -n "$http_url" ]] ; then
+    echo "ERROR:: Must defined http_url."
+    usage
+fi 
+
+if [[  ! -n "$server_name" ]] ; then
+    echo "ERROR:: Must defined server_name."
+    usage
+fi 
+
+if [[  ! -n "$operat" ]] ; then
+    operat="start"
+fi 
+
+if [[ $server_name == *","* && $server_name == *"-"* ]]; then
+    ####根据前缀自动生成内容#######
+    ####192.168.0.90-server1,192.168.0.91-server2
+    IFS=', ' read -r -a array <<< "$server_name"
+    for line in "${array[@]}"
+    do
+        echo "$line"
+        host=`echo "$line"|cut -d"-" -f1`
+        sname=`echo "$line"|cut -d"-" -f2`
+        if [ "$host" == "$NODE_HOST" ]; then
+            servername=$sname
+            break
+        fi
+    done
+else 
+    echo "ERROR:: Server name value: $server_name Illegal parameter format."
+    exit 1
+fi
+
+if [[ "$operat"=="start" ]] ; then 
+    sudo -u $run_user nohup $domain_path/bin/startManagedWebLogic.sh $servername  $http_url &
+else
+    sudo -u $run_user nohup $domain_path/bin/stopManagedWebLogic.sh $servername  $http_url &
+fi
+
+is_success=$?
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebLogic ManagerServer $operat $servername failed."
+else
+    echo "INFO:: WebLogic ManagerServer $operat  $servername success."
+fi
+
+sleep 10
+tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+exit $is_success

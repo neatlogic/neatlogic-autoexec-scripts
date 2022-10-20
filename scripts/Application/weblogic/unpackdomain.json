@@ -4,21 +4,30 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
-    "description": "weblogic启动adminserver",
+    "description": "weblogic解压打包domain文件",
     "option": [
         {
             "opt": "run_user",
-            "name": "软件安装用户",
-            "help": "为软件安装指定特定的用户，如：weblogic",
+            "name": "进程用户",
+            "help": "进程用户,如：weblogic",
             "type": "text",
             "defaultValue": "",
             "required": "true",
             "validate": ""
         },
         {
-            "opt": "weblogic_path",
+            "opt": "run_group",
+            "name": "进程用户组",
+            "help": "进程用户组,如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "weblogic_home",
             "name": "软件安装路径",
-            "help": "软件安装路径，如：/home/weblogic",
+            "help": "软件安装路径，如：/home/weblogic/Oracle/Middleware",
             "type": "text",
             "defaultValue": "",
             "required": "true",
@@ -27,27 +36,17 @@
         {
             "opt": "domain_path",
             "name": "domain路径",
-            "help": "domain路径，如：/home/weblogic",
+            "help": "软件安装路径，如：/home/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
             "type": "text",
             "defaultValue": "",
             "required": "true",
             "validate": ""
-        },
-        {
-            "opt": "listen_port",
-            "name": "监听端口",
-            "help": "adminserver监控端口,如:7001",
+        },{
+            "opt": "file_path",
+            "name": "domain文件路径",
+            "help": "domain文件路径",
             "type": "text",
-            "defaultValue": "7001",
-            "required": "true",
-            "validate": ""
-        },
-        {
-            "opt": "timeout",
-            "name": "超时时间",
-            "help": "检测AdminServer启动的timeout时间",
-            "type": "text",
-            "defaultValue": "60",
+            "defaultValue": "",
             "required": "true",
             "validate": ""
         }

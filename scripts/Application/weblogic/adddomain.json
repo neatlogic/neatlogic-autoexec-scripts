@@ -114,6 +114,21 @@
             "type": "text",
             "defaultValue": null,
             "required": "true"
+        },
+        {
+            "opt": "admin_t3_url",
+            "name": "admin t3管理地址",
+            "help": "adminserver的管理地址，如：t3://192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        },{
+            "opt": "admin_http_url",
+            "name": "admin http管理地址",
+            "help": "adminserver的管理地址，如：http://192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
         }
     ]
 }
