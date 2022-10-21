@@ -20,7 +20,7 @@ sub usage {
 my $errorState;
 
 sub main {
-    my ( $isHelp, $ip2server );
+    my ( $isHelp, $rootpwd, $masterip, $binLogFile, $binLogOffset );
     GetOptions(
         'h|help'     => \$isHelp,
         'rootpwd=s' => \$rootpwd,
