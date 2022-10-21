@@ -123,14 +123,9 @@ if [ -n "$rspFile" ]; then
     SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
     #获取pipe管道前命令的exit code
     exitStatus=${PIPESTATUS[0]}
-    if [ "$exitStatus"!="0" ]; then
+    if [ $exitCode -ge 128 ]; then
         exit $exitStatus
     fi
-
-    if [ "$DEL_USER" == "1" ]; then
-        removeUserAndGroups
-    fi
-    echo "Uninstall success."
 
     #从日志中后去root命令行
     rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
@@ -147,6 +142,11 @@ if [ -n "$rspFile" ]; then
         rootCmd="echo No root command found"
         lastNodeCmd="echo No root command found"
     fi
+
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+    echo "Uninstall success."
 else
     echo "ERROR: Can not find respose file directory from deinstall prepare log."
     HAS_ERROR=1
@@ -161,6 +161,8 @@ cat <<EOF >"output.json"
     "uninstLastNodeRootCmd":"$lastNodeCmd"
 }
 EOF
+
+cat output.json
 
 echo "INFO: Use dbclean to clean process and directory to do clean."
 exit $HAS_ERROR

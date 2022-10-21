@@ -183,7 +183,7 @@ if [ -n "$rspFile" ]; then
     SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
     #获取pipe管道前命令的exit code
     exitStatus=${PIPESTATUS[0]}
-    if [ "$exitStatus"!="0" ]; then
+    if [ $exitCode -ge 128 ]; then
         exit $exitStatus
     fi
 
