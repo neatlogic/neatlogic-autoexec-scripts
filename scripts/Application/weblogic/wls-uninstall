@@ -73,7 +73,7 @@ fi
 for dir in `ls $domain_path/servers`
 do
     #echo $dir
-    if [[ "$dir"!="domain_bak" &&  "$dir"!="AdminServer" ]]; then 
+    if [[ "$dir" != "domain_bak" &&  "$dir" != "AdminServer" ]]; then 
         is_server=`ps -ef | grep weblogic |grep $dir |awk '{print $2}'`
         if [[ -n "$is_server" ]] ; then 
             echo "INFO:: Stop ManagerServer $dir start."
@@ -84,7 +84,7 @@ do
 done
 
 #需先等managerserver停完成
-sleep 30
+sleep 10
 
 #检查NodeManager进程
 is_admin=`ps -ef | grep weblogic |grep NodeManager |awk '{print $2}'`
@@ -100,10 +100,18 @@ sleep 10
 #检查是否是是adminserver
 is_admin=`ps -ef | grep weblogic |grep AdminServer |awk '{print $2}'`
 if [[ -n "$is_admin" ]] ; then 
-    echo "INFO:: Stop AdminServer $dir start."
+    echo "INFO:: Stop AdminServer  start."
     sh $domain_path/bin/stopWebLogic.sh
-    echo "FINE:: Stop AdminServer $dir end."
+    echo "FINE:: Stop AdminServer  end."
 fi 
+
+sleep 10 
+
+#检查所有的进程是否已停完成，没停完成强制kill
+for pid in `ps -ef |grep weblogic| grep -cv "wls-uninstall" |awk '{print $2}'`
+do
+    kill -9 $pid
+done
 
 #低版本有uninstall脚本
 if [[ -d "$weblogic_home/uninstall" ]]; then 

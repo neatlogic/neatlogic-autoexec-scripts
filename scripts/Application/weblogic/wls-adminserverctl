@@ -83,18 +83,9 @@ else
     sudo -u $run_user nohup $domain_path/bin/stopWebLogic.sh > weblogic_run.log 2>&1 &
 fi 
 
-if [ $? != 0 ]
-then
-    echo "ERROR:: WebLogic AdminServer $operat failed."
-    exit  1
-else
-    echo "INFO:: WebLogic AdminServer $operat success."
-fi
-
-#判断adminserver是否启动
-if [[ "$operat"=="start" ]] ; then 
-    exitCode=1
-    loopcount=$((timeout/5))
+loopcount=$((timeout/5))
+exitCode=1
+if [[ "$operat" == "start" ]] ; then 
     while [ $exitCode != 0 ]
     do
         loopcount=$((loopcount-1))
@@ -102,15 +93,37 @@ if [[ "$operat"=="start" ]] ; then
         if [ -n "$port" ]; then
             exitCode=0
             tail -n 200 weblogic_run.log
-            echo "INFO:: Weblogic AdminServer launch success."
+            echo "FINE:: Start Weblogic AdminServer success."
         else
-            echo "INFO:: Weblogic AdminServer Runing... ."
+            echo "INFO:: Start Weblogic AdminServer Running... ."
         fi
         sleep 5
 
         if [[ $loopcount == 0 ]] ; then 
             echo "ERROR:: Start Weblogic AdminServer failed."
             exitCode=2
+            break
+        fi
+    done
+    exit $exitCode
+else 
+    while [ $exitCode != 0 ]
+    do
+        loopcount=$((loopcount-1))
+        pid=`ps -ef | grep weblogic |grep AdminServer |awk '{print $2}'`
+        if [ ! -n "$pid" ]; then
+            exitCode=0
+            tail -n 200 weblogic_run.log
+            echo "FINE:: Stop Weblogic AdminServer success."
+        else
+            echo "INFO:: Stop Weblogic AdminServer Running... ."
+        fi
+        sleep 5
+
+        if [[ $loopcount == 0 ]] ; then 
+            kill -9 $pid
+            echo "FINE:: Stop Weblogic AdminServer success."
+            exitCode=0
             break
         fi
     done
