@@ -1,15 +1,24 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "清理weblogic安装目录",
     "option": [
         {
-            "opt": "install_path",
+            "opt": "weblogic_home",
             "name": "软件安装路径",
             "help": "软件安装路径，如：/home/weblogic/Oracle/Middleware",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "domain_path",
+            "name": "domain路径",
+            "help": "domain路径，如：/opt/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
             "type": "text",
             "defaultValue": "",
             "required": "true",

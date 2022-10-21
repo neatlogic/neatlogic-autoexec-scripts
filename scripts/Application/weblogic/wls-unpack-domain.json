@@ -42,9 +42,17 @@
             "required": "true",
             "validate": ""
         },{
-            "opt": "file_path",
+            "opt": "domain_file",
             "name": "domain文件路径",
             "help": "domain文件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },{
+            "opt": "dat_file",
+            "name": "dat文件路径",
+            "help": "adminserver机器domain产生的security dat",
             "type": "text",
             "defaultValue": "",
             "required": "true",

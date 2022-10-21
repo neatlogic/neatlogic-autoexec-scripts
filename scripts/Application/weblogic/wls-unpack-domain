@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 usage() {
     pname=$(basename $0)
-    echo "$pname --run_user <run user> --run_group <run user group> --weblogic_home <weblogic home> --domain_path <domain home> --file_path <file path>"
+    echo "$pname --run_user <run user> --run_group <run user group> --weblogic_home <weblogic home> --domain_path <domain home> --domain_file <file path>"
     exit -1
 }
 
@@ -20,10 +20,14 @@ parseOpts() {
                 weblogic_home="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            file_path)
-                file_path="${!OPTIND}"
+            domain_file)
+                domain_file="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            dat_file)
+                dat_file="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;               
             run_user)
                 run_user="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -64,13 +68,13 @@ if [[  ! -n "$domain_path" ]] ; then
     usage
 fi
 
-if [[  ! -n "$file_path" ]] ; then
-    echo "ERROR:: Must defined file_path."
+if [[  ! -n "$domain_file" ]] ; then
+    echo "ERROR:: Must defined domain_file."
     usage
 fi 
 
-if [[ -d "$file_path" ]] ; then 
-    echo "ERROR:: $file_path dir not found."
+if [[ -d "$dat_file" ]] ; then 
+    echo "ERROR:: $dat_file dir not found."
     exit 1
 fi
 
@@ -85,7 +89,19 @@ if [[ -d "$run_group" ]] ; then
 fi
 wlsserver_bin="$weblogic_home/wlserver/common/bin/"
 
-sh $wlsserver_bin/unpack.sh -domain=$domain_path -template=$file_path
+sh $wlsserver_bin/unpack.sh -domain=$domain_path -template=$domain_file
+if [ $? != 0 ]
+then
+    echo "ERROR:: Weblogic uppack domain failed.$@"
+    exit 1
+else
+    echo "INFO:: Weblogic uppack domain succeed."
+fi
+
+#清理备机产生的SerializedSystemIni.dat
+rm -f $domain_path/security/SerializedSystemIni.dat
+#同步adminserver机器的SerializedSystemIni.dat
+cp $dat_file $domain_path/security/SerializedSystemIni.dat
 
 chown -R $run_user:$run_group $domain_path
 

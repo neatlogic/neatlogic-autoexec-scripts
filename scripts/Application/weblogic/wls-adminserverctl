@@ -86,6 +86,7 @@ fi
 if [ $? != 0 ]
 then
     echo "ERROR:: WebLogic AdminServer $operat failed."
+    exit  1
 else
     echo "INFO:: WebLogic AdminServer $operat success."
 fi
