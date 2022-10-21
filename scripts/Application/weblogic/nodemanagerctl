@@ -1,0 +1,79 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --operat <operat type> --run_user <run user> --domain_path <domain path>" 
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            operat)
+                operat="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi 
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user."
+    usage
+fi 
+
+if [[  ! -n "$operat" ]] ; then
+    operat="start"
+fi 
+
+if [[ "$operat"=="start" ]] ; then 
+    sudo -u $run_user nohup $domain_path/bin/startNodeManager.sh &
+else
+    sudo -u $run_user nohup $domain_path/bin/stopNodeManager.sh &
+fi
+
+is_success=$?
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebLogic NodeManager $operat failed."
+else
+    echo "INFO:: WebLogic NodeManager $operat success."
+fi
+
+sleep 5
+tail -n 200 $domain_path/nodemanager/nodemanager.log
+exit $is_success

@@ -1,0 +1,110 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "weblogic创建manager server",
+    "option": [
+        {
+            "opt": "run_user",
+            "name": "进程用户",
+            "help": "weblogic进程用户，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "进程用户组",
+            "help": "weblogic进程用户组，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "weblogic_home",
+            "name": "软件安装路径",
+            "help": "软件安装路径，如：/home/weblogic/Oracle/Middleware",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "domain_path",
+            "name": "domain路径",
+            "help": "domain路径，如：/home/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "t3_url",
+            "name": "t3管理地址",
+            "help": "t3管理地址，如：t3://192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "server_name",
+            "name": "服务器名称",
+            "help": "服务器名称，如:server1",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "server_port",
+            "name": "服务器端口",
+            "help": "服务器端口",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "server_ssl_port",
+            "name": "服务器SSL端口",
+            "help": "服务器SSL端口",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_username",
+            "name": "adminserver管理账号",
+            "help": "服务器SSL端口",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_password",
+            "name": "adminserver管理密码",
+            "help": "服务器SSL端口",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "server_name",
+            "name": "服务器名称",
+            "help": "服务器名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

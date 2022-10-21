@@ -1,0 +1,70 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use JSON;
+
+use AutoExecUtils;
+Getopt::Long::Configure("pass_through");
+
+sub usage {
+    my $pname = $FindBin::Script;
+    print("$pname --master_node <master node json> --slave_node <slave node json> --server_prefix < server name prefix> \n");
+    exit(1);
+}
+
+sub main {
+    $| = 1;    #不对输出进行buffer，便于实时看到输出日志
+    AutoExecUtils::setEnv();
+
+    my ( $ishelp, $master_node, $slave_node,$server_prefix);
+
+    GetOptions(
+        'help'           => \$ishelp,
+        'slave_node=s'         => \$slave_node,
+        'master_node=s'       => \$master_node,
+        'server_prefix=s'       => \$server_prefix,
+    );
+
+    my $hasOptErr = 0;
+    my ($masterNode ,$slaveNode);
+    if ( not defined($master_node) or $master_node eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Option --master_node not defined.\n");
+    }else{
+        $masterNode = from_json($master_node);
+    }
+
+    if ( defined($slave_node) and  $slave_node ne '' ) {
+        $slaveNode = from_json($slave_node);
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $count = 1;
+    ####根据前缀自动生成内容#######
+    ####192.168.0.90-server1,192.168.0.91-server2
+    my $result = '' ;
+    foreach my $node (@$masterNode){
+        $result = $result . $node->{'ip'} . '-' . $server_prefix . $count . ',' ;
+        $count ++ ;
+    }
+
+    foreach my $node (@$slaveNode){
+        $result = $result . $node->{'ip'} . '-' . $server_prefix . $count . ',' ;
+        $count ++ ;
+    }
+    
+    my $out = {};
+    $out->{serverNames}     = $result;
+    AutoExecUtils::saveOutput($out);
+
+    return 0;
+}
+
+exit main();
