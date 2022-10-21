@@ -104,7 +104,7 @@ EOF
 rm -f wls.rsp
 touch wls.rsp
 #ORACLE_HOME必须是空目录
-ORACLE_HOME=$install_path/Middleware
+ORACLE_HOME=$install_path/Oracle/Middleware
 cat <<EOF >> "wls.rsp"
 [ENGINE]
 Response File Version=1.0.0.0.0

@@ -99,8 +99,7 @@ if [[  ! -n "$run_user"  && ! -n "$run_group"  ]] ; then
 fi 
 
 if [[  ! -n "$domain_path" ]] ; then
-    domain_path="$weblogic_path/domain"
-    mkdir -p "$domain_path"
+    domain_path="$weblogic_path"
 fi 
 
 if [[  ! -n "$xms"  && ! -n "$xmx"  ]] ; then
@@ -178,6 +177,8 @@ fi
 #输出安装路径
 cat <<EOF > "$current_path/output.json"
 { 
-    "base_domain":"$base_domain" 
+    "base_domain":"$base_domain" ,
+    "admin_t3_url" : "t3://$NODE_HOST:$listen_port",
+    "admin_http_url" : "http://$NODE_HOST:$listen_port"
 }
 EOF

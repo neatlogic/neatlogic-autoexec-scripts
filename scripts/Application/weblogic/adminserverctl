@@ -1,0 +1,117 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --operat <operat type> --domain_path <domain path> --run_user <run user> --listen_port <adminserver listen port> --timeout <timeout>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            operat)
+                operat="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            listen_port)
+                listen_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            timeout)
+                timeout="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi 
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user."
+    usage
+fi 
+
+if [[  ! -n "$listen_port" ]] ; then
+    echo "ERROR:: Must defined listen_port."
+    usage
+fi 
+
+if [[ ! -n "$timeout" ]] ; then 
+    operat="start"
+fi 
+
+if [[ ! -n "$timeout" ]] ; then 
+    timeout=60
+fi 
+
+if [[ "$operat"=="start" ]] ; then 
+    sudo -u $run_user nohup $domain_path/bin/startWebLogic.sh > weblogic_run.log 2>&1 &
+else 
+    sudo -u $run_user nohup $domain_path/bin/stopWebLogic.sh > weblogic_run.log 2>&1 &
+fi 
+
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebLogic AdminServer $operat failed."
+else
+    echo "INFO:: WebLogic AdminServer $operat success."
+fi
+
+#判断adminserver是否启动
+if [[ "$operat"=="start" ]] ; then 
+    exitCode=1
+    loopcount=$((timeout/5))
+    while [ $exitCode != 0 ]
+    do
+        loopcount=$((loopcount-1))
+        port=`netstat -anp|grep $listen_port`
+        if [ -n "$port" ]; then
+            exitCode=0
+            tail -n 200 weblogic_run.log
+            echo "INFO:: Weblogic AdminServer launch success."
+        else
+            echo "INFO:: Weblogic AdminServer Runing... ."
+        fi
+        sleep 5
+
+        if [[ $loopcount == 0 ]] ; then 
+            echo "ERROR:: Start Weblogic AdminServer failed."
+            exitCode=2
+            break
+        fi
+    done
+    exit $exitCode
+fi 
