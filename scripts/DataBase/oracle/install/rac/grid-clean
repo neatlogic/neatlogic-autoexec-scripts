@@ -81,9 +81,14 @@ function manualUnInstall() {
     if [ -n "$GRID_UID" ]; then
         INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
 
-        #kill oracle process
-        SUDO_ORA_CMD $GRID_USER shutdown immediate
         SUDO_ORA_CMD $GRID_USER lsnrctl stop
+
+        su - $GRID_USER -c 'LANG=en_US.UTF-8 sqlplus / as sysdba' <<EOF
+shutdown immediate;
+EXIT;
+EOF
+
+        #kill oracle process
         pkill -u $GRID_USER
         sleep 5
         pkill -u $GRID_USER
