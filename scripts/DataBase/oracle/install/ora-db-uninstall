@@ -127,6 +127,14 @@ oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
 eval "$oraEnv"
 
+oracleEnv=${oraEnv//$'\n'/\\n}
+#Save oracle env
+cat <<EOF >"output.json"
+{
+    "oracleEnv":"$oracleEnv"
+}
+EOF
+
 if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
     echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
     exit 0
@@ -145,14 +153,6 @@ else
     echo "ERROR: Can not find respose file directory from deinstall prepare log."
     HAS_ERROR=1
 fi
-
-oracleEnv=${oraEnv//$'\n'/\\n}
-#Save oracle env
-cat <<EOF >"output.json"
-{
-    "oracleEnv":"$oracleEnv"
-}
-EOF
 
 echo "INFO: Use dbclean to clean process and directory to do clean."
 
