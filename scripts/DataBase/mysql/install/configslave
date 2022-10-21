@@ -66,11 +66,12 @@ sub main {
 EOF`;
     $exitCode=`echo $?`;
 
-    $errorState=`mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print $2}'
+    $errorState=`mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print \$2}'
 	show slave status\\G;
 EOF`;
     
-    if (length $errorState){
+    $errorState =~ s/[\r\n]+//g;
+    if ($errorState ne "0" ){
         $exitCode = -1;
     }
     return $exitCode;
