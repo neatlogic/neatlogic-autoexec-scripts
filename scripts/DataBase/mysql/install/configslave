@@ -68,7 +68,7 @@ EOF`;
 
     $errorState=`mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print $2}'
 	show slave status\\G;
-EOF`
+EOF`;
     
     if (length $errorState){
         $exitCode = -1;
