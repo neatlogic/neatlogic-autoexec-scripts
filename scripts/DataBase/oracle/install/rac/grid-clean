@@ -87,6 +87,9 @@ function manualUnInstall() {
 shutdown immediate;
 EXIT;
 EOF
+        for pid in $(ps -u root -fww | grep "$GRID_HOME" | grep -v grep | awk '{print $2}'); do
+            kill $pid
+        done
 
         #kill oracle process
         pkill -u $GRID_USER
@@ -96,6 +99,10 @@ EOF
             sleep 5
             pkill -9 -u $GRID_USER
         fi
+
+        for pid in $(ps -u root -fww | grep "$GRID_HOME" | grep -v grep | awk '{print $2}'); do
+            kill -9 $pid
+        done
     fi
 
     #remove ORACLE_HOME
