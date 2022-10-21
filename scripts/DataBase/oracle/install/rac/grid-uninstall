@@ -162,7 +162,5 @@ cat <<EOF >"output.json"
 }
 EOF
 
-cat output.json
-
 echo "INFO: Use dbclean to clean process and directory to do clean."
 exit $HAS_ERROR
