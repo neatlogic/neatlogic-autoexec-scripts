@@ -1,0 +1,143 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --run_user <run user> --run_group <run group> --weblogic_home <install path> --t3_url <admin t3 url> --cluster_name <cluster name> --cluster_address <cluster address> --admin_username <weblogic admin username> --admin_password <weblogic admin password>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;; 
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;   
+            weblogic_home)
+                weblogic_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            t3_url)
+                t3_url="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            cluster_name)
+                cluster_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            cluster_address)
+                cluster_address="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_username)
+                admin_username="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_password)
+                admin_password="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$weblogic_home" ]] ; then
+    echo "ERROR:: Must defined weblogic_home."
+    usage
+fi 
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user."
+    usage
+fi 
+
+if [[  ! -n "$run_group" ]] ; then
+    echo "ERROR:: Must defined run_group."
+    usage
+fi
+
+if [[  ! -n "$t3_url" ]] ; then
+    echo "ERROR:: Must defined t3_url."
+    usage
+fi 
+
+if [[  ! -n "$cluster_name" ]] ; then
+    echo "ERROR:: Must defined cluster_name."
+    usage
+fi 
+
+if [[  ! -n "$cluster_address" ]] ; then
+    echo "ERROR:: Must defined cluster_address."
+    usage
+fi 
+
+if [[  ! -n "$admin_username" ]] ; then
+    echo "ERROR:: Must defined admin_username."
+    usage
+fi 
+
+if [[  ! -n "$admin_password" ]] ; then
+    echo "ERROR:: Must defined admin_password."
+    usage
+fi 
+
+echo "INFO:: Creating Cluster $cluster_name start."
+cat <<EOF > add_cluster.py
+adminUsername="$admin_username"
+adminPassword="$admin_password"
+adminURL="$t3_url"
+clusterAddress="$cluster_address"
+clusterName="$cluster_name"
+
+connect(adminUsername, adminPassword, adminURL)
+edit()
+startEdit()
+cd('/')
+cmo.createCluster(clusterName)
+cd('/Clusters/' + clusterName)
+cmo.setClusterMessagingMode('unicast')
+cmo.setClusterBroadcastChannel('')
+cmo.setClusterAddress(clusterAddress)
+
+save()
+activate()
+disconnect()
+exit()
+EOF
+
+chown -R $run_user:$run_group $weblogic_home
+wlst_bin="$weblogic_home/wlserver/common/bin/"
+sudo -u $run_user sh $wlst_bin/wlst.sh  add_cluster.py
+if [ $? != 0 ]; then 
+    echo "ERROR:: Creating Cluster $cluster_name failed.$@"
+    exit 1
+else 
+    echo "INFO:: Creating Cluster $cluster_name success."
+    rm -f add_cluster.py
+    exit 0
+fi

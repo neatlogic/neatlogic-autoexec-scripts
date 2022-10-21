@@ -107,6 +107,7 @@ is_success=$?
 if [ $? != 0 ]
 then
     echo "ERROR:: WebLogic ManagerServer $operat $servername failed."
+    exit 1
 else
     echo "INFO:: WebLogic ManagerServer $operat  $servername success."
 fi

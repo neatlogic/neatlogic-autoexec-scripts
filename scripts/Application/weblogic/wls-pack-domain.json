@@ -4,8 +4,17 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
-    "description": "weblogic打包domain",
+    "description": "weblogic在AdminServer上打包domain",
     "option": [
+        {
+            "opt": "run_user",
+            "name": "进程用户",
+            "help": "进程用户,如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
         {
             "opt": "weblogic_home",
             "name": "软件安装路径",
@@ -33,10 +42,10 @@
             "validate": ""
         },{
             "opt": "file_name",
-            "name": "包名名称",
-            "help": "打包生成文件包名名称",
+            "name": "生成文件名称",
+            "help": "打包生成文件包名名称,默认生成的是jar包，不需要写文件后缀",
             "type": "text",
-            "defaultValue": "",
+            "defaultValue": "base_domain",
             "required": "true",
             "validate": ""
         }
@@ -44,8 +53,16 @@
     "output": [
         {
             "opt": "template_jar",
-            "name": "生成文件路径",
-            "help": "打包生成文件路径",
+            "name": "domain生成文件路径",
+            "help": "domain打包生成文件路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        },
+        {
+            "opt": "systemini_dat",
+            "name": "dat生成文件路径",
+            "help": "dat打包生成文件路径",
             "type": "text",
             "defaultValue": null,
             "required": "true"

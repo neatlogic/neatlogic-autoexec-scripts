@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 usage() {
     pname=$(basename $0)
-    echo "$pname --weblogic_home <weblogic home> --domain_path <domain home> --storage_path <file storage path> --file_name <pack filename>"
+    echo "$pname --run_user <run user> --weblogic_home <weblogic home> --domain_path <domain home> --storage_path <file storage path> --file_name <pack filename>"
     exit -1
 }
 
@@ -12,6 +12,10 @@ parseOpts() {
         case "${optchar}" in
         -)
             case "${OPTARG}" in
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;            
             domain_path)
                 domain_path="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -77,11 +81,23 @@ fi
 template_jar="$storage_path/$file_name.jar"
 wlsserver_bin="$weblogic_home/wlserver/common/bin/"
 
-sh $wlsserver_bin/pack.sh -domain=$domain_path -template=$template_jar -template_name=$file_name -managed=true
+sudo -u $run_user sh $wlsserver_bin/pack.sh -domain=$domain_path -template=$template_jar -template_name=$file_name -managed=true
+if [ $? != 0 ]
+then
+    echo "ERROR:: Weblogic pack domain failed.$@"
+    exit 1
+else
+    echo "INFO:: Weblogic pack domain succeed."
+fi
+
+#受管机器unpakc产生的domain目录下的security与adminserver不一致需要同步拷贝，不然启动受管机器的managerserver报错
+systemini_dat="$storage_path/SerializedSystemIni.dat"
+cp $domain_path/security/SerializedSystemIni.dat $systemini_dat
 
 #输出安装路径
 cat <<EOF > "output.json"
 { 
-    "template_jar":"$template_jar" 
+    "template_jar":"$template_jar" ,
+    "systemini_dat":"$systemini_dat"
 }
 EOF

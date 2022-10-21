@@ -1,0 +1,118 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --weblogic_home <install path> --domain_path <domain path>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            weblogic_home)
+                weblogic_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$weblogic_home" ]] ; then
+    echo "ERROR:: Must defined weblogic_home."
+    usage
+fi
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi
+
+if [[ ! -d "$weblogic_home" ]]; then 
+    echo "ERROR:: $weblogic_home directory not found."
+    exit 1
+fi 
+
+if [[ ! -d "$domain_path" ]]; then 
+    echo "ERROR:: $domain_path directory not found."
+    exit 1
+fi 
+
+#判断是否存在weblogic的wlsserver目录
+if [[  ! -d "$weblogic_home/wlserver"  || ! -d "$weblogic_home/oracle_common" ]] ; then
+    echo "ERROR:: $weblogic_home not weblogic install path."
+    exit 1
+fi
+
+#检查服务器进程
+for dir in `ls $domain_path/servers`
+do
+    #echo $dir
+    if [[ "$dir"!="domain_bak" &&  "$dir"!="AdminServer" ]]; then 
+        is_server=`ps -ef | grep weblogic |grep $dir |awk '{print $2}'`
+        if [[ -n "$is_server" ]] ; then 
+            echo "INFO:: Stop ManagerServer $dir start."
+            sh $domain_path/bin/stopManagedWebLogic.sh $dir
+            echo "FINE:: Stop ManagerServer $dir end."
+        fi 
+    fi 
+done
+
+#需先等managerserver停完成
+sleep 30
+
+#检查NodeManager进程
+is_admin=`ps -ef | grep weblogic |grep NodeManager |awk '{print $2}'`
+if [[ -n "$is_admin" ]] ; then 
+    echo "INFO:: Stop NodeManager start."
+    sh $domain_path/bin/stopNodeManager.sh
+    echo "FINE:: Stop NodeManager end."
+fi 
+
+#需先等managerserver停完成
+sleep 10
+
+#检查是否是是adminserver
+is_admin=`ps -ef | grep weblogic |grep AdminServer |awk '{print $2}'`
+if [[ -n "$is_admin" ]] ; then 
+    echo "INFO:: Stop AdminServer $dir start."
+    sh $domain_path/bin/stopWebLogic.sh
+    echo "FINE:: Stop AdminServer $dir end."
+fi 
+
+#低版本有uninstall脚本
+if [[ -d "$weblogic_home/uninstall" ]]; then 
+    echo "INFO:: Weblogic uninstall start."
+    sh $weblogic_home/uninstall/uninstall.sh -mode=silent
+    echo "FINE:: Weblogic uninstall end."
+fi 
+
+#清理目录
+echo "INFO:: Weblogic clean install directory start."
+rm -rf $weblogic_home
+echo "FINE:: Weblogic clean install directory end."
