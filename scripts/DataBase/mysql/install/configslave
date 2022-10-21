@@ -54,7 +54,7 @@ sub main {
     }
 
     my $masteripJson = from_json($masterip);
-    my $ip = $masteripJson->{'ip'};
+    my $ip = @$masteripJson[0]->{'ip'};
     my $exitCode = 0;
     my $errorState;
 
