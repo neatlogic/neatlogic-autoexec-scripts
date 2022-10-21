@@ -1,74 +1,79 @@
-#!/bin/bash
+#!/usr/bin/perl
+#配置mysql my.cnf文件
 
-usage() {
-    pname=$(basename $0)
-    echo "Usage:"
-    echo "$pname --rootpwd <root login use password> --masterip <mysql master ip> --binLogFile <master binLogFile> --binLogOffset <master binLogOffset>"
-    exit -1
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use JSON qw(to_json from_json encode_json);
+
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --rootpwd <root login use password> --masterip <mysql master ip> --binLogFile <master binLogFile> --binLogOffset <master binLogOffset> \n");
+    exit(1);
 }
 
-parseOpts() {
-    OPT_SPEC=":h-:"
-    while getopts "$OPT_SPEC" optchar; do
-        case "${optchar}" in
-        -)
-            case "${OPTARG}" in
-            rootpwd)
-                rootpwd="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            masterip)
-                masterIp="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            binLogFile)
-                binLogFile="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            binLogOffset)
-                binLogOffset="${!OPTIND}"
-                OPTIND=$(($OPTIND + 1))
-                ;;
-            *)
-                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
-                    echo "Unknown option -- ${OPTARG}" >&2
-                fi
-                ;;
-            esac
-            ;;
-        h)
-            usage
-            exit 2
-            ;;
-        *)
-            if ["$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
-                echo "Non-option argument: '-${OPTARG}'" >&2
-            fi
-            ;;
-        esac
-    done
-}
-parseOpts "$@"
+my $errorState;
 
-mysql -v --connect-expired-password -uroot -p$rootpwd <<EOF
+sub main {
+    my ( $isHelp, $ip2server );
+    GetOptions(
+        'h|help'     => \$isHelp,
+        'rootpwd=s' => \$rootpwd,
+        'masterip=s' => \$masterip,
+        'binLogFile=s' => \$binLogFile,
+        'binLogOffset=s' => \$binLogOffset
+    );
+
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($rootpwd) or $rootpwd eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined rootpwd by option --rootpwd.\n");
+    }
+    if ( not defined($masterip) or $masterip eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined masterip by option --masterip.\n");
+    }
+    if ( not defined($binLogFile) or $binLogFile eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined binLogFile by option --binLogFile.\n");
+    }
+    if ( not defined($binLogOffset) or $binLogOffset eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined binLogOffset by option --binLogOffset.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $masteripJson = from_json($masterip);
+    my $ip = $masteripJson->{'ip'};
+    my $exitCode = 0;
+    my $errorState;
+
+    `mysql -v --connect-expired-password -uroot -p$rootpwd <<EOF
         stop slave;
-        CHANGE MASTER TO MASTER_HOST='$masterIp',MASTER_USER='root',MASTER_PASSWORD='$rootpwd',MASTER_LOG_FILE='$binLogFile',MASTER_LOG_POS=$binLogOffset;
+        CHANGE MASTER TO MASTER_HOST='$ip',MASTER_USER='root',MASTER_PASSWORD='$rootpwd',MASTER_LOG_FILE='$binLogFile',MASTER_LOG_POS=$binLogOffset;
         start slave;
         show slave status\\G;
-EOF
+EOF`;
+    $exitCode=`echo $?`;
 
-if [ $? != 0 ]; then
-    echo "ERROR: set slave bin-log start postion failed."
-    exit 1
-fi
+    $errorState=`mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print $2}'
+	show slave status\\G;
+EOF`
+    
+    if (length $errorState){
+        $exitCode = -1;
+    }
+    return $exitCode;
+}
 
-errorState=$(
-    mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print $2}'
-	show slave status\G;
-EOF
-)
-
-if [ ! -z "$errorState" ]; then
-    echo "ERROR: error slave state."
-    exit 1
-fi
+exit main();
