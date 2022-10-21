@@ -44,6 +44,15 @@
             "defaultValue": "",
             "required": "true",
             "validate": ""
+        },
+        {
+            "opt": "timeout",
+            "name": "超时时间",
+            "help": "检测ManagerServer启停的timeout时间",
+            "type": "text",
+            "defaultValue": "60",
+            "required": "true",
+            "validate": ""
         }
     ],
     "output": []

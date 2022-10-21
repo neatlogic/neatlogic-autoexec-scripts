@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 usage() {
     pname=$(basename $0)
-    echo "$pname --operat <operat type> --run_user <run user> --domain_path <domain path> --http_url <admin http url> --server_name <manager server name>" 
+    echo "$pname --operat <operat type> --run_user <run user> --domain_path <domain path> --http_url <admin http url> --server_name <manager server name> --server_port <server port>" 
     exit -1
 }
 
@@ -29,6 +29,14 @@ parseOpts() {
                 OPTIND=$(($OPTIND + 1))
                 ;;
             server_name)
+                server_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_port)
+                server_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            timeout)
                 server_name="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
@@ -64,18 +72,22 @@ if [[  ! -n "$run_user" ]] ; then
     usage
 fi 
 
-if [[  ! -n "$http_url" ]] ; then
+if [[  ! -n "$http_url"  && "$operat" == "start" ]] ; then
     echo "ERROR:: Must defined http_url."
     usage
 fi 
 
-if [[  ! -n "$server_name" ]] ; then
+if [[  ! -n "$server_name" && "$operat" == "start" ]] ; then
     echo "ERROR:: Must defined server_name."
     usage
 fi 
 
 if [[  ! -n "$operat" ]] ; then
     operat="start"
+fi 
+
+if [[ ! -n "$timeout" ]] ; then 
+    timeout=60
 fi 
 
 if [[ $server_name == *","* && $server_name == *"-"* ]]; then
@@ -100,18 +112,54 @@ fi
 if [[ "$operat"=="start" ]] ; then 
     sudo -u $run_user nohup $domain_path/bin/startManagedWebLogic.sh $servername  $http_url &
 else
-    sudo -u $run_user nohup $domain_path/bin/stopManagedWebLogic.sh $servername  $http_url &
+    sudo -u $run_user nohup $domain_path/bin/stopManagedWebLogic.sh $servername  &
 fi
 
-is_success=$?
-if [ $? != 0 ]
-then
-    echo "ERROR:: WebLogic ManagerServer $operat $servername failed."
-    exit 1
-else
-    echo "INFO:: WebLogic ManagerServer $operat  $servername success."
-fi
+loopcount=$((timeout/5))
+exitCode=1
+if [[ "$operat" == "start" ]] ; then 
+    while [ $exitCode != 0 ]
+    do
+        loopcount=$((loopcount-1))
+        port=`netstat -anp|grep $server_port`
+        if [ -n "$port" ]; then
+            exitCode=0
+            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            echo "FINE:: Start Weblogic ManagerServer $servername success."
+        else
+            echo "INFO:: Start Weblogic ManagerServer $servername Running... ."
+        fi
+        sleep 5
 
-sleep 10
-tail -n 200 $domain_path/servers/$servername/logs/$servername.log
-exit $is_success
+        if [[ $loopcount == 0 ]] ; then 
+            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            echo "ERROR:: Start Weblogic ManagerServer $servername failed."
+            exitCode=2
+            break
+        fi
+    done
+    exit $exitCode
+else 
+    while [ $exitCode != 0 ]
+    do
+        loopcount=$((loopcount-1))
+        pid=`ps -ef | grep weblogic |grep $servername |awk '{print $2}'`
+        if [ ! -n "$pid" ]; then
+            exitCode=0
+            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            echo "FINE:: Stop Weblogic ManagerServer $servername success."
+        else
+            echo "INFO:: Stop Weblogic ManagerServer $servername Running... ."
+        fi
+        sleep 5
+
+        if [[ $loopcount == 0 ]] ; then 
+            kill -9 $pid
+            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            echo "FINE:: Stop Weblogic ManagerServer $servername success."
+            exitCode=0
+            break
+        fi
+    done
+    exit $exitCode
+fi

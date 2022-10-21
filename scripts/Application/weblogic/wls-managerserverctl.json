@@ -51,7 +51,7 @@
             "help": "adminserver的管理地址，如：http://192.168.0.90:7001",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -60,6 +60,24 @@
             "help": "服务器名称，如：server1",
             "type": "text",
             "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "server_port",
+            "name": "服务器端口",
+            "help": "服务器端口",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "timeout",
+            "name": "超时时间",
+            "help": "检测ManagerServer启停的timeout时间",
+            "type": "text",
+            "defaultValue": "60",
             "required": "true",
             "validate": ""
         }

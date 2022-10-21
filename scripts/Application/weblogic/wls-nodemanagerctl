@@ -24,6 +24,10 @@ parseOpts() {
                 domain_path="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            timeout)
+                server_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
                     echo "Unknown option --${OPTARG}" >&2
@@ -60,20 +64,62 @@ if [[  ! -n "$operat" ]] ; then
     operat="start"
 fi 
 
+if [[ ! -n "$timeout" ]] ; then 
+    timeout=60
+fi 
+
+is_success=0
 if [[ "$operat"=="start" ]] ; then 
     sudo -u $run_user nohup $domain_path/bin/startNodeManager.sh &
 else
     sudo -u $run_user nohup $domain_path/bin/stopNodeManager.sh &
 fi
 
-is_success=$?
-if [ $? != 0 ]
-then
-    echo "ERROR:: WebLogic NodeManager $operat failed."
-else
-    echo "INFO:: WebLogic NodeManager $operat success."
-fi
+loopcount=$((timeout/5))
+exitCode=1
+if [[ "$operat" == "start" ]] ; then 
+    while [ $exitCode != 0 ]
+    do
+        loopcount=$((loopcount-1))
+        port=`netstat -anp|grep 5556`
+        if [ -n "$port" ]; then
+            exitCode=0
+            tail -n 200 $domain_path/nodemanager/nodemanager.log
+            echo "FINE:: Start Weblogic NodeManager success."
+        else
+            echo "INFO:: Start Weblogic NodeManager Running... ."
+        fi
+        sleep 5
 
-sleep 5
-tail -n 200 $domain_path/nodemanager/nodemanager.log
-exit $is_success
+        if [[ $loopcount == 0 ]] ; then 
+            tail -n 200 $domain_path/nodemanager/nodemanager.log
+            echo "ERROR:: Start Weblogic NodeManager failed."
+            exitCode=2
+            break
+        fi
+    done
+    exit $exitCode
+else 
+    while [ $exitCode != 0 ]
+    do
+        loopcount=$((loopcount-1))
+        pid=`ps -ef | grep weblogic |grep NodeManager |awk '{print $2}'`
+        if [ ! -n "$pid" ]; then
+            exitCode=0
+            tail -n 200 $domain_path/nodemanager/nodemanager.log
+            echo "FINE:: Stop Weblogic NodeManager success."
+        else
+            echo "INFO:: Stop Weblogic NodeManager Running... ."
+        fi
+        sleep 5
+
+        if [[ $loopcount == 0 ]] ; then 
+            kill -9 $pid
+            tail -n 200 $domain_path/nodemanager/nodemanager.log
+            echo "FINE:: Stop Weblogic NodeManager success."
+            exitCode=0
+            break
+        fi
+    done
+    exit $exitCode
+fi
