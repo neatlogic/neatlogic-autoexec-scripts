@@ -103,5 +103,5 @@ rm -f $domain_path/security/SerializedSystemIni.dat
 #同步adminserver机器的SerializedSystemIni.dat
 cp $dat_file $domain_path/security/SerializedSystemIni.dat
 
-chown -R $run_user:$run_group $domain_path
+chown -R $run_user:$run_group $weblogic_home
 

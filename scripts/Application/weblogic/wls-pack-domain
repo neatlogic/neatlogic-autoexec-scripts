@@ -79,6 +79,9 @@ if [[ ! -d "$storage_path" ]] ; then
 fi
 
 template_jar="$storage_path/$file_name.jar"
+if [[ -f "$template_jar" ]] ; then 
+    rm -f $template_jar
+fi 
 wlsserver_bin="$weblogic_home/wlserver/common/bin/"
 
 sudo -u $run_user sh $wlsserver_bin/pack.sh -domain=$domain_path -template=$template_jar -template_name=$file_name -managed=true
@@ -92,6 +95,9 @@ fi
 
 #受管机器unpakc产生的domain目录下的security与adminserver不一致需要同步拷贝，不然启动受管机器的managerserver报错
 systemini_dat="$storage_path/SerializedSystemIni.dat"
+if [[ -f "$systemini_dat" ]] ; then 
+    rm -f $systemini_dat
+fi 
 cp $domain_path/security/SerializedSystemIni.dat $systemini_dat
 
 #输出安装路径
