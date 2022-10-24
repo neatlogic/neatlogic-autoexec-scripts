@@ -87,7 +87,7 @@ if [[ "$operat" == "start" ]] ; then
             tail -n 200 $domain_path/nodemanager/nodemanager.log
             echo "FINE:: Start Weblogic NodeManager success."
         else
-            echo "INFO:: Start Weblogic NodeManager Running... ."
+            echo "INFO:: Start Weblogic NodeManager Running..."
         fi
         sleep 5
 
@@ -109,7 +109,7 @@ else
             tail -n 200 $domain_path/nodemanager/nodemanager.log
             echo "FINE:: Stop Weblogic NodeManager success."
         else
-            echo "INFO:: Stop Weblogic NodeManager Running... ."
+            echo "INFO:: Stop Weblogic NodeManager Running..."
         fi
         sleep 5
 

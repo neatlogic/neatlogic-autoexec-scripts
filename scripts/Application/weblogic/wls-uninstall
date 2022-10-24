@@ -108,7 +108,7 @@ fi
 sleep 10 
 
 #检查所有的进程是否已停完成，没停完成强制kill
-for pid in `ps -ef |grep weblogic| grep -cv "wls-uninstall" |awk '{print $2}'`
+for pid in `ps -ef | grep weblogic | grep -E 'Dweblogic.Name|NodeManager|AdminServer' | grep -v grep | awk '{print $2}'`
 do
     kill -9 $pid
 done

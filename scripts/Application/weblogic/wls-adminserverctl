@@ -95,7 +95,7 @@ if [[ "$operat" == "start" ]] ; then
             tail -n 200 weblogic_run.log
             echo "FINE:: Start Weblogic AdminServer success."
         else
-            echo "INFO:: Start Weblogic AdminServer Running... ."
+            echo "INFO:: Start Weblogic AdminServer Running..."
         fi
         sleep 5
 
@@ -116,7 +116,7 @@ else
             tail -n 200 weblogic_run.log
             echo "FINE:: Stop Weblogic AdminServer success."
         else
-            echo "INFO:: Stop Weblogic AdminServer Running... ."
+            echo "INFO:: Stop Weblogic AdminServer Running..."
         fi
         sleep 5
 

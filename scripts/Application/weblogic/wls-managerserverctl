@@ -37,7 +37,7 @@ parseOpts() {
                 OPTIND=$(($OPTIND + 1))
                 ;;
             timeout)
-                server_name="${!OPTIND}"
+                timeout="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -79,6 +79,11 @@ fi
 
 if [[  ! -n "$server_name" && "$operat" == "start" ]] ; then
     echo "ERROR:: Must defined server_name."
+    usage
+fi 
+
+if [[  ! -n "$server_port" && "$operat" == "start" ]] ; then
+    echo "ERROR:: Must defined server_port."
     usage
 fi 
 
@@ -127,7 +132,7 @@ if [[ "$operat" == "start" ]] ; then
             tail -n 200 $domain_path/servers/$servername/logs/$servername.log
             echo "FINE:: Start Weblogic ManagerServer $servername success."
         else
-            echo "INFO:: Start Weblogic ManagerServer $servername Running... ."
+            echo "INFO:: Start Weblogic ManagerServer $servername Running..."
         fi
         sleep 5
 
@@ -149,7 +154,7 @@ else
             tail -n 200 $domain_path/servers/$servername/logs/$servername.log
             echo "FINE:: Stop Weblogic ManagerServer $servername success."
         else
-            echo "INFO:: Stop Weblogic ManagerServer $servername Running... ."
+            echo "INFO:: Stop Weblogic ManagerServer $servername Running..."
         fi
         sleep 5
 
