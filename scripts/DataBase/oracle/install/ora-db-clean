@@ -100,6 +100,7 @@ EOF
         fi
     fi
 
+    unalias rm 2>/dev/null
     #remove ORACLE_HOME
     #remove ORACLE_HOME
     if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
@@ -125,6 +126,7 @@ EOF
 
     #remove /opt/ORCLfmap
     rm -rf /opt/ORCLfmap
+    rm -rf /var/tmp/.oracle
 
     #stop and disable service
     if [ -n "$ORACLE_HOME" ]; then

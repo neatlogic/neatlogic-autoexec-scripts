@@ -87,7 +87,8 @@ function manualUnInstall() {
 shutdown immediate;
 EXIT;
 EOF
-        for pid in $(ps -u root -fww | grep "$GRID_HOME" | grep -v grep | awk '{print $2}'); do
+
+        for pid in $(ps -u root -fww | grep "$ORACLE_HOME" | grep -v grid-clean | grep -v grep | awk '{print $2}'); do
             kill $pid
         done
 
@@ -100,11 +101,12 @@ EOF
             pkill -9 -u $GRID_USER
         fi
 
-        for pid in $(ps -u root -fww | grep "$GRID_HOME" | grep -v grep | awk '{print $2}'); do
+        for pid in $(ps -u root -fww | grep "$ORACLE_HOME" | grep -v grid-clean | grep -v grep | awk '{print $2}'); do
             kill -9 $pid
         done
     fi
 
+    unalias rm 2>/dev/null
     #remove ORACLE_HOME
     if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
         rm -rf "$ORACLE_HOME"
@@ -132,6 +134,7 @@ EOF
 
     #remove /opt/ORCLfmap
     rm -rf /opt/ORCLfmap
+    rm -rf /var/tmp/.oracle
 
     #stop and disable service
     ps -p1 | grep systemd >/dev/null && initType="systemd" || initType="sysvinit"

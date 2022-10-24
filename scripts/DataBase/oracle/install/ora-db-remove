@@ -16,8 +16,9 @@ function DO_CMD() {
 function SUDO_ORA_CMD() {
     USER=$1
     shift
-    echo "Exec command: su - '$USER' -c '$@'"
-    eval "su - '$USER' -c '$@'"
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
@@ -122,8 +123,8 @@ fi
 echo "Try to execute dbca command to remove database..."
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteDatabase \
     -forceArchiveLogDeletion \
-    -sourceDB "$DB_NAME" \
-    -sysDBAUserName "$SYSDBA_USER" \
-    -sysDBAPassword "$SYSDBA_PWD"
+    -sourceDB "$DB_NAME"
+#-sysDBAUserName "$SYSDBA_USER" \
+#-sysDBAPassword "$SYSDBA_PWD"
 
 exit $HAS_ERROR

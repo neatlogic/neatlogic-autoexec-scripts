@@ -16,8 +16,9 @@ function DO_CMD() {
 function SUDO_ORA_CMD() {
     USER=$1
     shift
-    echo "Exec command: su - '$USER' -c '$@'"
-    eval "su - '$USER' -c '$@'"
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
@@ -33,7 +34,8 @@ function SUDO_ORA_CMD() {
 function SUDO_CMD_CONT() {
     USER=$1
     shift
-    echo "Exec command: su - '$USER' -c '$@'"
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
     eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
@@ -201,11 +203,12 @@ fi
 #su - oracle
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -responseFile $REAL_RESPONSE_FILE \
-    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
     -createDatabase \
     -templateName General_Purpose.dbc \
     -gdbname $DB_NAME \
     -sid $DB_NAME \
+    -dbUniqueName $DB_UNIQUE_NAME \
     -nodelist $NODE_LIST \
     -databaseConfigType $CONFIG_TYPE \
     -databaseType $DATABASE_TYPE \
@@ -224,8 +227,8 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -emConfiguration NONE \
     -ignorePreReqs \
     -storageType $STORAGE_TYPE \
-    -diskGroupName "+$DATA_DISKGROUP/{DB_NAME}/" \
-    -datafileDestination "+$DATA_DISKGROUP/{DB_NAME}/" \
+    -diskGroupName "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
     -recoveryAreaDestination "+$ARCH_DISKGROUP" \
     -recoveryGroupName "+$ARCH_DISKGROUP"
 

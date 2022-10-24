@@ -18,8 +18,9 @@ function DO_CMD() {
 function SUDO_ORA_CMD() {
     USER=$1
     shift
-    echo "Exec command: su - '$USER' -c '$@'"
-    eval "su - '$USER' -c '$@'"
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     exitCode=$?
     if [ $exitCode -ge 128 ]; then
         #负数返回码，大于127就是负数的补码
@@ -35,7 +36,8 @@ function SUDO_ORA_CMD() {
 function SUDO_CMD_CONT() {
     USER=$1
     shift
-    echo "Exec command: su - '$USER' -c '$@'"
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
     eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
     EXIT_CODE=$?
     if [ $EXIT_CODE != 0 ]; then
