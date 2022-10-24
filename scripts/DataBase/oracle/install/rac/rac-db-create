@@ -208,7 +208,6 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -templateName General_Purpose.dbc \
     -gdbname $DB_NAME \
     -sid $DB_NAME \
-    -dbUniqueName $DB_UNIQUE_NAME \
     -nodelist $NODE_LIST \
     -databaseConfigType $CONFIG_TYPE \
     -databaseType $DATABASE_TYPE \
