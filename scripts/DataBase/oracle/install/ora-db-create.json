@@ -70,10 +70,10 @@
         {
             "opt": "DB_UNIQUE_NAME",
             "name": "DB唯一名",
-            "help": "DB唯一名称, 在DG同步和切换中确定主备库",
+            "help": "DB唯一名称, 在DG同步和切换中确定主备库, 为空保持跟DB_NAME一致",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -223,6 +223,15 @@
             "help": "占用内存百分比, 如果设置了自动内存管理, 则此设置会失效",
             "type": "text",
             "defaultValue": "50",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INIT_PARAMS",
+            "name": "INIT参数",
+            "help": "dbca需要的initParams",
+            "type": "textarea",
+            "defaultValue": "db_unique_name={DB_UNIQUE_NAME}\ncompatible=19.0.0\ndb_block_size=8192BYTES\nsga_target=768MB\npga_aggregate_target=256MB\nprocesses=300\nopen_cursors=300\ncluster_database=true\ndb_recovery_file_dest_size=10GB",
             "required": "true",
             "validate": ""
         }

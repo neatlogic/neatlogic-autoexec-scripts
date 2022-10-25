@@ -46,6 +46,16 @@ function SUDO_CMD_CONT() {
     fi
 }
 
+function parseInitParams() {
+    #输入的INIT_PARAMS是textarea格式，把符号'\n'替换为真正的换行符号
+    if [ -z "$INIT_PARAMS" ]; then
+        INIT_PARAMS="db_name=$DB_NAME"
+        return
+    fi
+    INIT_PARAMS=$(echo "$INIT_PARAMS" | perl -pe 's/\\n/\n/g' | perl -ne 'if(not /^\s*#/ and not /^\s*$/){$_ =~ s/\s*=\s*/=/g; $_ =~ s/^\s*//g; $_=~s/\s+$/,/g; print;}')
+    INIT_PARAMS=$(echo "$INIT_PARAMS" | perl -pe 's/,$//')
+}
+
 #参数处理,全部用长参数
 ######################################
 function parseOpts() {
@@ -114,6 +124,10 @@ function parseOpts() {
                 MEM_PERCENTAGE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            INIT_PARAMS)
+                INIT_PARAMS="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             *)
                 if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
                     echo "Unknown option --${OPTARG}" >&2
@@ -135,6 +149,7 @@ function parseOpts() {
 }
 
 parseOpts "$@"
+parseInitParams
 
 if [ -z "$ORACLE_USER" ]; then
     echo "ERROR: Must defined ORACLE_USER with option --ORACLE_USER."
@@ -180,12 +195,17 @@ if [ -n "$RESPONSE_FILE" ]; then
     fi
 fi
 
+if [ -z "$DB_UNIQUE_NAME" ]; then
+    DB_UNIQUE_NAME=$DB_NAME
+fi
+
 #创建数据库
 #su - oracle
 SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
+    -createDatabase \
     -responseFile $REAL_RESPONSE_FILE \
     -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
-    -createDatabase \
+    -initParams "$INIT_PARAMS" \
     -templateName General_Purpose.dbc \
     -gdbname $DB_NAME \
     -sid $DB_NAME \

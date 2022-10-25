@@ -69,7 +69,7 @@
         },
         {
             "opt": "dbUniqueName",
-            "name": "DB实例名",
+            "name": "DB唯一名",
             "help": "实例名，RAC集群内一致，主备不一样",
             "type": "text",
             "defaultValue": null,

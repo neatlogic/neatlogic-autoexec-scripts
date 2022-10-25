@@ -543,7 +543,7 @@ variablesFile=
 # Default value : None
 # Mandatory     : NO
 #-----------------------------------------------------------------------------
-variables=ORACLE_BASE_HOME=/u01/app/oracle/product/19.3.0/db_1,DB_UNIQUE_NAME=tsorcl,ORACLE_BASE=/u01/app/oracle,PDB_NAME=,DB_NAME=tsorcl,ORACLE_HOME=/u01/app/oracle/product/19.3.0/db_1,SID=tsorcl
+#variables=ORACLE_BASE_HOME=/u01/app/oracle/product/19.3.0/db_1,DB_UNIQUE_NAME=tsorcl,ORACLE_BASE=/u01/app/oracle,PDB_NAME=,DB_NAME=tsorcl,ORACLE_HOME=/u01/app/oracle/product/19.3.0/db_1,SID=tsorcl
 
 #-----------------------------------------------------------------------------
 # Name          : initParams

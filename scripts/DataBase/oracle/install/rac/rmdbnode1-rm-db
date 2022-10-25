@@ -68,6 +68,10 @@ function parseOpts() {
                 DB_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             GRID_USER)
                 GRID_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -124,10 +128,14 @@ oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
 echo "$oraEnv"
 eval "$oraEnv"
 
+if [ -z "$DB_UNIQUE_NAME" ]; then
+    DB_UNIQUE_NAME=$DB_NAME
+fi
+
 #========开始执行删除操作==============================
 # 需要修改，参数--nodeList接收逗号相隔的多个节点
 # 其他进行循环处理
-POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_NAME" | grep 'policy managed')
+POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_UNIQUE_NAME" | grep 'policy managed')
 
 if [ ! -f "$ORACLE_HOME/bin/srvctl" ]; then
     echo "WARN: $ORACLE_HOME/bin/srvctl not exists, maybe already uninstalled."
@@ -135,18 +143,18 @@ if [ ! -f "$ORACLE_HOME/bin/srvctl" ]; then
 fi
 
 echo "Try to get database $DB_NAME status..."
-SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_NAME
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_UNIQUE_NAME
 
 echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
 
 echo "Try to remove db $DB_NAME from nodes:$REMOVE_NODES..."
 for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
     if [ -n "$POLICY_MANAGED" ]; then
-        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_UNIQUE_NAME -n $NODE
         SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -n $NODE -g Free
     else
         echo "DB $DB_NAME is administrator managed.\n"
-        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_NAME -n $NODE
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -d $DB_UNIQUE_NAME -n $NODE
 
         if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
             echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
@@ -155,7 +163,7 @@ for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
         SEQNO=$(echo $NODE | perl -pe 's/.*?(\d+)/$1/')
         echo "Try to remove instance ${DB_NAME}${SEQNO}..."
         SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
-            -gdbName "$DB_NAME" \
+            -gdbName "$DB_UNIQUE_NAME" \
             -instanceName "${DB_NAME}${SEQNO}"
         #-sysDBAUserName "$SYSDBA_USER" \
         #-sysDBAPassword "$SYSDBA_PWD"
