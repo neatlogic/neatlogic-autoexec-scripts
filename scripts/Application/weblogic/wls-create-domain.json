@@ -43,6 +43,15 @@
             "validate": ""
         },
         {
+            "opt": "domain_name",
+            "name": "domain名称",
+            "help": "domain名称，如：mydomain",
+            "type": "text",
+            "defaultValue": "base_domain",
+            "required": "false",
+            "validate": ""
+        },
+        {
             "opt": "domain_path",
             "name": "domain路径",
             "help": "软件安装路径，如：/home/weblogic",
