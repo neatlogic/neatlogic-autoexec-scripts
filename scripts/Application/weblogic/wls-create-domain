@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 usage() {
     pname=$(basename $0)
-    echo "$pname --java_home <java home> --run_user <run user> --run_group <run user group> --weblogic_path <install path> --domain_path <domain_path> --listen_port <admin server port>"
+    echo "$pname --java_home <java home> --run_user <run user> --run_group <run user group> --weblogic_path <install path> --domain_path <domain_path> --domain_name <domain_name> --listen_port <admin server port>"
     + "listen_ssl_port <ssl port> --xms <min heap size> --Xmx <max heap size> --weblogic_user <console user> --weblogic_password <console user password>"
     exit -1
 }
@@ -31,6 +31,10 @@ parseOpts() {
                 ;;
             domain_path)
                 domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_name)
+                domain_name="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             listen_port)
@@ -116,11 +120,15 @@ if [[  ! -n "$weblogic_user"  && ! -n "$weblogic_password"  ]] ; then
     weblogic_user="weblogic"
     weblogic_password="weblogic"
 fi
+
+if [[  ! -n "$domain_name"  ]] ; then
+    domain_name="base_domain"
+fi
+
 current_path=`pwd`
 
 cd $weblogic_path
 rm -f create_domain.rsp
-touch create_domain.rsp
 cat <<EOF >> "create_domain.rsp"
 read template from "$weblogic_path/wlserver/common/templates/wls/wls.jar";
 set JavaHome "$java_home";
@@ -128,11 +136,12 @@ set ServerStartMode "dev";
 find Server "AdminServer" as AdminServer;
 set AdminServer.ListenAddress "";
 set AdminServer.ListenPort "$listen_port";
-set AdminServer.SSL.Enabled "false";
+set AdminServer.SSL.Enabled "true";
+set AdminServer.SSL.ListenPort "$listen_ssl_port";
 find User "$weblogic_user" as u1;
 set u1.password "$weblogic_password";
 assign User "$weblogic_user" to Group "Monitors";
-write domain to "$domain_path/user_projects/domains/base_domain";
+write domain to "$domain_path/user_projects/domains/$domain_name";
 close template;
 EOF
 #set AdminServer.SSL.ListenPort "$listen_ssl_port";
