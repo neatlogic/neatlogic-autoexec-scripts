@@ -72,6 +72,10 @@ function parseOpts() {
                 RESPONSE_FILE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            TEMPLATE_FILE)
+                TEMPLATE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             ORACLE_USER)
                 ORACLE_USER="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -195,6 +199,24 @@ if [ -n "$RESPONSE_FILE" ]; then
     fi
 fi
 
+if [ -n "$TEMPLATE_FILE" ]; then
+    if [ ! -e "$TEMPLATE_FILE" ]; then
+        echo "ERROR: Template file:$TEMPLATE_FILE not exists."
+        exit 3
+    else
+        REAL_TEMPLATE_FILE=$ORACLE_HOME/assistants/dbca/templates/template_auto.dbc
+        echo "Copy $TEMPLATE_FILE to $REAL_TEMPLATE_FILE."
+        cp $TEMPLATE_FILE "$REAL_TEMPLATE_FILE" && chown $ORACLE_USER:$UNIX_GROUP_NAME "$REAL_TEMPLATE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $TEMPLATE_FILE to $REAL_TEMPLATE_FILE failed."
+            exit 4
+        fi
+        TEMPLATE_FILE=template_auto.dbc
+    fi
+else
+    TEMPLATE_FILE=General_Purpose.dbc
+fi
+
 if [ -z "$DB_UNIQUE_NAME" ]; then
     DB_UNIQUE_NAME=$DB_NAME
 fi
@@ -206,7 +228,7 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -responseFile $REAL_RESPONSE_FILE \
     -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
     -initParams "$INIT_PARAMS" \
-    -templateName General_Purpose.dbc \
+    -templateName "$TEMPLATE_FILE" \
     -gdbname $DB_NAME \
     -sid $DB_NAME \
     -databaseConfigType $CONFIG_TYPE \
@@ -228,10 +250,14 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -storageType FS \
     -datafileDestination "${DATA_DIR}"
 
+if [ -z "$ORACLE_SID" ]; then
+    ORACLE_SID=$DB_NAME
+fi
+
 echo "******************************************************************************"
 echo "Save state of PDB to enable auto-start."
 echo "******************************************************************************"
-su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
+su - $ORACLE_USER -c "ORACLE_SID=$ORACLE_SID sqlplus / as sysdba" <<EOF
 alter system set db_create_file_dest='${DATA_DIR}';
 alter pluggable database ${PDB_NAME} save state;
 alter system set local_listener='localhost';

@@ -50,6 +50,15 @@
             "validate": ""
         },
         {
+            "opt": "TEMPLATE_FILE",
+            "name": "DB模板文件",
+            "help": "创建DB实例的模板文件",
+            "type": "file",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "ORACLE_USER",
             "name": "OracleOS用户",
             "help": "Oracle在OS中的用户",
