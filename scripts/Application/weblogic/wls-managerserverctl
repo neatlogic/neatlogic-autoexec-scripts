@@ -114,11 +114,29 @@ else
     exit 1
 fi
 
-if [[ "$operat"=="start" ]] ; then 
-    sudo -u $run_user nohup $domain_path/bin/startManagedWebLogic.sh $servername  $http_url &
+temp_file="/tmp/weblogic.log"
+port=`netstat -anp|grep $server_port`
+pinfo=`ps -ef | grep weblogic | grep "$servername" | grep -v grep | awk '{print $2}'`
+if [[ "$operat" == "start" ]] ; then 
+    if [[ -n "$port" && -n "$pinfo" ]]; then
+        echo "FINE:: Weblogic ManagerServer $servername already start."
+        exit 0
+    else 
+        su - "$run_user" -c "nohup $domain_path/bin/startManagedWebLogic.sh \"$servername\" \"$http_url\" > $temp_file  2>&1 &"
+    fi 
 else
-    sudo -u $run_user nohup $domain_path/bin/stopManagedWebLogic.sh $servername  &
+    if [[ ! -n "$port" && ! -n "$pinfo"  ]]; then
+        echo "FINE:: Weblogic ManagerServer $servername already stop."
+        exit 0
+    else 
+        su - "$run_user" -c "nohup $domain_path/bin/stopManagedWebLogic.sh \"$servername\" > $temp_file 2>&1 &"
+    fi 
 fi
+
+if [ $? != 0  ] ;then 
+    echo "Weblogic ManagerServer $servername $operat failed.$@"
+    exit 1
+fi 
 
 loopcount=$((timeout/5))
 exitCode=1
@@ -129,15 +147,16 @@ if [[ "$operat" == "start" ]] ; then
         port=`netstat -anp|grep $server_port`
         if [ -n "$port" ]; then
             exitCode=0
-            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            tail -n 200 $temp_file
             echo "FINE:: Start Weblogic ManagerServer $servername success."
+            rm -f $temp_file
         else
             echo "INFO:: Start Weblogic ManagerServer $servername Running..."
         fi
         sleep 5
 
         if [[ $loopcount == 0 ]] ; then 
-            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            tail -n 200 $temp_file
             echo "ERROR:: Start Weblogic ManagerServer $servername failed."
             exitCode=2
             break
@@ -151,8 +170,9 @@ else
         pid=`ps -ef | grep weblogic |grep $servername |awk '{print $2}'`
         if [ ! -n "$pid" ]; then
             exitCode=0
-            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            tail -n 200 $temp_file
             echo "FINE:: Stop Weblogic ManagerServer $servername success."
+            rm -f $temp_file
         else
             echo "INFO:: Stop Weblogic ManagerServer $servername Running..."
         fi
@@ -160,8 +180,9 @@ else
 
         if [[ $loopcount == 0 ]] ; then 
             kill -9 $pid
-            tail -n 200 $domain_path/servers/$servername/logs/$servername.log
+            tail -n 200 $temp_file
             echo "FINE:: Stop Weblogic ManagerServer $servername success."
+            rm -f $temp_file
             exitCode=0
             break
         fi

@@ -120,7 +120,7 @@ chown -R $run_user:$run_group  $install_path
 
 #静默安装
 is_success=0
-sudo -u $run_user $JAVA_HOME/bin/java -jar $file_path -silent -responseFile $install_path/wls.rsp -invPtrLoc $install_path/oraInst.loc
+su - "$run_user" -c "$JAVA_HOME/bin/java -jar $file_path -silent -responseFile $install_path/wls.rsp -invPtrLoc $install_path/oraInst.loc"
 if [ $? != 0 ]
 then
     echo "ERROR:: Weblogic silent install failed."
@@ -136,7 +136,7 @@ if [ $is_success != 0 ]; then
 fi
 
 #设置环境变量
-sudo -u $run_user  $ORACLE_HOME/wlserver/server/bin/setWLSEnv.sh
+su - "$run_user" -c "sh $ORACLE_HOME/wlserver/server/bin/setWLSEnv.sh"
 if [ $? != 0 ]
 then
     echo "ERROR:: Set weblogic envionment variables failed."

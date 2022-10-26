@@ -145,7 +145,7 @@ chown -R $run_user:$run_group $domain_path
 is_success=0
 #创建domain
 cd $weblogic_path/wlserver/common/bin/
-sudo -u $run_user ./config.sh -mode=silent -silent_script=$weblogic_path/create_domain.rsp -log=$weblogic_path/create_domain.log -Djava.security.egd=file:/dev/./urandom
+su - "$run_user" -c "sh $weblogic_path/wlserver/common/bin//config.sh -mode=silent -silent_script=$weblogic_path/create_domain.rsp -log=$weblogic_path/create_domain.log -Djava.security.egd=file:/dev/./urandom"
 if [ $? != 0 ]
 then
     echo "ERROR:: create domain failed."
@@ -169,7 +169,7 @@ else
     echo "INFO:: change JVM heap size success."
 fi
 
-sudo -u $run_user $base_domain/bin/setDomainEnv.sh
+su - "$run_user" -c "sh $base_domain/bin/setDomainEnv.sh"
 if [ $is_success != 0 ]; then 
     exit $is_success
 fi

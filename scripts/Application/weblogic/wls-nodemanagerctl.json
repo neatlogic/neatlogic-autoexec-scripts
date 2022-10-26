@@ -37,6 +37,33 @@
             "validate": ""
         },
         {
+            "opt": "run_group",
+            "name": "进程用户组",
+            "help": "weblogic进程用户组，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+			"opt": "t3_url",
+			"name": "t3管理地址",
+			"help": "t3管理地址，如：t3:192.168.0.90:7001",
+			"type": "text",
+			"defaultValue": "",
+			"required": "true",
+			"validate": ""
+		},
+        {
+            "opt": "weblogic_home",
+            "name": "weblogic安装路径",
+            "help": "weblogic安装路径，如：/home/weblogic/Oracle/Middleware/",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "domain_path",
             "name": "domain路径",
             "help": "domain路径，如：/home/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
@@ -46,14 +73,23 @@
             "validate": ""
         },
         {
-            "opt": "timeout",
-            "name": "超时时间",
-            "help": "检测ManagerServer启停的timeout时间",
-            "type": "text",
-            "defaultValue": "60",
-            "required": "true",
-            "validate": ""
-        }
+			"opt": "admin_username",
+			"name": "admin管理用户",
+			"help": "admin管理用户",
+			"type": "text",
+			"defaultValue": "",
+			"required": "true",
+			"validate": ""
+		},
+		{
+			"opt": "admin_password",
+			"name": "admin管理密码",
+			"help": "admin管理密码",
+			"type": "password",
+			"defaultValue": "",
+			"required": "true",
+			"validate": ""
+		}
     ],
     "output": []
 }
