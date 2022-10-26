@@ -84,7 +84,7 @@ if [[ -f "$template_jar" ]] ; then
 fi 
 wlsserver_bin="$weblogic_home/wlserver/common/bin/"
 
-sudo -u $run_user sh $wlsserver_bin/pack.sh -domain=$domain_path -template=$template_jar -template_name=$file_name -managed=true
+su - "$run_user" -c "sh $wlsserver_bin/pack.sh -domain=$domain_path -template=$template_jar -template_name=$file_name -managed=true"
 if [ $? != 0 ]
 then
     echo "ERROR:: Weblogic pack domain failed.$@"

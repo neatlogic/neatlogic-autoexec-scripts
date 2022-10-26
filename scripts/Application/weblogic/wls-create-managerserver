@@ -151,7 +151,8 @@ fi
 
 is_success=0
 echo "INFO:: Creating ManagerServer $serverName start."
-cat <<EOF > add_manager_server.py
+temp_file="/tmp/add_manager_server.py"
+cat <<EOF > $temp_file
 adminUsername="$admin_username"
 adminPassword="$admin_password"
 adminURL="$t3_url"
@@ -216,14 +217,15 @@ disconnect()
 exit()
 EOF
 
+chown -R $run_user:$run_group $temp_file
 wlst_bin="$weblogic_home/wlserver/common/bin/"
-sudo -u $run_user sh $wlst_bin/wlst.sh  add_manager_server.py
+su - "$run_user" -c "sh $wlst_bin/wlst.sh $temp_file"
 if [ $? != 0 ]; then 
     echo "ERROR:: Creating ManagerServer $servername failed.$@"
     exit 1
 else 
     echo "INFO:: Creating ManagerServer $servername success."
-    rm -f add_manager_server.py
+    rm -f $temp_file
 fi
 
 #创建server账号密码配置

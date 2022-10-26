@@ -97,7 +97,8 @@ if [[  ! -n "$admin_password" ]] ; then
 fi 
 
 echo "INFO:: Creating Machine $machineName start."
-cat <<EOF > add_machine.py
+temp_file="/tmp/add_machine.py"
+cat <<EOF > $temp_file
 adminUsername="$admin_username"
 adminPassword="$admin_password"
 adminURL="$t3_url"
@@ -116,14 +117,15 @@ exit()
 EOF
 
 chown -R $run_user:$run_group $weblogic_home
+chown -R $run_user:$run_group $temp_file
 wlst_bin="$weblogic_home/wlserver/common/bin/"
-sudo -u $run_user sh $wlst_bin/wlst.sh  add_machine.py
+su - "$run_user" -c "sh $wlst_bin/wlst.sh $temp_file"
 if [ $? != 0 ]; then 
     echo "ERROR:: Creating Machine $machine_name failed.$@"
     exit 1
 else 
     echo "INFO:: Creating Machine $machine_name success."
-    rm -f add_machine.py
+    rm -f $temp_file
     exit 0
 fi
 
