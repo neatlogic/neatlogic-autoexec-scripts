@@ -84,6 +84,10 @@ function parseOpts() {
                 DATA_DIR="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
+            ARCH_DIR)
+                ARCH_DIR="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
             DATABASE_TYPE)
                 DATABASE_TYPE="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
@@ -217,6 +221,10 @@ else
     TEMPLATE_FILE=General_Purpose.dbc
 fi
 
+if [ -z "$ARCH_DIR" ]; then
+    ARCH_DIR=$DATA_DIR
+fi
+
 if [ -z "$DB_UNIQUE_NAME" ]; then
     DB_UNIQUE_NAME=$DB_NAME
 fi
@@ -248,7 +256,10 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -emConfiguration NONE \
     -ignorePreReqs \
     -storageType FS \
-    -datafileDestination "${DATA_DIR}"
+    -datafileDestination "${DATA_DIR}" \
+    -enableArchive true \
+    -archiveLogMode AUTO \
+    -archiveLogDest "${ARCH_DIR}"
 
 if [ -z "$ORACLE_SID" ]; then
     ORACLE_SID=$DB_NAME

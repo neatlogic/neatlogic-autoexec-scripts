@@ -139,6 +139,15 @@
             "validate": ""
         },
         {
+            "opt": "ARCH_DIR",
+            "name": "ArchiveLog目录",
+            "help": "存放归档日志的数据目录",
+            "type": "text",
+            "defaultValue": "${ORACLE_BASE}/oradata",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "IS_CDB",
             "name": "是否CDB",
             "help": "是否CDB",
