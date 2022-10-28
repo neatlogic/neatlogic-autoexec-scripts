@@ -1,4 +1,23 @@
 #!/usr/bin/perl
+#创建ASM磁盘组
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+
+use AutoExecUtils;
+use SqlplusExec;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --griduser <Grid os user name> --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
+    exit(1);
+}
+
 my $str = q{
 LISTENER =
   (DESCRIPTION_LIST =
@@ -43,3 +62,29 @@ while ($str =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg){
     print("$name = \n$desc\n");
     print("------------------------------\n");
 }
+
+sub main{
+my ( $isHelp, $action, $filePath );
+    my $gridUser = 'grid';
+    GetOptions(
+        'h|help'     => \$isHelp,
+        'action=s' => \$action,
+        'filepath=s'     => \$filePath
+    );
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($action) or $action eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined action by option --action <recreate|modify>.\n");
+    }
+    if ( not defined($filePath) or $filePath eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined tnsnames.ora or listener.ora file path by option --filepath.\n");
+    }
+if ( $hasOptErr == 1 ) {
+        usage();
+  }
+}
+exit(main())
