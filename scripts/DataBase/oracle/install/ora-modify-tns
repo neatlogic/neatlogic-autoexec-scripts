@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#创建ASM磁盘组
+#修改tnsnames.ora或者listener.ora文件
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
@@ -9,7 +9,6 @@ use strict;
 use Getopt::Long;
 
 use AutoExecUtils;
-use SqlplusExec;
 
 sub usage {
     my $pname = $FindBin::Script;
@@ -18,59 +17,16 @@ sub usage {
     exit(1);
 }
 
-my $str = q{
-LISTENER =
-  (DESCRIPTION_LIST =
-    (DESCRIPTION =
-      (ADDRESS = (PROTOCOL = TCP)(HOST = ${NODE2_FQ_HOSTNAME})(PORT = 1521))
-      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
-    )
-  )
-
-SID_LIST_LISTENER =
-  (SID_LIST =
-    (SID_DESC =
-      (GLOBAL_DBNAME = ${NODE2_DB_UNIQUE_NAME})
-      (SID_NAME = ${ORACLE_SID})
-      (ORACLE_HOME = ${ORACLE_HOME})
-    )
-    (SID_DESC =
-      (GLOBAL_DBNAME = ${NODE2_DB_UNIQUE_NAME}${DB_DOMAIN_STR})
-      (SID_NAME = ${ORACLE_SID})
-      (ORACLE_HOME = ${ORACLE_HOME})
-    )
-    (SID_DESC =
-      (SID_NAME = ${ORACLE_SID})
-      (GLOBAL_DBNAME = ${NODE2_DB_UNIQUE_NAME}_DGMGRL${DB_DOMAIN_STR})
-      (ORACLE_HOME = ${ORACLE_HOME})
-      (ENVS="TNS_ADMIN=${ORACLE_HOME}/network/admin")
-    )
-  )
-};
-
-#my @matches = $str =~ /(\w\s*=\s*\((?:\(.*\)|[^\)])*\)|\w+)/sg;
-
-#使用嵌套正则表达式进行多层嵌套括号的匹配
-my $descRe; 
-$descRe = qr/\((?:(?>[^()]+)|(??{$descRe}))*\)/x; 
-
-while ($str =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg){
-    my $name = $1;
-    my $desc = $2;
-
-    print ("============================\n");
-    print("$name = \n$desc\n");
-    print("------------------------------\n");
-}
-
-sub main{
-my ( $isHelp, $action, $filePath );
+sub main {
+    my ( $isHelp, $action, $filePath, $configItemsTxt );
     my $gridUser = 'grid';
     GetOptions(
-        'h|help'     => \$isHelp,
-        'action=s' => \$action,
-        'filepath=s'     => \$filePath
+        'h|help'      => \$isHelp,
+        'action=s'    => \$action,
+        'filepath=s'  => \$filePath,
+        'confitems=s' => \$configItemsTxt
     );
+
     if ($isHelp) {
         usage();
     }
@@ -83,8 +39,93 @@ my ( $isHelp, $action, $filePath );
         $hasOptErr = 1;
         print("ERROR: Must defined tnsnames.ora or listener.ora file path by option --filepath.\n");
     }
-if ( $hasOptErr == 1 ) {
+    if ( not defined($configItemsTxt) or $configItemsTxt eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined config items by option --confitems.\n");
+    }
+
+    if ( $hasOptErr == 1 ) {
         usage();
-  }
+    }
+
+    my $exitCode = 0;
+
+    $configItemsTxt =~ s/\\\n/\n/g;
+
+    my $descRe;
+    $descRe = qr/\((?:(?>[^()]+)|(??{$descRe}))*\)/x;
+
+    #分析输入
+    my @newItems    = ();
+    my $newItemsMap = {};
+    while ( $configItemsTxt =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg ) {
+        my $name = $1;
+        my $desc = $2;
+        $newItemsMap->{$name} = $desc;
+        push( @newItems, { name => $name, desc => $desc } );
+    }
+
+    my $content;
+
+    if ( $action eq 'modify' ) {
+
+        #读取文件内容
+        my $fh = IO::File->new("<$filePath");
+        if ( defined($fh) ) {
+            my $fSize = -s $filePath;
+            $fh->read( $content, $fSize );
+            $fh->close();
+        }
+        else {
+            print("ERROR: Can not open file:$filePath, $!\n");
+            $exitCode = 1;
+        }
+
+        my @oldItems    = ();
+        my $oldItemsMap = {};
+        while ( $content =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg ) {
+            my $name = $1;
+            my $desc = $2;
+            $oldItemsMap->{$name} = $desc;
+            push( @oldItems, { name => $name, desc => $desc } );
+        }
+
+        #更新content
+        foreach my $item (@oldItems) {
+            my $newDesc = $newItemsMap->{ $item->{name} };
+            if ( defined($newDesc) ) {
+                $item->{desc} = $newDesc;
+            }
+        }
+
+        foreach my $item (@newItems) {
+            my $oldDesc = $oldItemsMap->{ $item->{name} };
+            if ( not defined($oldDesc) ) {
+                push( @oldItems, { name => $item->{name}, desc => $item->{desc} } );
+            }
+        }
+
+        $content = '';
+        foreach my $item (@oldItems) {
+            $content = $content . $item->{name} . '=' . $item->{desc} . "\n";
+        }
+    }
+    else {
+        $content = $configItemsTxt;
+    }
+
+    my $out = { newFileContent => $content };
+    AutoExecUtils::saveOutput($out);
+
+    my $fh = IO::File->new(">$filePath");
+    if ( defined($fh) ) {
+        print $fh ($content);
+        $fh->close();
+    }
+    else {
+        print("ERROR: Can not modify file:$filePath, $!\n");
+        $exitCode = 1;
+    }
 }
-exit(main())
+
+exit( main() )
