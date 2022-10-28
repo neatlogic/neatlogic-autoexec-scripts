@@ -143,8 +143,9 @@ if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
 fi
 
 echo "Try to update inventory on node $MY_NODE..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent -force -noconfig -ignorePrereq -ignoreSysPrereqs \
-    -local -updateNodeList \
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -local -silent \
+    -force -noconfig -ignorePrereq -ignoreSysPrereqs \
+    -updateNodeList \
     "ORACLE_HOME=$ORACLE_HOME" \
     "CLUSTER_NODES={$MY_NODE}"
 
@@ -154,11 +155,11 @@ if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
 fi
 
 echo "Try to deinstall oracle database software on node $MY_NODE..."
-SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oradbunins_check.out
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -local -silent -checkonly -o /tmp | tee oradbunins_check.out
 rspFile=$(grep "Location of response file generated:" oradbunins_check.out | cut -d: -f 2)
 
 if [ -n "$rspFile" ]; then
-    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile
+    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -local -silent --paramfile $rspFile
 
     if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE/admin" ]; then
         rm -rf "$ORACLE_BASE/admin"
