@@ -1,7 +1,0 @@
-{
-    "python.envFile": "${workspaceFolder}/.vscode/.env",
-    "perltidy.profile": "${workspaceFolder}/.vscode/.perltidyrc",
-    "perl.perlInc": [
-        "."
-    ]
-}
