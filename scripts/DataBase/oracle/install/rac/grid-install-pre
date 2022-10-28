@@ -155,7 +155,7 @@ function installCvuqdisk() {
         echo rpm -ivh "$cvuqdiskFile"
         rpm -ivh "$cvuqdiskFile"
     else
-        cvuqdiskFile=$(ls /tmp/cvuqdisk-*.rpm 2>/dev/null)
+        cvuqdiskFile=$(ls /tmp/cvuqdisk-rpm/cvuqdisk-*.rpm 2>/dev/null)
         if [ -n "$cvuqdiskFile" ] && [ -f "$cvuqdiskFile" ]; then
             echo rpm -ivh "$cvuqdiskFile"
             rpm -ivh "$cvuqdiskFile"
