@@ -1,6 +1,6 @@
 {
-    "python.envFile": "${workspaceFolder}/.vscode/.env",
-    "perltidy.profile": "${workspaceFolder}/.vscode/.perltidyrc",
+    "python.envFile": "/Users/wenhb/git/autoscripts/.vscode/.env",
+    "perltidy.profile": "/Users/wenhb/git/autoscripts/.vscode/.perltidyrc",
     "perl.perlInc": [
         "."
     ]
