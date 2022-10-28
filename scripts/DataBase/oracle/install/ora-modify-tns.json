@@ -1,0 +1,56 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "修改tnsnames.ora或listeners.ora",
+    "option": [{
+            "opt": "action",
+            "name": "修改模式",
+            "help": "修改文件还是整文件替换",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "修改",
+                        "value": "modify"
+                    },
+                    {
+                        "text": "整文件替换",
+                        "value": "replace"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "modify",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "filepath",
+            "name": "文件路径",
+            "help": "tnsnames.ora或listeners.ora文件全路径",
+            "type": "text",
+            "defaultValue": "${ORACLE_HOME}/network/admin/tnsnames.ora",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "confitems",
+            "name": "内容",
+            "help": "tnsnames.ora或listeners.ora内容",
+            "type": "textarea",
+            "defaultValue": "LISTENER =\n  (DESCRIPTION_LIST =\n    (DESCRIPTION =\n      (ADDRESS = (PROTOCOL = TCP)(HOST = 127.0.0.1)(PORT = 1521))\n      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))\n    )\n  )",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [{
+        "opt": "newFileContent",
+        "name": "更改后文件内容",
+        "help": "更改后的文件内容",
+        "type": "textarea",
+        "defaultValue": "",
+        "required": "false"
+    }]
+}
