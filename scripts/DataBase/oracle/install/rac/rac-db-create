@@ -305,7 +305,7 @@ SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
     -recoveryGroupName "+$ARCH_DISKGROUP" \
     -enableArchive true \
     -archiveLogMode AUTO \
-    -archiveLogDest "+$ARCH_DISKGROUP/{DB_UNIQUE_NAME}/"
+    -archiveLogDest "+$ARCH_DISKGROUP"
 
 echo "******************************************************************************"
 echo "Save state of PDB to enable auto-start." $(date)
