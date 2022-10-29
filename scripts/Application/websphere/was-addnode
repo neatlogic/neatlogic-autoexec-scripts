@@ -1,0 +1,105 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --appsvr_home <was appsvr path> --run_user <run user> --node_ip <node ip> --node_port <node port>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            appsvr_home)
+                appsvr_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            node_ip)
+                node_ip="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            node_port)
+                node_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_userName)
+                admin_userName="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_password)
+                admin_password="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$appsvr_home" ]] ; then
+    echo "ERROR:: Must defined appsvr_home."
+    usage
+fi 
+
+if [[ ! -d "$appsvr_home" ]] ; then 
+    echo "ERROR:: Not found websphere install home : $appsvr_home."
+    exit 1
+fi
+
+if [[  ! -n "$node_ip" ]] ; then
+    node_ip='127.0.0.1'
+fi
+
+if [[  ! -n "$node_port" ]] ; then
+    operat="8879"
+fi
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user ."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+#添加节点到DMGR
+cmd="$appsvr_home/bin/addNode.sh $node_ip $node_port"
+if [[ -n "$admin_userName" && -n "$admin_password"  ]] ; then 
+    cmd="$cmd -username $admin_userName -password $admin_password"
+fi 
+su - "$run_user" -c "$cmd"
+is_success=0
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebSphere add node $node_ip:$node_port failed."
+    is_success=1
+else
+    echo "FINE:: WebSphere add node $node_ip:$node_port success."
+fi
+exit $is_success

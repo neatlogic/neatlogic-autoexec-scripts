@@ -1,0 +1,65 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "WebSphere安装补丁",
+    "option": [
+        {
+            "opt": "ims_home",
+            "name": "IMS安装路径",
+            "help": "软件安装到文件路径,如：/opt/websphere/eclipse",
+            "type": "text",
+            "defaultValue": "/opt/websphere/eclipse",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "was_filepath",
+            "name": "WAS文件路径",
+            "help": "存放websphere安装包路径，如：/mnt/nas/was8.5/",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "was_installpath",
+            "name": "WAS软件安装路径",
+            "help": "软件安装路径，如：/opt/IBM/WebSphere/AppServer",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "was_pathchpath",
+            "name": "补丁包路径",
+            "help": "软件安装路径，如：/opt/IBM/WebSphere/WasUpdate",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：websphere",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },       
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

@@ -1,0 +1,65 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "安装webspere管理软件Installation Manager",
+    "option": [
+        {
+            "opt": "ims_path",
+            "name": "安装文件路径",
+            "help": "存放Installation Manager安装包路径，如：/mnt/nas/agent.installer.linux.gtk.x86_64_1.9.2003.20220917_1018.zip",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "agent_home",
+            "name": "ims agent解压目录",
+            "help": "软件安装到文件路径,如：/opt/websphere/agent",
+            "type": "text",
+            "defaultValue": "/opt/websphere/agent",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "install_path",
+            "name": "软件安装路径",
+            "help": "软件安装到文件路径,如：/opt/websphere/eclipse",
+            "type": "text",
+            "defaultValue": "/opt/websphere/eclipse",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "ims_home",
+            "name": "WAS安装管理软件Home目录",
+            "help": "WAS安装管理软件Home目录",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

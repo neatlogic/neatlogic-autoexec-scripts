@@ -1,0 +1,59 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "websphere启停Dmgr",
+    "option": [
+        {
+            "opt": "operat",
+            "name": "操作类型",
+            "help": "操作类型",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "启动",
+                        "value": "start"
+                    },
+                    {
+                        "text": "停止",
+                        "value": "stop"
+                    }
+                ]
+            },
+            "defaultValue": "start",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "dmgr_home",
+            "name": "websphere Dmgr安装目录",
+            "help": "websphere安装目录路径，如：/opt/IBM/WebSphere/AppServer/profiles/Dmgr01",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "timeout",
+            "name": "超时时间",
+            "help": "超时时间",
+            "type": "text",
+            "defaultValue": "120",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
