@@ -59,7 +59,15 @@
             "help": "dmgr安装路径",
             "type": "text",
             "defaultValue": null,
-            "required": "false"
+            "required": "true"
+        },
+        {
+            "opt": "dmgr_ip",
+            "name": "dmgr节点IP",
+            "help": "dmgr节点IP",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
         }
     ]
 }

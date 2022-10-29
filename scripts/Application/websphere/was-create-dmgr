@@ -110,7 +110,8 @@ fi
 #输出安装路径
 cat <<EOF > "output.json"
 { 
-    "dmgr_home":"$was_home/profiles/$dmgr_name" 
+    "dmgr_home":"$was_home/profiles/$dmgr_name",
+    "dmgr_ip" : "$NODE_HOST"
 }
 EOF
 

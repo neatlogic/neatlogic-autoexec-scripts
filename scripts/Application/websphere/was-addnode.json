@@ -25,6 +25,24 @@
             "validate": ""
         },
         {
+            "opt": "node_name",
+            "name": "Dmgr节点IP或节点名称",
+            "help": "DMGR节点IP或名称，如：192.168.0.90",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "node_port",
+            "name": "Dmgr SOAP端口",
+            "help": "DMGR SOAP端口，如：8879",
+            "type": "text",
+            "defaultValue": "8879",
+            "required": "false",
+            "validate": ""
+        },
+        {
             "opt": "admin_userName",
             "name": "管理账号",
             "help": "DMGR登录账号，如：wasadmin",

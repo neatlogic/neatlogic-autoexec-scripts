@@ -162,7 +162,7 @@ fi
 
 #清理home用户环境变量
 cd /home/$run_user/
-if [ $? != 0 ]
+if [ $? == 0 ]
 then
     rm -rf /home/$run_user/etc
     rm -rf /home/$run_user/var
