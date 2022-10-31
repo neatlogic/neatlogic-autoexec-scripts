@@ -5,13 +5,15 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "修改tnsnames.ora或listeners.ora",
-    "option": [{
+    "option": [
+        {
             "opt": "action",
             "name": "修改模式",
             "help": "修改文件还是整文件替换",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "修改",
                         "value": "modify"
                     },
@@ -45,12 +47,14 @@
             "validate": ""
         }
     ],
-    "output": [{
-        "opt": "newFileContent",
-        "name": "更改后文件内容",
-        "help": "更改后的文件内容",
-        "type": "textarea",
-        "defaultValue": "",
-        "required": "false"
-    }]
+    "output": [
+        {
+            "opt": "newFileContent",
+            "name": "更改后文件内容",
+            "help": "更改后的文件内容",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false"
+        }
+    ]
 }

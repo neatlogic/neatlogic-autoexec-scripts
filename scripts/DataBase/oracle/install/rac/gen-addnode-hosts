@@ -114,7 +114,7 @@ if __name__ == "__main__":
         findNodeNameCount = 0
         for idx in range(1, crsNameCount*2 + newNodesCount):
             nodeName = '%s%s' % (crsName, idx)
-            if not nodeName in nodeNameMap:
+            if not nodeName in gridNodesIpInfo:
                 newNodeNames.append(nodeName)
                 findNodeNameCount = findNodeNameCount + 1
                 if findNodeNameCount == newNodesCount:
@@ -176,6 +176,7 @@ if __name__ == "__main__":
     vipConf = []
     newDbClusterNodes = []
     newGridClusterNodes = []
+    newGridClusterNodeVipNames = []
     networkInterfaceList = []
 
     idx = 0
@@ -214,6 +215,7 @@ if __name__ == "__main__":
             hostNameMap[pubIp] = '%s' % (newNodeNames[idx])
             vipConf.append('%s\t%s-vip' % (vipList[idx], newNodeNames[idx]))
             newGridClusterNodes.append('%s:%s-vip' % (newNodeNames[idx], newNodeNames[idx]))
+            newGridClusterNodeVipNames.append('%s-vip' % (newNodeNames[idx]))
             newDbClusterNodes.append('%s' % (newNodeNames[idx]))
 
         if privIp is None:
@@ -258,12 +260,12 @@ if __name__ == "__main__":
 
     allHostNameMap = hostNameMap.copy()
     for nodeName, ip in gridNodesIpInfo.items():
-        allHostNameMap[nodeName] = ip
+        allHostNameMap[ip] = nodeName
 
     out = {}
 
     out['newNodesIp2HostName'] = hostNameMap
-    out['newNodesIp2HostName'] = allHostNameMap
+    out['allNodesIp2HostName'] = allHostNameMap
     out['hostsConfTxt'] = hostConfTxt
 
     out['gridClusterExecNodes'] = gridClusterExecNodes
@@ -272,7 +274,8 @@ if __name__ == "__main__":
 
     # oracle.install.crs.config.gridClusterNodes=rac1:rac1-vip,rac2:rac2-vip
     out['newGridClusterNodes'] = ','.join(newGridClusterNodes)
-
+    # rac1-vip,rac2-vip
+    out['newGridClusterNodeVipNames'] = ','.join(newGridClusterNodeVipNames)
     # oracle.install.db.CLUSTER_NODES=rac1,rac23
     # nodelist=rac1,rac2
     out['newDbClusterNodes'] = ','.join(newDbClusterNodes)

@@ -121,7 +121,7 @@
         },
         {
             "opt": "newDbClusterNodes",
-            "name": "DB新增节点名配置",
+            "name": "DB新增节点名",
             "help": "DB集群节点名配置, 用于Oracle DB的静默安装配置(仅包括新增节点)",
             "type": "text",
             "defaultValue": "",
@@ -129,8 +129,16 @@
         },
         {
             "opt": "newGridClusterNodes",
-            "name": "Grid新增节点名配置",
+            "name": "Grid新增节点与VIP名",
             "help": "Grid集群节点名配置, 用于Orcle grid的静默安装配置(仅包括新增节点)",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "newGridClusterNodeVipNames",
+            "name": "Grid新增节点VIP名",
+            "help": "Grid新增节点VIP名, 用于Orcle grid的静默安装配置(仅包括新增节点)",
             "type": "text",
             "defaultValue": "",
             "required": "false"
