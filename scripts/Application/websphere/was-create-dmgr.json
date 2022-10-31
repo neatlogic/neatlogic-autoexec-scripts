@@ -1,0 +1,73 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "websphere创建Dmgr管理概要文件",
+    "option": [
+        {
+            "opt": "was_home",
+            "name": "websphere安装目录",
+            "help": "websphere安装目录路径，如：/opt/IBM/WebSphere/AppServer",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "dmgr_name",
+            "name": "Dmgr名称",
+            "help": "Dmgr名称,如：Dmgr01",
+            "type": "text",
+            "defaultValue": "Dmgr01",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_userName",
+            "name": "管理账号",
+            "help": "DMGR登录账号，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_password",
+            "name": "管理密码",
+            "help": "DMGR登录账号的密码，如：wasadmin",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "dmgr_home",
+            "name": "dmgr安装路径",
+            "help": "dmgr安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        },
+        {
+            "opt": "dmgr_ip",
+            "name": "dmgr节点IP",
+            "help": "dmgr节点IP",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

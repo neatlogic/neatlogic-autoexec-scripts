@@ -125,8 +125,8 @@ if [[ $server_name == *","* && $server_name == *"-"* ]]; then
         fi
     done
 else 
-    echo "ERROR:: Server name value: $server_name Illegal parameter format."
-    exit 1
+    echo "WARN:: Server name : $server_name not generate format."
+    servername=$server_name
 fi
 
 if [[  ! -n "$server_port" ]] ; then

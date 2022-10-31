@@ -1,0 +1,126 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --ims_path <ims file path> --agent_home <agent home>  --install_path <install path> --run_user <run user> --run_group <run user group>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            ims_path)
+                ims_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            agent_home)
+                agent_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            install_path)
+                install_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$ims_path" ]] ; then
+    echo "ERROR:: Must defined ims_path."
+    usage
+fi 
+
+if [[ ! -f "$ims_path" ]] ; then 
+    echo "ERROR:: Not found Installation Manager file : $ims_path."
+    exit 1
+fi 
+
+if [[  ! -n "$agent_home" ]] ; then
+    echo "ERROR:: Must defined agent_home."
+    usage
+fi 
+
+if [[ ! -d "$agent_home" ]] ; then 
+    mkdir -p $agent_home
+fi  
+
+if [[  ! -n "$install_path" ]] ; then
+    echo "ERROR:: Must defined install_path."
+    usage
+fi 
+
+if [[ ! -d "$install_path" ]] ; then 
+    mkdir -p $install_path
+fi  
+
+if [[  ! -n "$run_user"  && ! -n "$run_group"  ]] ; then
+    echo "ERROR:: Must defined run user  and group."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+if [[ -d "$install_path/tools" && -d "$install_path/lib" ]] ; then 
+    echo "FINE:: WebSphere Installation Manager directory already exists."
+    exit 0
+fi
+
+unzip -o $ims_path -d $agent_home
+chown -R $run_user:$run_group  $agent_home
+chown -R $run_user:$run_group  $(dirname "$install_path")
+
+#安装管理软件Installation Manager
+temp_file="/tmp/install.out"
+su - "$run_user" -c "$agent_home/userinstc -installationDirectory $install_path -acceptLicense -showProgress -silent -log $temp_file"
+is_success=0
+if [ $? != 0 ]
+then
+    echo "ERROR:: Install WebSphere Installation Manager failed."
+    is_success=1
+else
+    echo "FINE:: Install WebSphere Installation Manager success."
+    rm -f $temp_file
+fi
+
+#输出安装路径
+cat <<EOF > "output.json"
+{ 
+    "ims_home":"$install_path" 
+}
+EOF
+
+exit $is_success

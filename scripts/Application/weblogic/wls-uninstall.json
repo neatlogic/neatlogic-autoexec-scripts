@@ -4,7 +4,7 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
-    "description": "清理weblogic安装目录",
+    "description": "卸载weblogic安装目录",
     "option": [
         {
             "opt": "weblogic_home",
