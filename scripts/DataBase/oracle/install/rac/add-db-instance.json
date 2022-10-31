@@ -5,15 +5,13 @@
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "把当前Oracle实例加入集群",
-    "option": [
-        {
+    "option": [{
             "opt": "CV_ASSUME_DISTID",
             "name": "对应OS版本",
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "自动",
                         "value": "AUTO"
                     },
@@ -50,12 +48,12 @@
             "validate": ""
         },
         {
-            "opt": "DB_NAME",
-            "name": "全局DB名",
-            "help": "用于作为DB的服务名, DG主备库一致",
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB唯一名",
+            "help": "DB唯一名称, 在DG同步和切换中确定主备库, 为空保持跟DB_NAME一致, 支持多个，逗号相隔",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {

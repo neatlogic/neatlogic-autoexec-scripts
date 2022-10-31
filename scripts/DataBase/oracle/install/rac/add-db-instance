@@ -67,8 +67,8 @@ function parseOpts() {
                 NODE_NAMES="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
-            DB_NAME)
-                DB_NAME="${!OPTIND}"
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             SYSDBA_USER)
@@ -120,13 +120,15 @@ echo "$oraEnv"
 eval "$oraEnv"
 
 #========开始执行扩展DB节点的操作============
-for GDB_NAME in $(echo $DB_NAME | sed 's/,/ /'); do
-    echo "Try to execute dbca command to add instance $GDB_NAME(node:$NODE_NAMES) to cluster..."
-    SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \
-        -gdbName "$GDB_NAME" \
-        -nodeList "$NODE_NAMES"
-    # -sysDBAUserName "$SYSDBA_USER" \
-    # -sysDBAPassword "$SYSDBA_PWD"
+for GDB_NAME in $(echo $DB_UNIQUE_NAME | sed 's/,/ /'); do
+    for NODE_NAME in $(echo $NODE_NAMES | sed 's/,/ /'); do
+        echo "Try to execute dbca command to add instance $GDB_NAME(node:$NODE_NAME) to cluster..."
+        SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -addInstance \
+            -gdbName "$GDB_NAME" \
+            -nodeName "$NODE_NAME"
+        # -sysDBAUserName "$SYSDBA_USER" \
+        # -sysDBAPassword "$SYSDBA_PWD"
+    done
 done
 
 exit $HAS_ERROR
