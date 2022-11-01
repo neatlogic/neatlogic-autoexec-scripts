@@ -108,7 +108,7 @@ if [[ $app_cfg == *","* && $app_cfg == *"-"* ]]; then
 #            host_name=${info_arr[0]}
             appsvr_name=${info_arr[1]}
             node_name=${info_arr[2]}
-#            cell_name=${info_arr[3]}
+            cell_name=${info_arr[3]}
             server_name=${info_arr[4]}
             break
         fi

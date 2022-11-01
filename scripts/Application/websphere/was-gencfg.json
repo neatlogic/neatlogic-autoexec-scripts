@@ -58,6 +58,14 @@
             "type": "json",
             "defaultValue": null,
             "required": "true"
+        },
+        {
+            "opt": "hostnames",
+            "name": "主机hostnames",
+            "help": "主机hostnames",
+            "type": "json",
+            "defaultValue": null,
+            "required": "true"
         }
     ]
 }
