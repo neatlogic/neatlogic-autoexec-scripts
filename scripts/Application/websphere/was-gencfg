@@ -60,6 +60,7 @@ sub main {
     my $num_str = '';
     my $hosts = {};
     my $hostnames = {};
+    my $content = ''; 
     foreach my $node (@$masterNode) {
         $num_str = sprintf( "%02d", $count );
         my $hostname   = $hostname_prefix . $num_str;
@@ -71,8 +72,10 @@ sub main {
         $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
         #hosts
         $hosts->{$nodeIp} = $nodename;
-        $hosts->{$nodeIp} = $hostname;
         $hostnames->{$nodeIp} = $hostname;
+        #hostscontent
+        $content = $content + "$nodeIp $nodename\n";
+        $content = $content + "$nodeIp $hostname\n";
         $count++;
     }
 
@@ -87,8 +90,10 @@ sub main {
         $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
         #hosts
         $hosts->{$nodeIp} = $nodename;
-        $hosts->{$nodeIp} = $hostname;
         $hostnames->{$nodeIp} = $hostname;
+        #hostscontent
+        $content = $content + "$nodeIp $nodename\n";
+        $content = $content + "$nodeIp $hostname\n";
         $count++;
     }
 
@@ -96,6 +101,7 @@ sub main {
     $out->{app_cfgs} = $result;
     $out->{ip2Hostname} = to_json($hosts);
     $out->{hostnames} = to_json($hostnames);
+    $out->{hostContent} = $content;
     AutoExecUtils::saveOutput($out);
 
     return 0;

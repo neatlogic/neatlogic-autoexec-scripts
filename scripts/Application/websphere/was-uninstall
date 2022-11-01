@@ -128,17 +128,20 @@ if [[ -n "$is_admin" ]] ; then
     echo "INFO:: Stop Dmgr Profile start."
     cmd=""
     if [[ -n "$admin_userName" && -n "$admin_password" ]] ; then 
-        sh $dmgr_home/bin/stopManager.sh  -trace  -timeout $timeout -username $admin_userName -password $admin_password
+        sh $dmgr_home/bin/stopManager.sh  -trace  -nowait -username $admin_userName -password $admin_password
     else 
-        sh $dmgr_home/bin/stopManager.sh  -trace  -timeout $timeout
+        sh $dmgr_home/bin/stopManager.sh  -trace  -nowait
     fi 
     sh $cmd
     echo "FINE:: Stop Dmgr Profile end."
 fi 
 
+sleep 20 
+
 #检查所有的进程是否已停完成，没停完成强制kill
-for pid in `ps -ef | grep websphere | grep -E 'server|dmgr|Dmgr|AppSvr|nodeagent' | grep -v grep | awk '{print $2}'`
+for pid in `ps -ef | grep websphere | grep -E 'server|Dmgr|AppSvr|nodeagent' | grep -v grep | awk '{print $2}'`
 do
+    echo "INFO:: kill -9 $pid"
     kill -9 $pid
 done
 

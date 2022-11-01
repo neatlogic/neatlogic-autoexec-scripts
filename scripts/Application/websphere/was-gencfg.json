@@ -66,6 +66,14 @@
             "type": "json",
             "defaultValue": null,
             "required": "true"
+        },
+        {
+            "opt": "hostContent",
+            "name": "host配置",
+            "help": "host配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "true"
         }
     ]
 }
