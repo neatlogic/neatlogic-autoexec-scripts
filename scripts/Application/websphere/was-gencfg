@@ -58,6 +58,7 @@ sub main {
     ####192.168.0.90-was01|node01|cell01|server1,192.168.0.91-was02|node02|cell02|server2
     my $result  = '';
     my $num_str = '';
+    my $ip2Hostname = {};
     foreach my $node (@$masterNode) {
         $num_str = sprintf( "%02d", $count );
         my $hostname   = $hostname_prefix . $num_str;
@@ -65,7 +66,9 @@ sub main {
         my $nodename   = "node" . $num_str;
         my $cellname   = $nodename . "Cell" . $num_str;
         my $servername = $server_prefix . $num_str;
-        $result = $result . $node->{'ip'} . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        my $nodeIp = $node->{'ip'};
+        $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        $ip2Hostname->{$nodeIp} = $nodename;
         $count++;
     }
 
@@ -76,12 +79,15 @@ sub main {
         my $nodename   = "node" . $num_str;
         my $cellname   = $nodename . "Cell" . $num_str;
         my $servername = $server_prefix . $num_str;
-        $result = $result . $node->{'ip'} . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        my $nodeIp = $node->{'ip'};
+        $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        $ip2Hostname->{$nodeIp} = $nodename;
         $count++;
     }
 
     my $out = {};
     $out->{app_cfgs} = $result;
+    $out->{ip2Hostname} = to_json($ip2Hostname);
     AutoExecUtils::saveOutput($out);
 
     return 0;

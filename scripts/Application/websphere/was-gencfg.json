@@ -50,6 +50,14 @@
             "type": "text",
             "defaultValue": null,
             "required": "true"
+        },
+        {
+            "opt": "ip2Hostname",
+            "name": "IP到主机名映射",
+            "help": "IP到主机名映射",
+            "type": "json",
+            "defaultValue": null,
+            "required": "true"
         }
     ]
 }
