@@ -74,8 +74,8 @@ sub main {
         $hosts->{$nodeIp} = $nodename;
         $hostnames->{$nodeIp} = $hostname;
         #hostscontent
-        $content = $content + "$nodeIp $nodename\n";
-        $content = $content + "$nodeIp $hostname\n";
+        $content = $content . "$nodeIp $nodename\n";
+        $content = $content . "$nodeIp $hostname\n";
         $count++;
     }
 
@@ -92,8 +92,8 @@ sub main {
         $hosts->{$nodeIp} = $nodename;
         $hostnames->{$nodeIp} = $hostname;
         #hostscontent
-        $content = $content + "$nodeIp $nodename\n";
-        $content = $content + "$nodeIp $hostname\n";
+        $content = $content ."$nodeIp $nodename\n";
+        $content = $content ."$nodeIp $hostname\n";
         $count++;
     }
 
