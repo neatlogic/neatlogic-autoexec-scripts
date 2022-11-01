@@ -91,16 +91,20 @@ fi
 
 
 #判断是否存在websphere安装目录
-if [[  ! -d "$was_home/profiles"  || ! -d "$was_home/bin" ]] ; then
+if [[  ! -d "$was_home/lib"  || ! -d "$was_home/bin" ]] ; then
     echo "ERROR:: $was_home not websphere install path."
     exit 1
 fi
+
+timeout=120
 
 #检查应用概要
 for dir in `ls $was_home/profiles/`
 do
     #echo $dir
-    if [[ "$dir" != "Dmgr*" &&  "$dir" != "dmgr*" ]]; then 
+    if [[ "$dir" =~ "Dmgr" ||  "$dir" =~ "dmgr" ]]; then 
+        dmgr_home=$was_home/profiles/$dir/
+    else
         for server in `ls $was_home/profiles/$dir/servers/` 
         do 
             is_server=`ps -ef | grep websphere |grep $dir | grep $server |awk '{print $2}'`
@@ -115,8 +119,6 @@ do
                 echo "FINE:: Stop $dir Profile Server $server end."
             fi
         done
-    else 
-        dmgr_home=$was_home/profiles/$dir/
     fi 
 done
 
@@ -176,7 +178,7 @@ fi
 #清理安装目录
 echo "INFO:: Websphere clean install directory start."
 rm -rf $was_home
-rm -rf $was_home/IMShared
+rm -rf $(dirname "$was_home")/IMShared
 rm -rf $(dirname "$ims_home")/license
 rm -rf $(dirname "$ims_home")/properties
 rm -rf $ims_home

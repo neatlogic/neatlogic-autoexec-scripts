@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 usage() {
     pname=$(basename $0)
-    echo "$pname --was_home <was install path> --appsvr_name <dmgr name> --run_user <run user>"
+    echo "$pname --was_home <was install path> --appsvr_name <dmgr name> --server_name <server name> --node_name <node name> --cell_name <cell name> --run_user <run user>"
     exit -1
 }
 
@@ -34,6 +34,10 @@ parseOpts() {
                 ;;
             host_name)
                 host_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            app_cfg)
+                app_cfg="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             run_user)
@@ -73,8 +77,8 @@ if [[ ! -d "$was_home" ]] ; then
     exit 1
 fi 
 
-if [[  ! -n "$appsvr_name" ]] ; then
-    echo "ERROR:: Must defined appsvr_name."
+if [[  ! -n "$appsvr_name"  && ! -n "$app_cfg" ]] ; then
+    echo "ERROR:: Must defined appsvr_name or  app_cfg."
     usage
 fi
 
@@ -87,6 +91,28 @@ user_ret=`id $run_user`
 if [ $? != 0 ] ; then
     echo "ERROR:: Os user $run_user not found."
     exit 1
+fi
+
+#echo "app_cfg:$app_cfg"
+if [[ $app_cfg == *","* && $app_cfg == *"-"* ]]; then
+    ####根据前缀自动生成内容#######
+    ####192.168.0.90-was01|AppSvr01|node01|cell01|server1,192.168.0.91-was02|AppSvr02|node02|cell02|server2
+    IFS=', ' read -r -a array <<< "$app_cfg"
+    for line in "${array[@]}"
+    do
+        echo "$line"
+        host=`echo "$line"|cut -d"-" -f1`
+        info=`echo "$line"|cut -d"-" -f2`
+        if [ "$host" == "$NODE_HOST" ]; then
+            info_arr=(${info//\|/ })
+#            host_name=${info_arr[0]}
+            appsvr_name=${info_arr[1]}
+            node_name=${info_arr[2]}
+#            cell_name=${info_arr[3]}
+            server_name=${info_arr[4]}
+            break
+        fi
+    done
 fi
 
 if [[ -d "$was_home/profiles/$appsvr_name" ]] ; then 
@@ -128,7 +154,12 @@ fi
 #输出安装路径
 cat <<EOF > "output.json"
 { 
-    "appsvr_home":"$was_home/profiles/$appsvr_name" 
+    "appsvr_home":"$was_home/profiles/$appsvr_name" ,
+    "out_appsvrname" : "$appsvr_name",
+    "out_servername" : "$server_name",
+    "out_hostname" : "$host_name",
+    "out_cellname" : "$cell_name",
+    "out_nodename" : "$node_name"
 }
 EOF
 

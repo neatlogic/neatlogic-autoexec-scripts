@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use JSON;
+
+use AutoExecUtils;
+Getopt::Long::Configure("pass_through");
+
+sub usage {
+    my $pname = $FindBin::Script;
+    print("$pname --master_node <master node json> --slave_node <slave node json> --server_prefix < server name prefix> --hostname_prefix <hostname perfix> \n");
+    exit(1);
+}
+
+sub main {
+    $| = 1;    #不对输出进行buffer，便于实时看到输出日志
+    AutoExecUtils::setEnv();
+
+    my ( $ishelp, $master_node, $slave_node, $hostname_prefix, $server_prefix );
+
+    GetOptions(
+        'help'              => \$ishelp,
+        'slave_node=s'      => \$slave_node,
+        'master_node=s'     => \$master_node,
+        'server_prefix=s'   => \$server_prefix,
+        'hostname_prefix=s' => \$hostname_prefix
+    );
+
+    my $hasOptErr = 0;
+    my ( $masterNode, $slaveNode );
+    if ( not defined($master_node) or $master_node eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Option --master_node not defined.\n");
+    }
+    else {
+        $masterNode = from_json($master_node);
+    }
+
+    if ( defined($slave_node) and $slave_node ne '' ) {
+        $slaveNode = from_json($slave_node);
+    }
+
+    if ( not defined($hostname_prefix) or ( $hostname_prefix eq '' ) ) {
+        $hostname_prefix = 'was';
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $count = 1;
+    ####根据前缀自动生成内容#######
+    ####hostname|nodename|cellname|servername
+    ####192.168.0.90-was01|node01|cell01|server1,192.168.0.91-was02|node02|cell02|server2
+    my $result  = '';
+    my $num_str = '';
+    foreach my $node (@$masterNode) {
+        $num_str = sprintf( "%02d", $count );
+        my $hostname   = $hostname_prefix . $num_str;
+        my $profilename = "AppSvr" . $num_str;
+        my $nodename   = "node" . $num_str;
+        my $cellname   = $nodename . "Cell" . $num_str;
+        my $servername = $server_prefix . $num_str;
+        $result = $result . $node->{'ip'} . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        $count++;
+    }
+
+    foreach my $node (@$slaveNode) {
+        $num_str = sprintf( "%02d", $count );
+        my $hostname   = $hostname_prefix . $num_str;
+        my $profilename = "AppSvr" . $num_str;
+        my $nodename   = "node" . $num_str;
+        my $cellname   = $nodename . "Cell" . $num_str;
+        my $servername = $server_prefix . $num_str;
+        $result = $result . $node->{'ip'} . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        $count++;
+    }
+
+    my $out = {};
+    $out->{app_cfgs} = $result;
+    AutoExecUtils::saveOutput($out);
+
+    return 0;
+}
+
+exit main();
