@@ -58,15 +58,19 @@ sub main {
     ####192.168.0.90-was01|node01|cell01|server1,192.168.0.91-was02|node02|cell02|server2
     my $result  = '';
     my $num_str = '';
+    my $cell_str = '';
     my $hosts = {};
     my $hostnames = {};
     my $content = ''; 
+    ####cell name说明
+    ##DMGR的cell name 默认是主机名 + cell + 01，所以应用profiles分配的不能与dmgr一致
     foreach my $node (@$masterNode) {
         $num_str = sprintf( "%02d", $count );
+        $cell_str = sprintf( "%02d", ($count+1) );
         my $hostname   = $hostname_prefix . $num_str;
         my $profilename = "AppSvr" . $num_str;
         my $nodename   = "wasNode" . $num_str;
-        my $cellname   = $nodename . "Cell" . $num_str;
+        my $cellname   = $nodename . "Cell" . $cell_str;
         my $servername = $server_prefix . $count;
         my $nodeIp = $node->{'ip'};
         $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
@@ -81,10 +85,11 @@ sub main {
 
     foreach my $node (@$slaveNode) {
         $num_str = sprintf( "%02d", $count );
+        $cell_str = sprintf( "%02d", ($count+1) );
         my $hostname   = $hostname_prefix . $num_str;
         my $profilename = "AppSvr" . $num_str;
         my $nodename   = "wasNode" . $num_str;
-        my $cellname   = $nodename . "Cell" . $num_str;
+        my $cellname   = $nodename . "Cell" . $cell_str;
         my $servername = $server_prefix . $count;
         my $nodeIp = $node->{'ip'};
         $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
