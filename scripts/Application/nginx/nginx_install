@@ -11,7 +11,7 @@ parseOpts() {
         -)
             case "${OPTARG}" in
             modules)
-                #modules="${!OPTIND}"
+                modules="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             file_path)
@@ -96,6 +96,21 @@ fi
 #默认安装模块
 if [[ ! -n "$modules" ]] ; then
     modules=" --with-http_stub_status_module --with-http_ssl_module --with-http_realip_module --with-stream "
+else 
+    moduleStr=''
+    modules=`echo $modules |sed 's/\[\|\]//g'`
+    IFS=', ' read -r -a array <<< "$modules"
+    for line in "${array[@]}"
+    do
+        line=`echo $line|sed 's/\"//g'`
+        moduleStr="$moduleStr $line"
+    done
+    modules=$moduleStr
+fi
+
+if [[ -d "$prefix/sbin" && -d "$prefix/conf"  ]] ;then 
+    echo "FINE:: Nginx directory already exists ."
+    exit 0
 fi
 
 source lib/common.sh

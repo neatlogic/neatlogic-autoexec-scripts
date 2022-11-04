@@ -11,29 +11,73 @@
             "name": "安装模块",
             "help": "安装模块",
             "type": "multiselect",
-            "defaultValue": "",
             "required": "false",
             "dataSource": {
                 "dataList": [
                     {
-                        "text": "--with-http_stub_status_module",
+                        "text": "运行状态模块",
                         "value": "--with-http_stub_status_module"
                     },
                     {
-                        "text": "--with-http_ssl_module",
+                        "text": "启用SSL模块",
                         "value": "--with-http_ssl_module"
                     },
                     {
-                        "text": "--with-http_realip_module",
+                        "text": "HTTP的真实IP模块",
                         "value": "--with-http_realip_module"
                     },
                     {
-                        "text": "--with-stream ",
-                        "value": "--with-stream "
+                        "text": "TCP/UDP代理模块",
+                        "value": "--with-stream"
+                    },
+                    {
+                        "text": "字符串替换模块",
+                        "value": "--with-http_sub_module"
+                    },
+                    {
+                        "text": "gzip压缩模块",
+                        "value": "--with-http_gunzip_module"
+                    },
+                    {
+                        "text": "字符集转换模块",
+                        "value": "--without-http_charset_module"
+                    },
+                    {
+                        "text": "cookie操作模块",
+                        "value": "--without-http_userid_module"
+                    },
+                    {
+                        "text": "基于IP的访问控制模块",
+                        "value": "--without-http_access_module"
+                    },
+                    {
+                        "text": "HTTP基本认证模块",
+                        "value": "--without-http_auth_basic_module"
+                    },
+                    {
+                        "text": "rewrite规则模块",
+                        "value": "--without-http_rewrite_module"
+                    },
+                    {
+                        "text": "referer操作模块",
+                        "value": "--without-http_referer_module"
+                    },
+                    {
+                        "text": "rewrite规则模块",
+                        "value": "--without-http_rewrite_module"
+                    },
+                    {
+                        "text": "代理功能模块",
+                        "value": "--without-http_proxy_module"
+                    },
+                    {
+                        "text": "hash负载均衡算法模块",
+                        "value": "--without-http_upstream_hash_module"
                     }
                 ]
             },
-            "validate": ""
+            "validate": "",
+            "defaultValue": ["--with-http_stub_status_module","--with-http_ssl_module","--with-http_realip_module","--with-stream"]
         },
         {
             "opt": "file_path",
