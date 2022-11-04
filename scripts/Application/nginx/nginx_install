@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --modules <nginx modules> --file_path <file path> --prefix <install path> --pcre_home <pcre home> --run_user <run user>  --run_group <run group>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            modules)
+                #modules="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            file_path)
+                file_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            prefix)
+                prefix="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            pcre_home)
+                pcre_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[ ! -n "$file_path" ]] ; then
+    echo "ERROR:: Must defined option --file_path"
+    usage
+fi 
+
+if [[ ! -n "$prefix" ]] ; then
+    echo "ERROR:: Must defined option --prefix"
+    usage
+fi 
+
+if [[ ! -f "$file_path" ]] ; then 
+    echo "ERROR:: Not found file: $file_path ."
+    exit 1
+fi 
+
+if [[ ! -n "$pcre_home" ]] ; then
+    echo "ERROR:: Must defined option --pcre_home"
+    usage
+fi 
+
+if [[ ! -d "$pcre_home" ]] ; then 
+    echo "ERROR:: Not found dir $pcre_home"
+    exit 1
+fi 
+
+if [[ ! -d "$prefix" ]] ; then 
+    mkdir -p $prefix
+fi 
+
+if [[ ! -n "$run_user" ]] ; then
+    run_user="root"
+fi 
+
+if [[ ! -n "$run_group" ]] ; then
+    run_group="root"
+fi
+
+#默认安装模块
+if [[ ! -n "$modules" ]] ; then
+    modules=" --with-http_stub_status_module --with-http_ssl_module --with-http_realip_module --with-stream "
+fi
+
+source lib/common.sh
+cwd_path=`pwd`
+
+temp_dir="/tmp/nginx"
+DO_CMD "mkdir -p $temp_dir"
+DO_CMD "tar -xvf $file_path -C $temp_dir"
+
+GET_DIRNAME $temp_dir "nginx"
+
+DO_CMD "cd $temp_dir/$DIR_NAME && ./configure $modules --prefix=$prefix --with-pcre=$pcre_home && make && make install"
+
+DO_CMD "chown -R $run_user:$run_group $prefix"
+
+SUDO_CMD $run_user "$prefix/sbin/nginx -v"
+
+DO_CMD "rm -rf $temp_dir"
+
+#输出安装路径
+cat <<EOF > "$cwd_path/output.json"
+{ 
+    "nginx_home":"$prefix" 
+}
+EOF

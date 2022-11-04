@@ -1,0 +1,20 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Unix卸载Nginx",
+    "option": [
+        {
+            "opt": "nginx_home",
+            "name": "Nginx安装目录",
+            "help": "Nginx安装目录，如：/opt/nginx",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

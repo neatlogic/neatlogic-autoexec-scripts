@@ -1,0 +1,94 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Unix安装Nginx",
+    "option": [
+        {
+            "opt": "modules",
+            "name": "安装模块",
+            "help": "安装模块",
+            "type": "multiselect",
+            "defaultValue": "",
+            "required": "false",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "--with-http_stub_status_module",
+                        "value": "--with-http_stub_status_module"
+                    },
+                    {
+                        "text": "--with-http_ssl_module",
+                        "value": "--with-http_ssl_module"
+                    },
+                    {
+                        "text": "--with-http_realip_module",
+                        "value": "--with-http_realip_module"
+                    },
+                    {
+                        "text": "--with-stream ",
+                        "value": "--with-stream "
+                    }
+                ]
+            },
+            "validate": ""
+        },
+        {
+            "opt": "file_path",
+            "name": "安装文件路径",
+            "help": "安装zip包路径，如：/mnt/nas/nginx/nginx-1.18.0.tar.gz",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "prefix",
+            "name": "安装目录",
+            "help": "安装目录，如：/opt/nginx",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "pcre_home",
+            "name": "pcre安装目录",
+            "help": "pcre安装目录，如：/opt/nginx/pcre",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "nginx_home",
+            "name": "nginx安装路径",
+            "help": "nginx安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

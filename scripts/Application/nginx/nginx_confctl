@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --file <nginx conf file> --content <nginx conf content> --nginx_home <nginx install home> --run_user <run user>  --run_group <run group>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            file)
+                file="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            content)
+                content="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            nginx_home)
+                nginx_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[ ! -n "$file"  && ! -n "$content"  ]] ; then
+    echo "ERROR:: Must defined option --file or --content"
+    usage
+fi 
+
+if [[ ! -n "$nginx_home" ]] ; then
+    echo "ERROR:: Must defined option --nginx_home "
+    usage
+fi
+
+if [[ ! -d "$nginx_home" ]] ; then
+    echo "ERROR:: dir $nginx_home not found."
+    exit 1
+fi 
+
+if [[ ! -n "$run_user" ]] ; then
+    run_user="root"
+fi 
+
+if [[ ! -n "$run_group" ]] ; then
+    run_group="root"
+fi
+
+source lib/common.sh
+
+#备份
+DO_CMD "mv $nginx_home/conf/nginx.conf $nginx_home/conf/nginx.conf.bak"
+
+if [[ -n "$content" ]] ; then 
+    content=`echo "$content" | sed 's/\\\n/\\n/g'`
+    #echo $content
+    cat <<EOF > $nginx_home/conf/nginx.conf 
+    $content 
+EOF
+fi
+
+#假若文件存在优先用文件
+if [[  -n "$file" ]] ; then 
+    DO_CMD "cp -r $file $nginx_home/conf/nginx.conf "
+fi 
+
+#验证配置文件正确性
+SUDO_CMD $run_user "$nginx_home/sbin/nginx -t"
+
+DO_CMD "chown -R $run_user:$run_group $nginx_home/"
+
+
+
