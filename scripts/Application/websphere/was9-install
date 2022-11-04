@@ -114,7 +114,7 @@ imsshared=$(dirname "$install_path")/IMShared
 mkdir -p imsshared
 chown -R $run_user:$run_group $(dirname "$install_path")
 
-#获取小版本号
+#获取was9小版本号
 was_ver=`su - "$run_user"  -c "$ims_home/tools/imcl listAvailablePackages -repositories $file_path -silent"`
 if [ $? != 0 ]
 then
@@ -129,11 +129,26 @@ else
     exit 1
 fi
 
-#安装WAS8.5
+#获取jdk小版本号
+jdk_ver=`su - "$run_user"  -c "$ims_home/tools/imcl listAvailablePackages -repositories $jdk_path -silent"`
+if [ $? != 0 ]
+then
+    echo "ERROR:: Get webSphere detail version failed."
+    exit 1
+fi
+
+if [[ -n "$jdk_ver" ]] ; then 
+    echo "INFO:: Get IBM JDK detail version : $jdk_ver"
+else 
+    echo "ERROR:: Get IBM JDK  detail version empty."
+    exit 1
+fi
+
+#安装WAS9
 is_success=0
 temp_file="/tmp/was.out"
 echo "INFO:: WebSphere silent install start."
-su - "$run_user" -c "$ims_home/tools/imcl install $was_ver -repositories $file_path/repository.config,$jdk_path/repository.config -installationDirectory $install_path -sharedResourcesDirectory $imsshared -properties cic.selector.nl=zh -acceptLicense -silent -showVerboseProgress -log $temp_file" 
+su - "$run_user" -c "$ims_home/tools/imcl install $was_ver $jdk_ver -repositories $file_path/repository.config,$jdk_path/repository.config -installationDirectory $install_path -sharedResourcesDirectory $imsshared -properties cic.selector.nl=zh -acceptLicense -silent -showVerboseProgress -log $temp_file" 
 if [ $? != 0 ]
 then
     echo "ERROR:: WebSphere silent install failed."
