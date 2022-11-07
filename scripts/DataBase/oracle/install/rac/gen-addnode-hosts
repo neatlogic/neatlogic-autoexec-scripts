@@ -1,7 +1,6 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
-from nis import match
 import os
 import sys
 import re
@@ -50,39 +49,31 @@ if __name__ == "__main__":
     if hasOptError == 1:
         usage()
 
-    oldHostsLines = args.oldhosts.split("\\n")
     possibleCrsNameMap = {}
     confMap = {}
     nodeNameMap = {}
-    spaceReg = re.compile(r"\s+")
-    for line in oldHostsLines:
-        line = line.strip()
-        if line == '' or line.startswith('#'):
-            continue
-        lineInfo = spaceReg.split(line, 1)
-        if len(lineInfo) > 1:
-            ip = lineInfo[0]
-            name = lineInfo[1]
-            confMap[ip] = name
-            nodeNameMap[name] = ip
-            matchObjs = re.findall(r'(\w+)\d+', name)
-            if len(matchObjs) > 0:
-                possibleCrsName = matchObjs[0]
-                if possibleCrsName.lower() != 'localhost':
-                    matchCount = possibleCrsNameMap.get(possibleCrsName, 0)
-                    possibleCrsNameMap[possibleCrsName] = matchCount + 1
+    oldNodeNames = []
+
+   # gridNodesIpInfo
+    gridClusterExecNodes = []
+    gridNodesIpInfo = json.loads(args.gridnodesipinfo)
+    for nodeName, ip in gridNodesIpInfo.items():
+        gridClusterExecNodes.append({'ip': ip})
+        confMap[ip] = nodeName
+        nodeNameMap[nodeName] = ip
+        oldNodeNames.append(nodeName)
+
+        matchObjs = re.findall(r'(\w+)\d+', nodeName)
+        if len(matchObjs) > 0:
+            possibleCrsName = matchObjs[0]
+            matchCount = possibleCrsNameMap.get(possibleCrsName, 0)
+            possibleCrsNameMap[possibleCrsName] = matchCount + 1
 
     pubNetTxt = args.pubnet
     pubNet = ipaddress.ip_network(pubNetTxt, strict=False)
 
     privNetTxt = args.privnet
     privNet = ipaddress.ip_network(privNetTxt, strict=False)
-
-    # gridNodesIpInfo
-    gridClusterExecNodes = []
-    gridNodesIpInfo = json.loads(args.gridnodesipinfo)
-    for ip in gridNodesIpInfo.values():
-        gridClusterExecNodes.append({'ip': ip})
 
     # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
     newNodesIpInfo = json.loads(args.newnodesipinfo)
@@ -93,26 +84,15 @@ if __name__ == "__main__":
     # 对老的hosts配置进行分析，把出现次数最多的名称作为rac name
     newNodeNames = []
     crsName = args.crsname
-    autoCrsName = None
-    crsNameCount = 0
-    for possibleCrsName, matchCount in possibleCrsNameMap.items():
-        if matchCount > crsNameCount:
-            crsNameCount = matchCount
-            autoCrsName = possibleCrsName
-
-    if crsName != '' and crsName != autoCrsName:
-        print("ERROR: Can not find rac node names in hosts file.")
-        sys.exit(-1)
-
-    crsName = autoCrsName
 
     if crsName is None:
         print("ERROR: Can not determine rac name by hosts config text.")
         sys.exit(-1)
     else:
-        # 从hosts里的名称到ip映射中排除已经使用的nodename，计算出新增的nodename
+        # 从现有grid节点信息中，计算出新增的nodename
+        oldNodeNamesCount = len(oldNodeNames)
         findNodeNameCount = 0
-        for idx in range(1, crsNameCount*2 + newNodesCount):
+        for idx in range(oldNodeNamesCount+1, oldNodeNamesCount*2 + newNodesCount):
             nodeName = '%s%s' % (crsName, idx)
             if not nodeName in gridNodesIpInfo:
                 newNodeNames.append(nodeName)
@@ -121,7 +101,7 @@ if __name__ == "__main__":
                     break
 
     if len(newNodeNames) == 0:
-        print("ERROR: Can not determine node name by hosts config text.")
+        print("ERROR: Can not determine node name by curernt grid nodes config.")
         sys.exit(-1)
     else:
         print("Determine new node name:" + ','.join(newNodeNames))
@@ -255,6 +235,14 @@ if __name__ == "__main__":
         if vip in pubIpMap:
             hasError = 1
             print("ERROR: VIP:%s is public ip for rac node, conflict." % (vip))
+
+    oldHostsLines = []
+    spaceReg = re.compile(r"\s+")
+    for line in args.oldhosts.split("\\n"):
+        line = line.strip()
+        if line == '' or line.startswith('#'):
+            continue
+        oldHostsLines.append(line)
 
     hostConfTxt = "\n".join(oldHostsLines) + "\n" + "\n".join(pubIpConf) + "\n" + "\n".join(vipConf) + "\n" + "\n".join(privIpConf) + "\n"
 

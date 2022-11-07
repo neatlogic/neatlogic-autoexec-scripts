@@ -13,7 +13,7 @@ use AutoExecUtils;
 sub usage {
     my $pname = $FindBin::Script;
 
-    print("$pname --griduser <Grid os user name> --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
+    print("$pname --action <modify|replace> --filepath <tnsnames.ora or listener.ora file path> --confitems <config items text>\n");
     exit(1);
 }
 
@@ -50,7 +50,7 @@ sub main {
 
     my $exitCode = 0;
 
-    $configItemsTxt =~ s/\\\n/\n/g;
+    $configItemsTxt =~ s/\\n/\n/g;
 
     my $descRe;
     $descRe = qr/\((?:(?>[^()]+)|(??{$descRe}))*\)/x;

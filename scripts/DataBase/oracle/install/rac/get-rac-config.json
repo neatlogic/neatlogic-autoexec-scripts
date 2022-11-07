@@ -25,9 +25,9 @@
             "validate": ""
         },
         {
-            "opt": "ORACLE_SID",
-            "name": "ORACLE_SID",
-            "help": "如不设置则直接使用环境变量ORACLE_SID",
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB_UNIQUE_NAME",
+            "help": "DB的唯一名, 如当前ORACLE_HOME只安装了一个实例, 则可以留空",
             "type": "text",
             "defaultValue": "",
             "required": "false",
@@ -140,6 +140,22 @@
             "required": "false"
         },
         {
+            "opt": "dbInstancesIpInfo",
+            "name": "DB节点IP信息",
+            "help": "DB节点名和IP、主机名对应关系",
+            "type": "json",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbInstancesIpTxt",
+            "name": "DB节点IP信息",
+            "help": "DB节点名和IP、主机名对应关系",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "hostsConfTxt",
             "name": "hosts配置内容",
             "help": "/etc/hosts配置内容",
@@ -176,6 +192,30 @@
             "name": "集群操作节点",
             "help": "除当前节点外可以执行集群操作的节点",
             "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "uniqDbTnsConf",
+            "name": "使用DB_UNIQUE_NAME的tns配置",
+            "help": "用于ADG的数据同步使用的tnsnames.ora的配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbTnsConf",
+            "name": "使用DB_NAME的tns配置",
+            "help": "基于实例VIP的tnsnames.ora的配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "racScanTnsConf",
+            "name": "基于SCAN_IP的tns配置",
+            "help": "基于多个SCAN_IP的tnsnames.ora的配置",
+            "type": "textarea",
             "defaultValue": null,
             "required": "false"
         }
