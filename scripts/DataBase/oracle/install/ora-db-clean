@@ -101,19 +101,6 @@ EOF
     fi
 
     unalias rm 2>/dev/null
-    #remove ORACLE_HOME
-    #remove ORACLE_HOME
-    if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
-        rm -rf "$ORACLE_HOME"
-    fi
-
-    if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE" ]; then
-        rm -rf "$ORACLE_BASE"
-    fi
-
-    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
-        rm -rf "$INVENTORY_LOCATION"
-    fi
 
     #remove script in /usr/local/bin
     rm -f /usr/local/bin/dbhome
@@ -135,6 +122,20 @@ EOF
 
     if [ -n "$ORACLE_UID" ]; then
         pkill -9 -u $ORACLE_USER
+    fi
+
+    #remove ORACLE_HOME
+    #remove ORACLE_HOME
+    if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
+        rm -rf "$ORACLE_HOME"
+    fi
+
+    if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE" ]; then
+        rm -rf "$ORACLE_BASE"
+    fi
+
+    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
+        rm -rf "$INVENTORY_LOCATION"
     fi
 
     if [ "$DEL_USER" == "1" ]; then
