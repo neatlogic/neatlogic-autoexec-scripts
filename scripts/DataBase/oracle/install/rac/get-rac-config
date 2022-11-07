@@ -402,6 +402,7 @@ sub main {
 
     my $userEnv = getUserEnv( $GRID_USER, $ORACLE_USER );
     $out->{GRID_HOME}     = $userEnv->{GRID_HOME};
+    $out->{GRID_BASE}     = $userEnv->{GRID_BASE};
     $out->{INVENTORY_DIR} = $userEnv->{INVENTORY_DIR};
     $out->{ORACLE_HOME}   = $userEnv->{ORACLE_HOME};
     $out->{ORACLE_BASE}   = $userEnv->{ORACLE_BASE};
@@ -429,19 +430,19 @@ sub main {
         $out->{operNodeInfo}       = $nodesIpInfo->{operNodeInfo};
         $out->{otherNodeNames}     = $nodesIpInfo->{otherNodeNames};
 
-        my $gridNodeIpInfo       = $nodesIpInfo->{gridNodeIpInfo};
-        my $nodesVipMap          = $crsInfo->{NODES_VIP};
-        my $dbInstancesIpInfoTxt = '';
+        my $gridNodeIpInfo   = $nodesIpInfo->{gridNodeIpInfo};
+        my $nodesVipMap      = $crsInfo->{NODES_VIP};
+        my $dbInstancesIpTxt = '';
         my ( $localInsName, $dbInstancesIpInfo ) = getDBInstances( $GRID_USER, $dbUniqueName, $localNodeName );
         foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
             my $insInfo  = $dbInstancesIpInfo->{$insName};
             my $nodeName = $insInfo->{hostName};
-            $insInfo->{ip}        = $gridNodeIpInfo->{$nodeName};
-            $insInfo->{vip}       = $nodesVipMap->{$nodeName};
-            $dbInstancesIpInfoTxt = $dbInstancesIpInfoTxt . "\n" . "$insName $nodeName" . $insInfo->{hostname} . ' ' . $insInfo->{ip} . ' ' . $insInfo->{vip};
+            $insInfo->{ip}    = $gridNodeIpInfo->{$nodeName};
+            $insInfo->{vip}   = $nodesVipMap->{$nodeName};
+            $dbInstancesIpTxt = $dbInstancesIpTxt . "\n" . "$insName $nodeName" . $insInfo->{hostname} . ' ' . $insInfo->{ip} . ' ' . $insInfo->{vip};
         }
-        $out->{dbInstancesIpInfo}    = $dbInstancesIpInfo;
-        $out->{dbInstancesIpInfoTxt} = $dbInstancesIpInfoTxt;
+        $out->{dbInstancesIpInfo} = $dbInstancesIpInfo;
+        $out->{dbInstancesIpTxt}  = $dbInstancesIpTxt;
 
         if ( not defined($localInsName) or $localInsName eq '' ) {
             my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;

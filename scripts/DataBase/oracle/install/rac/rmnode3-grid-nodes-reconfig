@@ -1,5 +1,5 @@
 #!/bin/bash
-#使用集群工具crsctl从集群配置中彻底清除被删除节点
+#使用集群工具crsctl从集群配置中彻底清除被删除节点, 保证所有相关内容都被删除
 
 HAS_ERROR=0
 function DO_CMD() {
