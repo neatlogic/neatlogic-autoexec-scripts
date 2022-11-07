@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_SID <ORACLE_SID>\n");
+    exit(1);
+}
+
+sub getStdbyLogSql {
+    my ( $osUser, $sid ) = @_;
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+    my $queryLogsSql = q{
+        SELECT
+            a."GROUP#",
+            a."THREAD#",
+            a.BYTES,
+            a.MEMBERS,
+            b.MEMBER
+        FROM
+            v$log a,
+            v$logfile b 
+        WHERE
+            a."GROUP#" = b."GROUP#" 
+        ORDER BY
+            "GROUP#";
+    };
+    my $rows = $sqlplus->query(
+        sql     => $queryLogsSql,
+        verbose => 1
+    );
+
+    #alter database add logfile thread 1 group 9 ('+DATA/orcl/onlinelog/group_9_redo_log.log', '+BAK/orcl/onlinelog/group_9_redo_log.log') size 50m;
+
+    my @threadNos     = ();
+    my @groupNos      = ();
+    my $threadInfoMap = {};
+    my $groupInfoMap  = {};
+    foreach my $row (@$rows) {
+
+        #整理select得到的数据，一个Thread代表一个节点，每个节点若干个redo log组，每个节点内的group数量是一致的。
+        #每个group内可能有多个互为镜像的日志文件
+        my $threadNo = $row->{'THREAD#'};
+        my $groupNo  = $row->{'GROUP#'};
+
+        my $groupInfo = $groupInfoMap->{$groupNo};
+        if ( not defined($groupInfo) ) {
+            push( @groupNos, $groupNo );
+            $groupInfo = { GROUP_NO => $groupNo };
+            $groupInfoMap->{$groupNo} = $groupInfo;
+        }
+
+        $groupInfo->{THREAD_NO} = $threadNo;
+        $groupInfo->{BYTES}     = $row->{'BYTES'};
+        my $member = $groupInfo->{MEMBER};
+        if ( not defined($member) ) {
+            $member = [ $row->{MEMBER} ];
+        }
+        else {
+            push( @$member, $row->{MEMBER} );
+        }
+
+        my $threadInfo = $threadInfoMap->{$threadNo};
+        if ( not defined($threadInfo) ) {
+            push( @threadNos, $threadNo );
+            $threadInfo = { THREAD_NO => $threadNo };
+            $threadInfoMap->{$threadNo} = $threadInfo;
+        }
+
+        my $groups = $groupInfoMap->{GROUPS};
+        if ( not defined($groups) ) {
+            $groups = [$groupInfo];
+        }
+        else {
+            push( @$groups, $groupInfo );
+        }
+    }
+
+    #生成的create standby log的语句，没有包含具体的日志文件名称
+    #所以要依赖spfile对日志文件路径和文件名patter的设置自动生成日志路径和名称
+    my $createStdbyLogGroupSql = '';
+    my $currentGroupNo         = scalar(@groupNos) + 1;
+    foreach my $threadNo (@threadNos) {
+        my $threadInfo = $threadInfoMap->{$threadNo};
+        my $groups     = $threadInfo->{GROUPS};
+        my $bytes;
+        foreach my $groupInfo (@$groups) {
+            my $members = $groupInfo->{MEMBER};
+            my $bytes   = $groupInfo->{BYTES};
+            my $sql     = "ALTER DATABASE ADD STANDBY LOGFILE THREAD $threadNo GROUP $currentGroupNo SIZE $bytes;";
+            $createStdbyLogGroupSql = $createStdbyLogGroupSql . $sql . "\n";
+            $currentGroupNo         = $currentGroupNo + 1;
+        }
+        my $sql = "ALTER DATABASE ADD STANDBY LOGFILE THREAD $threadNo GROUP $currentGroupNo SIZE $bytes;";
+        $createStdbyLogGroupSql = $createStdbyLogGroupSql . $sql . "\n";
+        $currentGroupNo         = $currentGroupNo + 1;
+    }
+
+    return $createStdbyLogGroupSql;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            ORACLE_SID=s
+        }
+    );
+
+    my $hasOptErr   = 0;
+    my $ORACLE_USER = $opts->{ORACLE_USER};
+    my $ORACLE_HOME = $opts->{ORACLE_HOME};
+    my $ORACLE_SID  = $opts->{ORACLE_SID};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $createStdbyLogGroupSql = getStdbyLogSql( $ORACLE_USER, $ORACLE_SID );
+
+    my $out = {};
+    $out->{createStdbyLogGroupSql} = $createStdbyLogGroupSql;
+    AutoExecUtils::saveOutput($out);
+
+    if ( defined($createStdbyLogGroupSql) and $createStdbyLogGroupSql ne '' ) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}

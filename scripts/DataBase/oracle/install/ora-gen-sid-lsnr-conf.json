@@ -1,0 +1,73 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "生成SID Listener配置文本(同时支持RAC和非RAC), 每个节点SID都不一样, 都要执行",
+    "option": [
+        {
+            "opt": "GRID_USER",
+            "name": "GRID_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "grid",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "GRID安装的目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_NAME",
+            "name": "全局DB名",
+            "help": "用于作为DB的服务名, DG主备库一致",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB唯一名",
+            "help": "DB唯一名称, 在DG同步和切换中确定主备库, 为空保持跟DB_NAME一致",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "lsnrOraConfPath",
+            "name": "listener.ora路径",
+            "help": "文件listener.ora的路径, RAC使用的是GRID_HOME下的, 非RAC是ORACLE_HOME下的",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "sidLsnrConf",
+            "name": "SID Listener配置内容",
+            "help": "SID Listener配置内容",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

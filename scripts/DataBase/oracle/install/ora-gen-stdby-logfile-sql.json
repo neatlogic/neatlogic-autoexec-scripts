@@ -1,0 +1,38 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "生成创建StandBy Redo日志的SQL, 大小跟原日志一致, 每个Thread多一组, 只需要在一个节点上执行",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_SID",
+            "name": "ORACLE_SID",
+            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "createStdbyLogGroupSql",
+            "name": "创建StandBy Redo Log的SQL",
+            "help": "用于创建StandBy Redo日志的SQL, 大小跟原日志一致, 每个Thread多一组",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

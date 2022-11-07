@@ -1,0 +1,304 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --GRID_USER <GRID_USER> --ORACLE_USER <ORACLE_USER> --DB_NAME <DB_NAME> --DB_UNIQUE_NAME <DB_UNIQUE_NAME>\n");
+    exit(1);
+}
+
+sub getCrsHome {
+    my ( $osUser, $ORACLE_HOME ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    #如果getcrshome有返回代表当前实例是安装在Grid环境中的
+    my $gridHome = '';
+    my $cmdFile  = "$ORACLE_HOME/srvm/admin/getcrshome";
+    if ( -e $cmdFile ) {
+        $gridHome = `su - '$osUser' -c '$cmdFile'`;
+        if ( $? == 0 ) {
+            $gridHome =~ s/^\s*|\s*$//g;
+        }
+    }
+
+    return $gridHome;
+}
+
+sub getDBInstances {
+    my ( $osUser, $ORACLE_HOME, $dbUniqueName ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $localNodeName = `su - '$osUser' -c '$envLine olsnodes -l'`;
+    if ( $? != 0 ) {
+        return;
+    }
+    $localNodeName =~ s/^\s*|\s*$//g;
+
+    # [oracle@myrac1 ~]$ srvctl status database -d mydb_primary
+    # Instance mydb1 is not running on node myrac1
+    # Instance mydb2 is not running on node myrac2
+    # Instance mydb3 is not running on node myrac3
+    my $dbStatusTxt = `su - '$osUser' -c "$envLine srvctl status database -d $dbUniqueName"`;
+
+    my $localInsName;
+    foreach my $line ( split( /\n/, $dbStatusTxt ) ) {
+        if ( $line =~ /Instance\s+(\w+).*?\snode\s+(\w+)/ ) {
+            my $insName  = $1;
+            my $nodeName = $2;
+            if ( $nodeName eq $localNodeName ) {
+                $localInsName = $insName;
+            }
+        }
+    }
+
+    return $localInsName;
+}
+
+sub getUserEnv {
+    my ($ORACLE_USER) = @_;
+
+    my $env       = {};
+    my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+
+            if ( $name eq 'ORACLE_HOME' ) {
+                $env->{ORACLE_HOME} = $val;
+            }
+            elsif ( $name eq 'ORACLE_BASE' ) {
+                $env->{ORACLE_BASE} = $val;
+            }
+            elsif ( $name eq 'ORACLE_SID' ) {
+                $env->{ORACLE_SID} = $val;
+            }
+        }
+    }
+
+    return $env;
+}
+
+sub getDBLocalInstance {
+    my ( $osUser, $GRID_HOME, $dbUniqueName ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $localNodeName = `su - '$osUser' -c '$envLine olsnodes -l'`;
+    if ( $? != 0 ) {
+        return;
+    }
+    $localNodeName =~ s/^\s*|\s*$//g;
+
+    # [oracle@myrac1 ~]$ srvctl status database -d mydb_primary
+    # Instance mydb1 is not running on node myrac1
+    # Instance mydb2 is not running on node myrac2
+    # Instance mydb3 is not running on node myrac3
+    my $dbStatusTxt = `su - '$osUser' -c "$envLine '$GRID_HOME/bin/srvctl' status database -d $dbUniqueName"`;
+
+    my $localInsName;
+    foreach my $line ( split( /\n/, $dbStatusTxt ) ) {
+        if ( $line =~ /Instance\s+(\w+).*?\snode\s+(\w+)/ ) {
+            my $insName  = $1;
+            my $nodeName = $2;
+            if ( $nodeName eq $localNodeName ) {
+                $localInsName = $insName;
+            }
+        }
+    }
+
+    return $localInsName;
+}
+
+sub getRacDBInfo {
+    my ( $osUser, $GRID_HOME, $dbUniqueName ) = @_;
+    my $racInfo = {};
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    if ( not defined($dbUniqueName) ) {
+        $dbUniqueName = `su - '$osUser' -c "$envLine '$GRID_HOME/bin/srvctl' config database"`;
+        $dbUniqueName =~ s/^\s*|\s*$//g;
+    }
+
+    #srvctl config database -d mydb_primary
+    # [oracle@myrac1 ~]$ srvctl config database -d mydb_primary
+    # Database unique name: mydb_primary
+    # Database name: mydb
+    # Oracle home: /db/oracle/app/oracle/product/19.3.0/db
+    # Oracle user: oracle
+    # Spfile: +DATA/MYDB_PRIMARY/PARAMETERFILE/spfile.275.1119294627
+    # Password file: +DATA/MYDB_PRIMARY/PASSWORD/pwdmydb_primary.256.1119292157
+    # Domain:
+    # Start options: open
+    # Stop options: immediate
+    # Database role: PRIMARY
+    # Management policy: AUTOMATIC
+    # Server pools:
+    # Disk Groups: ARCH,DATA
+    # Mount point paths:
+    # Services:
+    # Type: RAC
+    # Start concurrency:
+    # Stop concurrency:
+    # OSDBA group: dba
+    # OSOPER group: oper
+    # Database instances: mydb1,mydb2,mydb3
+    # Configured nodes: myrac1,myrac2,myrac3
+    # CSS critical: no
+    # CPU count: 0
+    # Memory target: 0
+    # Maximum memory: 0
+    # Default network number for database services:
+    # Database is administrator managed
+    my $dbConf    = {};
+    my $dbConfTxt = `su - '$osUser' -c "$envLine '$GRID_HOME/bin/srvctl' config database -d $dbUniqueName"`;
+    foreach my $dbConfLine ( split( /\n/, $dbConfTxt ) ) {
+        if ( $dbConfLine =~ /^\s*([^:]+):\s*(.*?)$/ ) {
+            $dbConf->{$1} = $2;
+        }
+        elsif ( $dbConfLine =~ /policy managed/ ) {
+            $dbConf->{'Policy Managed'} = 1;
+        }
+    }
+
+    $racInfo->{DB_UNIQUE_NAME} = $dbUniqueName;
+    $racInfo->{DB_NAME}        = $dbConf->{'Database name'};
+    $racInfo->{ORACLE_HOME}    = $dbConf->{'Oracle home'};
+    $racInfo->{TYPE}           = $dbConf->{'Type'};
+
+    return $racInfo;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            GRID_USER=s
+            ORACLE_USER=s
+            ORACLE_HOME=s
+            DB_UNIQUE_NAME=s
+            DB_NAME=s
+        }
+    );
+
+    my $hasOptErr   = 0;
+    my $ORACLE_USER = $opts->{ORACLE_USER};
+    my $GRID_USER   = $opts->{GRID_USER};
+    my $ORACLE_HOME = $opts->{ORACLE_HOME};
+    my $dbName      = $opts->{DB_NAME};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($GRID_USER) or $GRID_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined GRID_USER by option --GRID_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $sidLsnrConf;
+    my $lsnrOraConfPath;
+
+    if ( not defined($ORACLE_HOME) ) {
+        my $oraEnv = getUserEnv($ORACLE_USER);
+        $ORACLE_HOME = $oraEnv->{ORACLE_HOME};
+    }
+
+    my $gridHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
+
+    if ( defined($gridHome) and $gridHome ne '' ) {
+        my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
+        my $GRID_USER    = $opts->{GRID_USER};
+        my $GRID_HOME    = $opts->{GRID_HOME};
+        if ( not defined($GRID_HOME) or $GRID_HOME eq '' ) {
+            my $oraEnv = getUserEnv($GRID_USER);
+            $GRID_HOME = $oraEnv->{ORACLE_HOME};
+        }
+
+        my $racInfo = getRacDBInfo( $GRID_USER, $GRID_HOME, $dbUniqueName );
+        my $dbName  = $racInfo->{DB_NAME};
+
+        my $ORACLE_SID;
+        my $localInsName = getDBLocalInstance( $GRID_USER, $GRID_HOME, $dbUniqueName );
+        if ( defined($localInsName) and $localInsName ne '' ) {
+            $ORACLE_SID = $localInsName;
+
+            # SID_LIST_LISTENER =
+            #   (SID_LIST =
+            #     (SID_DESC =
+            #       (GLOBAL_DBNAME = testdb)
+            #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+            #       (SID_NAME=testdb1)
+            #     )
+            #   )
+            $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n    (SID_DESC =\n";
+            $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbName)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
+            $sidLsnrConf = $sidLsnrConf . "    )\n";
+            $sidLsnrConf = $sidLsnrConf . "  )\n";
+        }
+        else {
+            print("ERROR: Can not find the oracle sid.\n");
+        }
+
+        $lsnrOraConfPath = "$GRID_HOME/network/admin/listener.ora";
+    }
+    else {
+        my $ORACLE_SID;
+        if ( not defined($ORACLE_HOME) or $ORACLE_HOME eq '' ) {
+            my $oraEnv = getUserEnv($ORACLE_USER);
+            $ORACLE_HOME = $oraEnv->{ORACLE_HOME};
+            $ORACLE_SID  = $oraEnv->{ORACLE_SID};
+        }
+
+        if ( defined($dbName) and $dbName ne '' ) {
+            $ORACLE_SID = $dbName;
+        }
+
+        # SID_LIST_LISTENER =
+        #   (SID_LIST =
+        #     (SID_DESC =
+        #       (GLOBAL_DBNAME = testdb)
+        #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+        #       (SID_NAME=testdb1)
+        #     )
+        #   )
+        $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n    (SID_DESC =\n";
+        $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbName)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
+        $sidLsnrConf = $sidLsnrConf . "    )\n";
+        $sidLsnrConf = $sidLsnrConf . "  )\n";
+
+        $lsnrOraConfPath = "$ORACLE_HOME/network/admin/listener.ora";
+    }
+
+    my $out = {};
+    $out->{lsnrOraConfPath} = $lsnrOraConfPath;
+    $out->{sidLsnrConf}     = $sidLsnrConf;
+    AutoExecUtils::saveOutput($out);
+
+    if ( defined($sidLsnrConf) and $sidLsnrConf ne '' ) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+
+exit( main() );

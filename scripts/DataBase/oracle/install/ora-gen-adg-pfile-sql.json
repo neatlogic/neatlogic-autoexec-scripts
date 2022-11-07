@@ -1,0 +1,90 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "生成SID Listener配置文本(同时支持RAC和非RAC)",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "GRID安装的目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "MY_UNIQUE_NAME",
+            "name": "当前库UniqueName",
+            "help": "当前操作库的db unique name",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "OTHER_SITE_UNIQUE_NAME",
+            "name": "对端库UniqueName",
+            "help": "对端库的db unique name",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "LOG_ARCHIVE_DEST",
+            "name": "日志归档目标号",
+            "help": "Oracle库的Archive Log归档的目标号",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "2",
+                        "value": "2"
+                    },
+                    {
+                        "text": "3",
+                        "value": "3"
+                    },
+                    {
+                        "text": "4",
+                        "value": "4"
+                    },
+                    {
+                        "text": "5",
+                        "value": "5"
+                    },
+                    {
+                        "text": "6",
+                        "value": "6"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "2",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "pfileAlterSql",
+            "name": "DG设置的pfile参数的SQL",
+            "help": "用于修改当前库设置DG相关的pfile参数的SQL",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

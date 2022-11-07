@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            ORACLE_SID=s
+        }
+    );
+
+    my $hasOptErr   = 0;
+    my $ORACLE_USER = $opts->{ORACLE_USER};
+    my $ORACLE_SID  = $opts->{ORACLE_SID};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+    foreach my $sqlTxt (@ARGV) {
+        $sqlTxt =~ s/^\s*|\s*$//sg;
+
+        my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+        my $exitCode = $sqlplus->do(
+            sql     => $sqlTxt,
+            verbose => 1
+        );
+
+        if ( $exitCode != 0 ) {
+            $hasError = 1;
+            print("ERROR: Errors occur while executing sql.\n");
+            last;
+        }
+    }
+
+    if ( $hasError == 0 ) {
+        print("FINE: Execute sql scripts success.\n");
+    }
+    return $hasError;
+}
+
+exit( main() );

@@ -1,0 +1,38 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "连接到远程Oracle主机本地执行SQL",
+    "argument": {
+        "name": "SQL内容",
+        "type": "text",
+        "defaultValue": "",
+        "help": "SQL脚本，支持一或多条SQL语句",
+        "count": 0,
+        "validate": "",
+        "required": "false"
+    },
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_SID",
+            "name": "ORACLE_SID",
+            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
