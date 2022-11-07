@@ -25,6 +25,15 @@
             "validate": ""
         },
         {
+            "opt": "jdk_path",
+            "name": "JDK文件路径",
+            "help": "JDK安装包文件路径，如：/mnt/nas/websphere/ibm_jdk/r",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "install_path",
             "name": "软件安装路径",
             "help": "软件安装路径，如：/opt/IBM/WebSphere/AppServer",

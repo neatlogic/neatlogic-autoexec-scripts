@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --file_path <file path> --prefix <install path> --run_user <run user> --run_group <run group>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            file_path)
+                file_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            prefix)
+                prefix="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[ ! -n "$file_path" ]] ; then
+    echo "ERROR:: Must defined option --file_path"
+    usage
+fi 
+
+if [[ ! -n "$prefix" ]] ; then
+    echo "ERROR:: Must defined option --prefix"
+    usage
+fi 
+
+if [[ ! -f "$file_path" ]] ; then 
+    echo "ERROR:: Not found file: $file_path ."
+    exit 1
+fi 
+
+if [[ ! -d "$prefix" ]] ; then 
+    mkdir -p $prefix
+fi 
+
+if [[ ! -n "$run_user" ]] ; then
+    run_user="root"
+fi 
+
+if [[ ! -n "$run_group" ]] ; then
+    run_group="root"
+fi 
+
+source lib/common.sh
+cwd_path=`pwd`
+
+DO_CMD "unzip -o $file_path -d $prefix"
+
+GET_DIRNAME $prefix "pcre"
+
+prce_home="$prefix/$DIR_NAME/"
+
+if [[ -d "$prce_home" ]]; then 
+    DO_CMD "cd $prce_home && ./configure --prefix $prce_home  && make && make install"
+
+    DO_CMD "chown -R $run_user:$run_group $prefix"
+
+    SUDO_CMD $run_user "cd $prce_home/bin && pcre-config --version"
+else 
+    echo "ERROR:: dir: $prce_home get pcre-* child dir failed."
+fi 
+
+#输出安装路径
+cat <<EOF > "$cwd_path/output.json"
+{ 
+    "pcre_home":"$prce_home" 
+}
+EOF

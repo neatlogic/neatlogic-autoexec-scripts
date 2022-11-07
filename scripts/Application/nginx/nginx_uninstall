@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --nginx_home <nginx install home>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            nginx_home)
+                nginx_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[ ! -n "$nginx_home" ]] ; then
+    echo "ERROR:: Must defined option --nginx_home "
+    usage
+fi
+
+if [[ ! -d "$nginx_home" ]] ; then
+    echo "ERROR:: dir $nginx_home not found."
+    exit 1
+fi 
+
+if [[ ! -d "$nginx_home/sbin" && ! -d "$nginx_home/conf" ]] ; then 
+    echo "ERROR:: $nginx_home not nginx install path."
+    exit 1
+fi 
+
+source lib/common.sh
+
+#检查进程是否存在
+pid=`ps -ef |grep nginx |awk '{print $2}'`
+if [[ -n "$pid" ]] ; then 
+    $nginx_home/sbin/nginx -s stop
+fi
+
+DO_CMD "rm -rf $nginx_home"
+

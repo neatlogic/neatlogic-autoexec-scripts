@@ -1,0 +1,56 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Unix安装PCRE,让Nginx支持Rewrite功能",
+    "option": [
+        {
+            "opt": "file_path",
+            "name": "安装文件路径",
+            "help": "安装zip包路径，如：/mnt/nas/nginx/pcre-8.45.zip",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "prefix",
+            "name": "安装目录",
+            "help": "安装目录，如：/opt/nginx",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "pcre_home",
+            "name": "pcre安装路径",
+            "help": "pcre安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

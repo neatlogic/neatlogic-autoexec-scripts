@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --operat <start|stop> --nginx_home <nginx install path> --run_user <run user> "
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            operat)
+                operat="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            nginx_home)
+                nginx_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[ ! -n "$nginx_home" ]] ; then
+    echo "ERROR:: Must defined option --nginx_home"
+    usage
+fi 
+
+if [[ ! -d "$nginx_home" ]] ; then 
+    echo "ERROR:: Not found dir: $nginx_home ."
+    exit 1
+fi 
+
+if [[ ! -n "$operat" ]] ; then
+    operat="start"
+fi 
+
+source lib/common.sh
+
+if [[ "$operat" == "start" ]] ; then 
+    SUDO_CMD $run_user "$nginx_home/sbin/nginx -c $nginx_home/conf/nginx.conf"
+else 
+    SUDO_CMD $run_user "$nginx_home/sbin/nginx -s stop"
+fi

@@ -1,0 +1,138 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Unix安装Nginx",
+    "option": [
+        {
+            "opt": "modules",
+            "name": "安装模块",
+            "help": "安装模块",
+            "type": "multiselect",
+            "required": "false",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "运行状态模块",
+                        "value": "--with-http_stub_status_module"
+                    },
+                    {
+                        "text": "启用SSL模块",
+                        "value": "--with-http_ssl_module"
+                    },
+                    {
+                        "text": "HTTP的真实IP模块",
+                        "value": "--with-http_realip_module"
+                    },
+                    {
+                        "text": "TCP/UDP代理模块",
+                        "value": "--with-stream"
+                    },
+                    {
+                        "text": "字符串替换模块",
+                        "value": "--with-http_sub_module"
+                    },
+                    {
+                        "text": "gzip压缩模块",
+                        "value": "--with-http_gunzip_module"
+                    },
+                    {
+                        "text": "字符集转换模块",
+                        "value": "--without-http_charset_module"
+                    },
+                    {
+                        "text": "cookie操作模块",
+                        "value": "--without-http_userid_module"
+                    },
+                    {
+                        "text": "基于IP的访问控制模块",
+                        "value": "--without-http_access_module"
+                    },
+                    {
+                        "text": "HTTP基本认证模块",
+                        "value": "--without-http_auth_basic_module"
+                    },
+                    {
+                        "text": "rewrite规则模块",
+                        "value": "--without-http_rewrite_module"
+                    },
+                    {
+                        "text": "referer操作模块",
+                        "value": "--without-http_referer_module"
+                    },
+                    {
+                        "text": "rewrite规则模块",
+                        "value": "--without-http_rewrite_module"
+                    },
+                    {
+                        "text": "代理功能模块",
+                        "value": "--without-http_proxy_module"
+                    },
+                    {
+                        "text": "hash负载均衡算法模块",
+                        "value": "--without-http_upstream_hash_module"
+                    }
+                ]
+            },
+            "validate": "",
+            "defaultValue": ["--with-http_stub_status_module","--with-http_ssl_module","--with-http_realip_module","--with-stream"]
+        },
+        {
+            "opt": "file_path",
+            "name": "安装文件路径",
+            "help": "安装zip包路径，如：/mnt/nas/nginx/nginx-1.18.0.tar.gz",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "prefix",
+            "name": "安装目录",
+            "help": "安装目录，如：/opt/nginx",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "pcre_home",
+            "name": "pcre安装目录",
+            "help": "pcre安装目录，如：/opt/nginx/pcre",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "nginx_home",
+            "name": "nginx安装路径",
+            "help": "nginx安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

@@ -1,0 +1,59 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "Nginx服务启停",
+    "option": [
+        {
+            "opt": "operat",
+            "name": "操作类型",
+            "help": "操作类型",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "启动",
+                        "value": "start"
+                    },
+                    {
+                        "text": "停止",
+                        "value": "stop"
+                    }
+                ]
+            },
+            "defaultValue": "start",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "nginx_home",
+            "name": "nginx安装路径",
+            "help": "nginx安装路径，如：/opt/nginx",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：nginx",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "nginx_home",
+            "name": "nginx安装路径",
+            "help": "nginx安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}
