@@ -95,14 +95,19 @@ else
 fi
 
 echo $GRID_HOME/root.sh
-$GRID_HOME/root.sh
+OUT_TXT=$($GRID_HOME/root.sh)
 exitCode=$?
-if [ $exitCode -ge 128 ]; then
+
+#回显root脚本执行的日志文件内容
+LOG_PATH=$(echo $OUT_TXT | cut -d' ' -f2)
+if [ -f "$LOG_PATH" ]; then
+    cat "$LOG_PATH"
+fi
+
+if [ $exitCode != 128 ]; then
     #负数返回码，大于127就是负数的补码
     echo "ERROR: Execute $GRID_HOME/root.sh failed, exitCode:$exitCode."
     exit $exitCode
-elif [ $exitCode -gt 0 ]; then
-    echo "WARN: Execute $GRID_HOME/root.sh has some warning, exitCode:$exitCode."
 else
     echo "FINE: Execute $GRID_HOME/root.sh successful."
 fi

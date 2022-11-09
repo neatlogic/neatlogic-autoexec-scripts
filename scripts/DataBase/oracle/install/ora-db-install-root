@@ -95,8 +95,15 @@ else
 fi
 
 echo $ORACLE_HOME/root.sh
-$ORACLE_HOME/root.sh
+OUT_TXT=$($ORACLE_HOME/root.sh)
 exitCode=$?
+
+#回显root脚本执行的日志文件内容
+LOG_PATH=$(echo $OUT_TXT | cut -d' ' -f2)
+if [ -f "$LOG_PATH" ]; then
+    cat "$LOG_PATH"
+fi
+
 if [ $exitCode -ge 128 ]; then
     #负数返回码，大于127就是负数的补码
     echo "ERROR: Execute $ORACLE_HOME/root.sh failed, exitCode:$exitCode."
