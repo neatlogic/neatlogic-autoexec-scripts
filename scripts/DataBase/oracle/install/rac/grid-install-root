@@ -104,7 +104,7 @@ if [ -f "$LOG_PATH" ]; then
     cat "$LOG_PATH"
 fi
 
-if [ $exitCode != 128 ]; then
+if [ $exitCode != 0 ]; then
     #负数返回码，大于127就是负数的补码
     echo "ERROR: Execute $GRID_HOME/root.sh failed, exitCode:$exitCode."
     exit $exitCode
