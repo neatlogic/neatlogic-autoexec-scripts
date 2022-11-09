@@ -1,0 +1,113 @@
+{
+    "opType": "runner",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "根据某个pfile内容生成新的DB的pfile内容",
+    "option": [
+        {
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB唯一名",
+            "help": "DB唯一名称, 生成目标DB的唯一名称, DB名保持不变",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "mempercent",
+            "name": "内存百分比",
+            "help": "生成目标DB与原DB内存配置百分比",
+            "type": "text",
+            "defaultValue": "100",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "dbintances",
+            "name": "生成DB实例名",
+            "help": "生成目标DB的实例名, 一行一个实例名",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "pfileref",
+            "name": "PFILE模版",
+            "help": "PFILE模版内容, 一般从原库导出",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "dirconvmap",
+            "name": "目录转换",
+            "help": "源库和生成目标库目录不一致时需要配置, 一行一个映射，例如：+DATA,/oracle/oradata",
+            "type": "textarea",
+            "defaultValue": "/db/oracle/oradata,/db/oracle/oradata\n/db/oracle/oradata2,/db/oracle/oradata2",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "pfile",
+            "name": "PFILE内容",
+            "help": "可用于目标生成库的pfile配置内容",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbName",
+            "name": "DB名",
+            "help": "从pfile模版中取出的DB名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "controlFiles",
+            "name": "oracle库控制文件列表",
+            "help": "目标生成库存放控制文件的路径",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "controlFileDirs",
+            "name": "oracle库控制文件目录列表",
+            "help": "目标生成库存放控制文件的目录列表",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "logArchDestDir",
+            "name": "归档日志目录",
+            "help": "目标生成库存放归档日志的目录",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "otherDirs",
+            "name": "其他目录列表",
+            "help": "目标生成库存其他需要存在的目录的列表",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dirConfMap",
+            "name": "PFILE中目录相关的配置",
+            "help": "目标生成库存PFILE参数配置中目录相关的配置",
+            "type": "json",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

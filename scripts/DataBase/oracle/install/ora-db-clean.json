@@ -12,7 +12,7 @@
             "help": "执行前的变量设（使用${}引用作业参数）",
             "type": "textarea",
             "defaultValue": "ORACLE_USER=${ORACLE_USER}\nUNIX_GROUP_NAME=${UNIX_GROUP_NAME}\nINVENTORY_LOCATION=${INVENTORY_LOCATION}\nORACLE_BASE=${ORACLE_BASE}\nORACLE_HOME=${ORACLE_HOME}\nGRID_BASE=${GRID_BASE}\nGRID_HOME=${GRID_HOME}\nOSDBA_GROUP=${OSDBA_GROUP}\nOSOPER_GROUP=${OSOPER_GROUP}\nOSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}\nOSDGDBA_GROUP=${OSDGDBA_GROUP}\nOSKMDBA_GROUP=${OSKMDBA_GROUP}\nOSRACDBA_GROUP=${OSRACDBA_GROUP}",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {

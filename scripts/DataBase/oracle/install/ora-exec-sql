@@ -9,6 +9,13 @@ use Getopt::Long;
 use SqlplusExec;
 use AutoExecUtils;
 
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_SID <ORACLE_SID>\n");
+    exit(1);
+}
+
 sub main {
     my $opts = {};
     GetOptions(
@@ -34,7 +41,7 @@ sub main {
     foreach my $sqlTxt (@ARGV) {
         $sqlTxt =~ s/^\s*|\s*$//sg;
 
-        my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+        my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, sid => $ORACLE_SID );
 
         my $exitCode = $sqlplus->do(
             sql     => $sqlTxt,

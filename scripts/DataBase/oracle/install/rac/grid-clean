@@ -89,8 +89,13 @@ EXIT;
 EOF
 
         echo "Try to ensure local node stoped..."
+        echo "crsctl stop crs"
         $ORACLE_HOME/bin/crsctl stop crs
-        $ORACLE_HOME/bin/crsctl delete node -n $($ORACLE_HOME/bin/olsnodes -l)
+        LOCAL_NODE_NAME=$($ORACLE_HOME/bin/olsnodes -l)
+        if [ -n "$LOCAL_NODE_NAME" ]; then
+            echo "crsctl delete node -n $LOCAL_NODE_NAME"
+            $ORACLE_HOME/bin/crsctl delete node -n $LOCAL_NODE_NAME
+        fi
 
         for pid in $(ps -u root -fww | grep "$ORACLE_HOME" | grep -v grid-clean | grep -v grep | awk '{print $2}'); do
             kill $pid

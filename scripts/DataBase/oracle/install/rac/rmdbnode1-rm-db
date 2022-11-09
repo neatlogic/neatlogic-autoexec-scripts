@@ -150,11 +150,11 @@ echo "Try to execute dbca command on one of the other node to remove database in
 echo "Try to remove db $DB_NAME from nodes:$REMOVE_NODES..."
 for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
     if [ -n "$POLICY_MANAGED" ]; then
-        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl -force stop instance -d $DB_UNIQUE_NAME -n $NODE
-        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl -force relocate server -n $NODE -g Free
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -force -d $DB_UNIQUE_NAME -n $NODE
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -force -n $NODE -g Free
     else
         echo "DB $DB_NAME is administrator managed.\n"
-        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl -force stop instance -d $DB_UNIQUE_NAME -n $NODE
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -force -d $DB_UNIQUE_NAME -n $NODE
 
         if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
             echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."

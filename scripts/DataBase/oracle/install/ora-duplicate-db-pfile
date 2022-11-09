@@ -1,0 +1,359 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+# mydb1.__data_transfer_cache_size=0
+# mydb2.__data_transfer_cache_size=0
+# mydb3.__data_transfer_cache_size=0
+# mydb2.__db_cache_size=281018368
+# mydb1.__db_cache_size=281018368
+# mydb3.__db_cache_size=331350016
+# mydb1.__inmemory_ext_roarea=0
+# mydb2.__inmemory_ext_roarea=0
+# mydb3.__inmemory_ext_roarea=0
+# mydb1.__inmemory_ext_rwarea=0
+# mydb2.__inmemory_ext_rwarea=0
+# mydb3.__inmemory_ext_rwarea=0
+# mydb1.__java_pool_size=0
+# mydb2.__java_pool_size=0
+# mydb3.__java_pool_size=0
+# mydb1.__large_pool_size=4194304
+# mydb2.__large_pool_size=4194304
+# mydb3.__large_pool_size=4194304
+# mydb1.__oracle_base='/db/oracle/app/oracle'#ORACLE_BASE set from environment
+# mydb3.__oracle_base='/db/oracle/app/oracle'#ORACLE_BASE set from environment
+# mydb2.__oracle_base='/db/oracle/app/oracle'#ORACLE_BASE set from environment
+# mydb1.__pga_aggregate_target=268435456
+# mydb2.__pga_aggregate_target=268435456
+# mydb3.__pga_aggregate_target=268435456
+# mydb1.__sga_target=805306368
+# mydb2.__sga_target=805306368
+# mydb3.__sga_target=805306368
+# mydb1.__shared_io_pool_size=29360128
+# mydb2.__shared_io_pool_size=29360128
+# mydb3.__shared_io_pool_size=25165824
+# mydb2.__shared_pool_size=473956352
+# mydb1.__shared_pool_size=473956352
+# mydb3.__shared_pool_size=427819008
+# mydb1.__streams_pool_size=0
+# mydb2.__streams_pool_size=0
+# mydb3.__streams_pool_size=0
+# mydb1.__unified_pga_pool_size=0
+# mydb2.__unified_pga_pool_size=0
+# mydb3.__unified_pga_pool_size=0
+# *.audit_file_dest='/db/oracle/app/oracle/admin/mydb_primary/adump'
+# *.audit_trail='db'
+# *.cluster_database=true
+# *.compatible='19.0.0'
+# *.control_files='+DATA/MYDB_PRIMARY/CONTROLFILE/current.261.1119292377','+ARCH/MYDB_PRIMARY/CONTROLFILE/current.256.11192923
+# 77'
+# *.db_block_size=8192
+# *.db_create_file_dest='+DATA'
+# *.db_name='mydb'
+# *.db_recovery_file_dest='+ARCH'
+# *.db_recovery_file_dest_size=10g
+# *.db_unique_name='mydb_primary'
+# *.diagnostic_dest='/db/oracle/app/oracle'
+# *.dispatchers='(PROTOCOL=TCP) (SERVICE=mydbXDB)'
+# *.enable_pluggable_database=true
+# family:dw_helper.instance_mode='read-only'
+# mydb2.instance_number=2
+# mydb1.instance_number=1
+# *.local_listener='-oraagent-dummy-'
+# *.log_archive_dest_1='LOCATION=+ARCH'
+# *.log_archive_format='%t_%s_%r.dbf'
+# *.nls_language='AMERICAN'
+# *.nls_territory='AMERICA'
+# *.open_cursors=300
+# *.pga_aggregate_target=256m
+# *.processes=300
+# *.remote_login_passwordfile='exclusive'
+# *.sga_target=768m
+# mydb2.thread=2
+# mydb1.thread=1
+# mydb1.undo_tablespace='UNDOTBS1'
+# mydb2.undo_tablespace='UNDOTBS2'
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --pfileref <ORACLE_USER>  --dbinstances <DB Instaces> --DB_UNIQUE_NAME <DB UNIQUE NAME> --dirconvmap <Directory convert map>\n");
+    exit(1);
+}
+
+sub convertPfileRef {
+    my ( $pfileReference, $dbUniqName, $memPercent, $dbInstances ) = @_;
+
+    my $pfileContent  = '';
+    my $perDbConfMap  = {};
+    my @pfileRefArray = split( /\n/, $pfileReference );
+    my $refDbName;
+    my $refDbUniqName;
+    foreach my $line (@pfileRefArray) {
+        $line =~ s/^\s*|\s*$//g;
+        if ( $line =~ /^#/ ) {
+            next;
+        }
+
+        if ( $memPercent != 100 ) {
+            if (   $line =~ /_pool_size\s*=\s*(\d+)/
+                or $line =~ /_cache_size\s*=\s*(\d+)/
+                or $line =~ /_target\s*=\s*(\d+)/ )
+            {
+                my $val    = $1;
+                my $newVal = $val;
+                $newVal = int( $val * $memPercent * 100 );
+                $line =~ s/$val/$newVal/;
+            }
+        }
+
+        if ( $line =~ /^(\w+\d+)\./ ) {
+            my $dbInsName = $1;
+            my $insConf   = $perDbConfMap->{$dbInsName};
+            if ( not defined($insConf) ) {
+                $insConf = {};
+                $perDbConfMap->{$dbInsName} = $insConf;
+            }
+            $insConf->{$line} = 1;
+        }
+        else {
+            my @lineInfo = split( /\s*=\s*/, $line, 2 );
+            if ( $lineInfo[0] =~ /\.db_name$/ ) {
+                $refDbName = $lineInfo[1];
+            }
+            elsif ( $lineInfo[0] =~ /\.db_unique_name$/ ) {
+                $refDbUniqName = $lineInfo[1];
+            }
+            $pfileContent = $$pfileContent . $line;
+        }
+    }
+
+    my @instancesConf   = ();
+    my @oldDBInstances  = sort( keys(%$perDbConfMap) );
+    my @destDbInstances = sort(@$dbInstances);
+    my $insCount        = scalar(@destDbInstances);
+    for ( my $i = 0 ; $i < $insCount ; $i++ ) {
+        my $oldInsName = $oldDBInstances[$i];
+        my $newInsName = $destDbInstances[$i];
+
+        my $insConf = $perDbConfMap->{$oldInsName};
+        foreach my $line ( keys(%$insConf) ) {
+            $line =~ s/^$oldInsName/$newInsName/;
+            push( @instancesConf, $line );
+        }
+    }
+    $pfileContent = join( "\n", @instancesConf ) . "\n" . $pfileContent;
+
+    if ( not defined($dbUniqName) ) {
+        $dbUniqName = $refDbUniqName;
+    }
+
+    my $ucDbUniqName    = uc($dbUniqName);
+    my $ucRefDbUniqName = uc($refDbUniqName);
+    if ( defined($refDbUniqName) and $dbUniqName ne $refDbUniqName ) {
+        $pfileContent =~ s/$refDbUniqName/$dbUniqName/g;
+        $pfileContent =~ s/$ucRefDbUniqName/$ucDbUniqName/g;
+    }
+
+    my $pfileInfo = {
+        content    => $pfileContent,
+        dbName     => $refDbName,
+        dbUniqName => $dbUniqName
+    };
+
+    return $pfileInfo;
+}
+
+sub convertDir {
+    my ( $dir, $dirConvMap ) = @_;
+    while ( my ( $oldDir, $newDir ) = each(%$dirConvMap) ) {
+        $dir =~ s/$oldDir/$newDir/;
+    }
+
+    return $dir;
+}
+
+sub getPfileConfDirs {
+    my ( $pfileContent, $dirConvMap ) = @_;
+
+    my $controlFiles    = '';
+    my $controlFileDirs = '';
+    my $logArchDestDir;
+    my $otherDirs  = '';
+    my $dirConfMap = {};
+
+    foreach my $line ( split( /\n/, $pfileContent ) ) {
+        if ( $line =~ /^\s*#/ ) {
+            next;
+        }
+        $line =~ s/#.*$//;
+
+        my @lineInfo = split( /\s*=\s*/, $line, 2 );
+        if ( $lineInfo[0] =~ /\.control_files$/ ) {
+            my $controlFilesConf = $lineInfo[1];
+            $controlFilesConf =~ s/^\s*|\s*$//g;
+            foreach my $controlFile ( split( /\s*,\s*/, $controlFilesConf ) ) {
+                $controlFile =~ s/^['"]|['"]$//g;
+                if ( defined($dirConfMap) ) {
+                    $controlFile = convertDir( $controlFile, $dirConfMap );
+                }
+
+                $controlFiles    = $controlFiles . $controlFile . "\n";
+                $controlFileDirs = $controlFileDirs . dirname($controlFile) . "\n";
+            }
+            $controlFiles    =~ s/\s*$//;
+            $controlFileDirs =~ s/\s*$//;
+
+            $dirConfMap->{ $lineInfo[0] } = $controlFiles;
+        }
+        elsif ( $lineInfo[0] =~ /\.log_archive_dest_\d+$/ ) {
+            my $logArchDestDef = $lineInfo[1];
+            if ( $logArchDestDef =~ /LOCATION=(.*?)\s+\w+=/ ) {
+                $logArchDestDir = $1;
+            }
+            elsif ( $logArchDestDef =~ /LOCATION=(.*?)\s*'$/ ) {
+                $logArchDestDir = $1;
+            }
+
+            if ( defined($dirConfMap) ) {
+                $logArchDestDir = convertDir( $logArchDestDir, $dirConfMap );
+            }
+
+            $dirConfMap->{ $lineInfo[0] } = $logArchDestDir;
+        }
+        elsif ( $lineInfo[1] =~ /^'\// or $lineInfo[1] =~ /^'\+\w+/ ) {
+            my $dirConfVal = '';
+            my $filesConf  = $lineInfo[1];
+            $filesConf =~ s/^\s*|\s*$//g;
+            foreach my $file ( split( /\s*,\s*/, $filesConf ) ) {
+                $file =~ s/^['"]|['"]$//g;
+
+                if ( defined($dirConfMap) ) {
+                    $file = convertDir( $file, $dirConfMap );
+                }
+
+                $dirConfVal = $dirConfVal . $file . "\n";
+            }
+            $otherDirs  =~ $otherDirs . $dirConfVal;
+            $dirConfVal =~ s/\s*$//;
+            $dirConfMap->{ $lineInfo[0] } = $dirConfVal;
+        }
+    }
+    $otherDirs =~ s/\s*$//;
+
+    my $pfileDirsInfo = {
+        controlFiles    => $controlFiles,
+        controlFileDirs => $controlFileDirs,
+        logArchDestDir  => $logArchDestDir,
+        otherDirs       => $otherDirs,
+        dirConfMap      => $dirConfMap
+    };
+
+    return $pfileDirsInfo;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            pfileref=s
+            DB_UNIQUE_NAME=s
+            mempercent=s
+            dbintances=s
+            dirconvmap=s
+        }
+    );
+
+    my $hasOptErr      = 0;
+    my $pfileReference = $opts->{pfileref};
+    my $dbUniqName     = $opts->{DB_UNIQUE_NAME};    #生成目标DB的唯一名
+    my $dirConvMapTxt  = $opts->{dirconvmap};
+    my $dbInstancesTxt = $opts->{dbinstances};       #生成目标的实例名列表
+    my $memPercent     = $opts->{mempercent};        #生成目标的实例的内存参数跟模版DB的百分比比例
+
+    if ( not defined($dbUniqName) or $dbUniqName eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined DB_UNIQUE_NAME by option --DB_UNIQUE_NAME.\n");
+    }
+
+    if ( not defined($dbInstancesTxt) or $dbInstancesTxt eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined DB instances by option --dbintances.\n");
+    }
+
+    if ( not defined($pfileReference) or $pfileReference eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined pfile reference by option --pfileref.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    if ( not defined($memPercent) ) {
+        $memPercent = 100;
+    }
+    else {
+        $memPercent = int($memPercent);
+    }
+
+    $dbInstancesTxt =~ s/^\s*|\s*$//g;
+    $dbInstancesTxt =~ s/\\n/\n/g;
+    my @dbInstances = ();
+    foreach my $insName ( split( /\n/, $dbInstancesTxt ) ) {
+        $insName =~ s/^\s*//;
+        $insName =~ s/\s.*$//;
+        push( @dbInstances, $insName );
+    }
+
+    $pfileReference =~ s/^\s*|\s*$//g;
+    $pfileReference =~ s/\\n/\n/g;
+
+    my $dirConvMap = {};
+    if ( defined($dirConvMapTxt) and $dirConvMapTxt ne '' ) {
+        $dirConvMapTxt =~ s/^\s*|\s*$//g;
+        $dirConvMapTxt =~ s/\\n/\n/g;
+        foreach my $line ( split( /\n/, $dirConvMapTxt ) ) {
+            $line =~ s/^\s*|\s*$//g;
+            my @dirMap = split( /\s*,\s*/, $line );
+            if ( scalar(@dirMap) == 2 ) {
+                $dirConvMap->{ $dirMap[0] } = $dirMap[1];
+            }
+            else {
+                print("ERROR: Malform directory mapping config line:$line, Example: /xx/yy,/xx1/yy1");
+                $hasError = 1;
+            }
+        }
+    }
+
+    my $pfileInfo     = convertPfileRef( $pfileReference, $dbUniqName, $memPercent, \@dbInstances );
+    my $pfileDirsInfo = getPfileConfDirs( $pfileInfo->{content}, $dirConvMap );
+
+    my $out = {
+        pfile           => $pfileInfo->{content},
+        dbName          => $pfileInfo->{dbName},
+        controlFiles    => $pfileDirsInfo->{controlFiles},
+        controlFileDirs => $pfileDirsInfo->{controlFileDirs},
+        logArchDestDir  => $pfileDirsInfo->{logArchDestDir},
+        otherDirs       => $pfileDirsInfo->{otherDirs},
+        dirConfMap      => $pfileDirsInfo->{dirConfMap}
+    };
+
+    AutoExecUtils::saveOutput($out);
+
+    if ( $hasError == 0 ) {
+        print("FINE: Generate dumplacted db pfile success.\n");
+    }
+
+    return $hasError;
+}
+
+exit( main() );
