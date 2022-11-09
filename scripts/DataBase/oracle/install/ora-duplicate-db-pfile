@@ -6,7 +6,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
-use SqlplusExec;
+use File::Basename;
 use AutoExecUtils;
 
 # mydb1.__data_transfer_cache_size=0
@@ -52,8 +52,7 @@ use AutoExecUtils;
 # *.audit_trail='db'
 # *.cluster_database=true
 # *.compatible='19.0.0'
-# *.control_files='+DATA/MYDB_PRIMARY/CONTROLFILE/current.261.1119292377','+ARCH/MYDB_PRIMARY/CONTROLFILE/current.256.11192923
-# 77'
+# *.control_files='+DATA/MYDB_PRIMARY/CONTROLFILE/current.261.1119292377','+ARCH/MYDB_PRIMARY/CONTROLFILE/current.256.1119292377'
 # *.db_block_size=8192
 # *.db_create_file_dest='+DATA'
 # *.db_name='mydb'
@@ -89,7 +88,7 @@ sub usage {
 }
 
 sub convertPfileRef {
-    my ( $pfileReference, $dbUniqName, $memPercent, $dbInstances ) = @_;
+    my ( $pfileReference, $dbUniqName, $memPercent, $dbInstances, $dirConvMap ) = @_;
 
     my $pfileContent  = '';
     my $perDbConfMap  = {};
@@ -98,8 +97,12 @@ sub convertPfileRef {
     my $refDbUniqName;
     foreach my $line (@pfileRefArray) {
         $line =~ s/^\s*|\s*$//g;
-        if ( $line =~ /^#/ ) {
+        if ( $line =~ /^#/ or $line =~ /_oracle_base\s*=/ ) {
             next;
+        }
+
+        if ( defined($dirConvMap) ) {
+            $line = convertDir( $line, $dirConvMap );
         }
 
         if ( $memPercent != 100 ) {
@@ -109,7 +112,7 @@ sub convertPfileRef {
             {
                 my $val    = $1;
                 my $newVal = $val;
-                $newVal = int( $val * $memPercent * 100 );
+                $newVal = int( $val * $memPercent / 100 );
                 $line =~ s/$val/$newVal/;
             }
         }
@@ -127,11 +130,13 @@ sub convertPfileRef {
             my @lineInfo = split( /\s*=\s*/, $line, 2 );
             if ( $lineInfo[0] =~ /\.db_name$/ ) {
                 $refDbName = $lineInfo[1];
+                $refDbName =~ s/^\s*['"]|['"]\s*$//g;
             }
             elsif ( $lineInfo[0] =~ /\.db_unique_name$/ ) {
                 $refDbUniqName = $lineInfo[1];
+                $refDbUniqName =~ s/^\s*['"]|['"]\s*$//g;
             }
-            $pfileContent = $$pfileContent . $line;
+            $pfileContent = $pfileContent . $line . "\n";
         }
     }
 
@@ -174,7 +179,7 @@ sub convertPfileRef {
 sub convertDir {
     my ( $dir, $dirConvMap ) = @_;
     while ( my ( $oldDir, $newDir ) = each(%$dirConvMap) ) {
-        $dir =~ s/$oldDir/$newDir/;
+        $dir =~ s/\Q$oldDir\E/$newDir/e;
     }
 
     return $dir;
@@ -200,11 +205,7 @@ sub getPfileConfDirs {
             my $controlFilesConf = $lineInfo[1];
             $controlFilesConf =~ s/^\s*|\s*$//g;
             foreach my $controlFile ( split( /\s*,\s*/, $controlFilesConf ) ) {
-                $controlFile =~ s/^['"]|['"]$//g;
-                if ( defined($dirConfMap) ) {
-                    $controlFile = convertDir( $controlFile, $dirConfMap );
-                }
-
+                $controlFile =~ s/^\s*['"]|['"]\s*$//g;
                 $controlFiles    = $controlFiles . $controlFile . "\n";
                 $controlFileDirs = $controlFileDirs . dirname($controlFile) . "\n";
             }
@@ -221,11 +222,6 @@ sub getPfileConfDirs {
             elsif ( $logArchDestDef =~ /LOCATION=(.*?)\s*'$/ ) {
                 $logArchDestDir = $1;
             }
-
-            if ( defined($dirConfMap) ) {
-                $logArchDestDir = convertDir( $logArchDestDir, $dirConfMap );
-            }
-
             $dirConfMap->{ $lineInfo[0] } = $logArchDestDir;
         }
         elsif ( $lineInfo[1] =~ /^'\// or $lineInfo[1] =~ /^'\+\w+/ ) {
@@ -233,15 +229,10 @@ sub getPfileConfDirs {
             my $filesConf  = $lineInfo[1];
             $filesConf =~ s/^\s*|\s*$//g;
             foreach my $file ( split( /\s*,\s*/, $filesConf ) ) {
-                $file =~ s/^['"]|['"]$//g;
-
-                if ( defined($dirConfMap) ) {
-                    $file = convertDir( $file, $dirConfMap );
-                }
-
+                $file =~ s/^\s*['"]|['"]\s*$//g;
                 $dirConfVal = $dirConfVal . $file . "\n";
             }
-            $otherDirs  =~ $otherDirs . $dirConfVal;
+            $otherDirs = $otherDirs . $dirConfVal;
             $dirConfVal =~ s/\s*$//;
             $dirConfMap->{ $lineInfo[0] } = $dirConfVal;
         }
@@ -266,7 +257,7 @@ sub main {
             pfileref=s
             DB_UNIQUE_NAME=s
             mempercent=s
-            dbintances=s
+            dbinstances=s
             dirconvmap=s
         }
     );
@@ -285,7 +276,7 @@ sub main {
 
     if ( not defined($dbInstancesTxt) or $dbInstancesTxt eq '' ) {
         $hasOptErr = 1;
-        print("ERROR: Must defined DB instances by option --dbintances.\n");
+        print("ERROR: Must defined DB instances by option --dbinstances.\n");
     }
 
     if ( not defined($pfileReference) or $pfileReference eq '' ) {
@@ -334,8 +325,8 @@ sub main {
         }
     }
 
-    my $pfileInfo     = convertPfileRef( $pfileReference, $dbUniqName, $memPercent, \@dbInstances );
-    my $pfileDirsInfo = getPfileConfDirs( $pfileInfo->{content}, $dirConvMap );
+    my $pfileInfo     = convertPfileRef( $pfileReference, $dbUniqName, $memPercent, \@dbInstances, $dirConvMap );
+    my $pfileDirsInfo = getPfileConfDirs( $pfileInfo->{content} );
 
     my $out = {
         pfile           => $pfileInfo->{content},

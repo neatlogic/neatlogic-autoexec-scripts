@@ -6,6 +6,7 @@
 
 import os
 import sys
+import os.path
 import fcntl
 import socket
 import json
@@ -25,6 +26,8 @@ class Context:
         self.tenant = tenent
         self.config = config
         self.jobId = os.getenv('AUTOEXEC_JOBID')
+        self.fileFeteched = {}
+        self.scriptFetched = {}
 
 
 def setEnv():
@@ -51,7 +54,7 @@ def getAutoexecContext():
         passKey = config['server']['password.key']
         autoexecDBPass = config['autoexec']['db.password']
 
-        MY_KEY = 't6AbbuAlA4lCZBGco6K8o78eLbYeeXsS'
+        MY_KEY = 'c3H002LGZRrseEPck9tsNgfXHJcl0USJ'
         if passKey.startswith('{ENCRYPTED}'):
             passKey = _rc4_decrypt_hex(MY_KEY, passKey[11:])
             config['server']['password.key'] = passKey
@@ -70,19 +73,32 @@ def getAutoexecContext():
 
 def saveOutput(outputData):
     outputPath = os.getenv('OUTPUT_PATH')
-    print("INFO: Try save output to {}.\n".format(outputPath))
+    print("INFO: Try save output to {}.\n".format(outputPath), end='')
     if outputPath is not None and outputPath != '':
         outputDir = os.path.dirname(outputPath)
-        if not os.path.exists(outputDir):
-            outputPDir = os.path.dirname(outputDir)
-            if not os.path.exists(outputPDir):
-                os.mkdir(outputPDir)
-            os.mkdir(outputDir)
+        if not outputDir == '' and not os.path.exists(outputDir):
+            os.makedirs(outputDir)
         outputFile = open(outputPath, 'w')
-        outputFile.write(json.dumps(outputData, ensure_ascii=False))
+        outputFile.write(json.dumps(outputData, indent=4, ensure_ascii=False))
         outputFile.close()
+        print("INFO: Save output success.\n", end='')
     else:
-        print("WARN: Could not save output file, because of environ OUTPUT_PATH not defined.\n")
+        print("WARN: Could not save output file, because of environ OUTPUT_PATH not defined.\n", end='')
+
+
+def saveLiveData(outputData):
+    outputPath = os.getenv('LIVEDATA_PATH')
+    print("INFO: Try save output to {}.\n".format(outputPath), end='')
+    if outputPath is not None and outputPath != '':
+        outputDir = os.path.dirname(outputPath)
+        if not outputDir == '' and not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+        outputFile = open(outputPath, 'w')
+        outputFile.write(json.dumps(outputData, indent=4, ensure_ascii=False))
+        outputFile.close()
+        print("INFO: Save output success.\n", end='')
+    else:
+        print("WARN: Could not save output file, because of environ OUTPUT_PATH not defined.\n", end='')
 
 
 def getOutput(output_path):
@@ -151,7 +167,7 @@ def getNode(resourceId):
             if not line:
                 break
             node = json.loads(line)
-            if node['resourceId'] == resourceId:
+            if node.get('resourceId') == resourceId:
                 matchNode = node
 
     return matchNode
@@ -165,7 +181,7 @@ def loadNodeOutput():
         outputFile = None
         try:
             outputFile = open(outputPath, 'r')
-            fcntl.lockf(outputFile, fcntl.LOCK_SH)
+            fcntl.flock(outputFile, fcntl.LOCK_SH)
             content = outputFile.read()
             if content:
                 output = json.loads(content)
@@ -173,7 +189,7 @@ def loadNodeOutput():
             print('ERROR: Load output file:{}, failed {}\n'.format(outputPath, ex))
         finally:
             if outputFile is not None:
-                fcntl.lockf(outputFile, fcntl.LOCK_UN)
+                fcntl.flock(outputFile, fcntl.LOCK_UN)
                 outputFile.close()
     else:
         print('WARN: Output file:{} not found.\n'.format(outputPath))
@@ -181,8 +197,21 @@ def loadNodeOutput():
     return output
 
 
+def getOutput(varKey):
+    lastDotPos = varKey.rindex('.')
+    varName = varKey[lastDotPos+1:]
+    pluginId = varKey[0:lastDotPos]
+    output = loadNodeOutput()
+    pluginOut = output.get(pluginId)
+
+    val = None
+    if pluginOut is not None:
+        val = pluginOut.get(varName)
+    return val
+
+
 def informNodeWaitInput(resourceId, title=None, opType='button', message='Please select', options=None, role=None, pipeFile=None):
-    sockPath = os.getenv('AUTOEXEC_WORK_PATH') + '/job.sock'
+    sockPath = os.getenv('AUTOEXEC_JOB_SOCK')
     phaseName = os.getenv('AUTOEXEC_PHASE_NAME')
     if os.path.exists(sockPath):
         try:
@@ -215,21 +244,93 @@ def informNodeWaitInput(resourceId, title=None, opType='button', message='Please
     return
 
 
-def getNodes():
+def setJobEnv(onlyInProcess, items):
+    if not items:
+        return
+
+    sockPath = os.getenv('AUTOEXEC_JOB_SOCK')
+    if os.path.exists(sockPath):
+        try:
+            client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+            client.connect(sockPath)
+            request = {}
+            request['action'] = 'setEnv'
+            request['onlyInProcess'] = onlyInProcess
+            request['items'] = items
+
+            client.send(json.dumps(request))
+            client.close()
+        except Exception as ex:
+            raise Exception('ERROR: Set job env failed, {}.\n'.format(str(ex)))
+    return
+
+
+def getNodes(phaseName=None, groupNo=None):
     nodesMap = {}
 
-    if 'AUTOEXEC_NODES_PATH' in os.environ:
-        nodesJsonPath = os.environ['AUTOEXEC_NODES_PATH']
-        fh = open(nodesJsonPath, 'r')
+    nodesJsonPath = os.getenv('AUTOEXEC_NODES_PATH')
 
-        while True:
+    if nodesJsonPath is not None:
+        found = False
+        nodesJsonDir = os.path.dirname(nodesJsonPath)
+        if phaseName is not None:
+            nodesJsonPath = '{}/nodes-ph-{}.json'.format(nodesJsonDir, phaseName)
+            if os.path.exists(nodesJsonPath):
+                found = True
+
+        if not found and groupNo is not None:
+            nodesJsonPath = '{}/nodes-gp-{}.json'.format(nodesJsonDir, groupNo)
+            if os.path.exists(nodesJsonPath):
+                found = True
+
+        if not found:
+            nodesJsonPath = '{}/nodes.json'.format(nodesJsonDir)
+
+        with open(nodesJsonPath, 'r') as fh:
             line = fh.readline()
-            if not line:
-                break
-            node = json.loads(line)
-            nodesMap[node['resourceId']] = node
-
+            while True:
+                line = fh.readline()
+                if not line:
+                    break
+                node = json.loads(line)
+                del node['password']
+                nodesMap[node['resourceId']] = node
+            fh.close()
     return nodesMap
+
+
+def getNodesArray(phaseName=None, groupNo=None):
+    nodesArray = []
+
+    nodesJsonPath = os.getenv('AUTOEXEC_NODES_PATH')
+
+    if nodesJsonPath is not None:
+        found = False
+        nodesJsonDir = os.path.dirname(nodesJsonPath)
+        if phaseName is not None:
+            nodesJsonPath = '{}/nodes-ph-{}.json'.format(nodesJsonDir, phaseName)
+            if os.path.exists(nodesJsonPath):
+                found = True
+
+        if not found and groupNo is not None:
+            nodesJsonPath = '{}/nodes-gp-{}.json'.format(nodesJsonDir, groupNo)
+            if os.path.exists(nodesJsonPath):
+                found = True
+
+        if not found:
+            nodesJsonPath = '{}/nodes.json'.format(nodesJsonDir)
+
+        with open(nodesJsonPath, 'r') as fh:
+            line = fh.readline()
+            while True:
+                line = fh.readline()
+                if not line:
+                    break
+                node = json.loads(line)
+                del node['password']
+                nodesArray.append(node)
+            fh.close()
+    return nodesArray
 
 
 def isJson(data):
@@ -252,6 +353,19 @@ def handleJsonstr(jsonstr):
     # None数据
     jsonstr = jsonstr.replace('None', '""')
     return jsonstr
+
+
+def getNodePwd(resourceId, host, port, username, protocol):
+    context = getAutoexecContext()
+    config = context.config
+    passKey = config['server']['password.key']
+    serverAdapter = ServerAdapter.ServerAdapter(context)
+    pwdEncrypted = serverAdapter.getNodePwd(resourceId, host, port, username, protocol)
+    if pwdEncrypted.startswith('{ENCRYPTED}'):
+        nodePwd = _rc4_decrypt_hex(passKey, pwdEncrypted[11:])
+    elif pwdEncrypted.startswith('{RC4}'):
+        nodePwd = _rc4_decrypt_hex(passKey, pwdEncrypted[5:])
+    return nodePwd
 
 
 # def getInspectConf(ciType, resourceId):
@@ -288,3 +402,27 @@ def getScript(scriptId):
     context = getAutoexecContext()
     serverAdapter = ServerAdapter.ServerAdapter(context)
     return serverAdapter.getScript(scriptId)
+
+
+def getCITxtFilePathList(resoruceId):
+    context = getAutoexecContext()
+    serverAdapter = ServerAdapter.ServerAdapter(context)
+    return serverAdapter.getCITxtFilePathList(resoruceId)
+
+
+def uploadFile(filePath, fileType):
+    context = getAutoexecContext()
+    serverAdapter = ServerAdapter.ServerAdapter(context)
+    return serverAdapter.uploadFile(filePath, fileType)
+
+
+def removeUploadedFile(fileId):
+    context = getAutoexecContext()
+    serverAdapter = ServerAdapter.ServerAdapter(context)
+    return serverAdapter.removeUploadedFile(fileId)
+
+
+def txtFileInspectSave(params):
+    context = getAutoexecContext()
+    serverAdapter = ServerAdapter.ServerAdapter(context)
+    return serverAdapter.txtFileInspectSave(params)
