@@ -21,7 +21,7 @@
             "help": "GRID安装的目录",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -30,7 +30,7 @@
             "help": "当前操作库的db unique name",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -78,6 +78,14 @@
         }
     ],
     "output": [
+        {
+            "opt": "pFileContent",
+            "name": "当前库pfile内容",
+            "help": "用于作为拷贝目标库的参数配置模版",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
         {
             "opt": "pfileAlterSql",
             "name": "DG设置的pfile参数的SQL",

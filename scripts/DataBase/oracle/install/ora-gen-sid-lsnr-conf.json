@@ -5,8 +5,7 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "生成SID Listener配置文本(同时支持RAC和非RAC), 每个节点SID都不一样, 都要执行",
-    "option": [
-        {
+    "option": [{
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "GRID安装用户",
@@ -30,7 +29,7 @@
             "help": "GRID安装的目录",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         },
         {
@@ -52,8 +51,7 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "lsnrOraConfPath",
             "name": "listener.ora路径",
             "help": "文件listener.ora的路径, RAC使用的是GRID_HOME下的, 非RAC是ORACLE_HOME下的",

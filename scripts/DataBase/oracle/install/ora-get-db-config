@@ -1,0 +1,549 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Socket;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --GRID_USER <GRID_USER> --ORACLE_USER <ORACLE_USER> --DB_UNIQUE_NAME <DB_UNIQUE_NAME>\n");
+    exit(1);
+}
+
+sub getCrsHome {
+    my ( $osUser, $ORACLE_HOME ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $gridHome = '';
+    my $cmdFile  = "$ORACLE_HOME/srvm/admin/getcrshome";
+    if ( -e $cmdFile ) {
+        $gridHome = `su - '$osUser' -c '$cmdFile'`;
+        if ( $? == 0 ) {
+            $gridHome =~ s/^\s*|\s*$//g;
+        }
+    }
+
+    return $gridHome;
+}
+
+sub getConfig {
+    my ( $osUser, $sid ) = @_;
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+    my $rows;
+
+    #SELECT SEQUENCE# FROM V$THREAD where THREAD#='1'
+    $rows = $sqlplus->query(
+        sql     => q{SELECT SEQUENCE# as SEQUENCE FROM V$THREAD where THREAD#='1'},
+        verbose => 1
+    );
+    my $SEQUENCE;
+    if ( defined($rows) ) {
+        $SEQUENCE = $$rows[0]->{SEQUENCE};
+    }
+
+    #SELECT COUNT(1) AS TEMP_FILES_COUNT FROM DBA_TEMP_FILES;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT COUNT(1) AS TEMP_FILES_COUNT FROM DBA_TEMP_FILES},
+        verbose => 1
+    );
+    my $TEMP_FILES_COUNT;
+    if ( defined($rows) ) {
+        $TEMP_FILES_COUNT = $$rows[0]->{TEMP_FILES_COUNT};
+    }
+
+    return ( $SEQUENCE, $TEMP_FILES_COUNT );
+}
+
+sub getDBNameInfo {
+    my ( $osUser, $sid ) = @_;
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+    my $rows;
+
+    #SHOW PARAMETER NAME
+    $rows = $sqlplus->query(
+        sql     => q{SHOW PARAMETER NAME},
+        verbose => 1
+    );
+    my $dbInfo = {};
+    foreach my $row (@$rows) {
+        $dbInfo->{ $row->{NAME} } = $row->{VALUE};
+    }
+    return $dbInfo;
+}
+
+sub getDBInstances {
+    my ( $osUser, $dbUniqueName, $localNodeName ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    # [oracle@myrac1 ~]$ srvctl status database -d mydb_primary
+    # Instance mydb1 is not running on node myrac1
+    # Instance mydb2 is not running on node myrac2
+    # Instance mydb3 is not running on node myrac3
+    my $dbStatusTxt = `su - '$osUser' -c "$envLine srvctl status database -d $dbUniqueName"`;
+
+    my $localInsName;
+    my $instances = {};
+    foreach my $line ( split( /\n/, $dbStatusTxt ) ) {
+        if ( $line =~ /Instance\s+(\w+).*?\snode\s+(\w+)/ ) {
+            my $insName  = $1;
+            my $nodeName = $2;
+            $instances->{$insName} = { hostName => $nodeName };
+            if ( $nodeName eq $localNodeName ) {
+                $localInsName = $insName;
+            }
+        }
+    }
+
+    return ( $localInsName, $instances );
+}
+
+sub getRacDBInfo {
+    my ( $osUser, $dbUniqueName ) = @_;
+    my $racInfo = {};
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    if ( not defined($dbUniqueName) ) {
+        $dbUniqueName = `su - '$osUser' -c "$envLine srvctl config database"`;
+        $dbUniqueName =~ s/^\s*|\s*$//g;
+    }
+
+    #srvctl config database -d mydb_primary
+    # [oracle@myrac1 ~]$ srvctl config database -d mydb_primary
+    # Database unique name: mydb_primary
+    # Database name: mydb
+    # Oracle home: /db/oracle/app/oracle/product/19.3.0/db
+    # Oracle user: oracle
+    # Spfile: +DATA/MYDB_PRIMARY/PARAMETERFILE/spfile.275.1119294627
+    # Password file: +DATA/MYDB_PRIMARY/PASSWORD/pwdmydb_primary.256.1119292157
+    # Domain:
+    # Start options: open
+    # Stop options: immediate
+    # Database role: PRIMARY
+    # Management policy: AUTOMATIC
+    # Server pools:
+    # Disk Groups: ARCH,DATA
+    # Mount point paths:
+    # Services:
+    # Type: RAC
+    # Start concurrency:
+    # Stop concurrency:
+    # OSDBA group: dba
+    # OSOPER group: oper
+    # Database instances: mydb1,mydb2,mydb3
+    # Configured nodes: myrac1,myrac2,myrac3
+    # CSS critical: no
+    # CPU count: 0
+    # Memory target: 0
+    # Maximum memory: 0
+    # Default network number for database services:
+    # Database is administrator managed
+    my $dbConf    = {};
+    my $dbConfTxt = `su - '$osUser' -c "$envLine srvctl config database -d $dbUniqueName"`;
+    foreach my $dbConfLine ( split( /\n/, $dbConfTxt ) ) {
+        if ( $dbConfLine =~ /^\s*([^:]+):\s*(.*?)$/ ) {
+            $dbConf->{$1} = $2;
+        }
+        elsif ( $dbConfLine =~ /policy managed/ ) {
+            $dbConf->{'Policy Managed'} = 1;
+        }
+    }
+
+    $racInfo->{DB_UNIQUE_NAME} = $dbUniqueName;
+    $racInfo->{DB_NAME}        = $dbConf->{'Database name'};
+    $racInfo->{ORACLE_HOME}    = $dbConf->{'Oracle home'};
+    $racInfo->{SPFILE}         = $dbConf->{'Spfile'};
+    $racInfo->{PASSWORD_FILE}  = $dbConf->{'Password file'};
+    $racInfo->{DATABASE_ROLE}  = $dbConf->{'DATABASE_ROLE'};
+    $racInfo->{DISK_GROUPS}    = $dbConf->{'Disk Groups'};
+    $racInfo->{SERVER_POOLS}   = $dbConf->{'Server pools'};
+    $racInfo->{TYPE}           = $dbConf->{'Type'};
+    $racInfo->{INSTANCES}      = $dbConf->{'Database instances'};
+    $racInfo->{NODES}          = $dbConf->{'Configured nodes'};
+
+    return $racInfo;
+}
+
+sub getCrsInfo {
+    my ($osUser) = @_;
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $crsInfo = {};
+
+    #cemutlo -n
+    my $crsName = `su - '$osUser' -c "$envLine cemutlo -n"`;
+    $crsName =~ s/^\s*|\s*$//g;
+    $crsInfo->{NAME} = $crsName;
+
+    my $localNodeName = `su - '$osUser' -c '$envLine olsnodes -l'`;
+    $localNodeName =~ s/^\s*|\s*$//g;
+    $crsInfo->{LOCAL_NODE_NAME} = $localNodeName;
+
+    my $nodeNames = `su - '$osUser' -c '$envLine olsnodes'`;
+    $nodeNames =~ s/^\s*|\s*$//g;
+    $crsInfo->{ALL_NODE_NAMES} = $nodeNames;
+
+    my $nodesVip = {};
+    foreach my $nodeName ( split( /\n/, $nodeNames ) ) {
+
+        #srvctl status vip -n myrac1
+        # [oracle@myrac1 ~]$ srvctl status vip -n myrac1
+        # VIP 192.168.0.112 is enabled
+        # VIP 192.168.0.112 is running on node: myrac1
+        my $nodeVipTxt = `su - '$osUser' -c '$envLine srvctl status vip -n $nodeName'`;
+        if ( $nodeVipTxt =~ /([\d\.]{7,15})/ ) {
+            $nodesVip->{$nodeName} = $1;
+        }
+    }
+    $crsInfo->{NODES_VIP} = $nodesVip;
+
+    return $crsInfo;
+}
+
+sub getUserEnv {
+    my ( $GRID_USER, $ORACLE_USER ) = @_;
+
+    my $env        = {};
+    my $gridEnvTxt = `su - '$GRID_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $gridEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+
+            if ( $name eq 'ORACLE_HOME' ) {
+                $env->{GRID_HOME} = $val;
+                my $oraInstFh = IO::File->new("<$val/oraInst.loc");
+                if ( defined($oraInstFh) ) {
+                    while ( my $line = $oraInstFh->getline() ) {
+
+                        #inventory_loc=/db/oracle/app/oraInventory
+                        if ( $line =~ /inventory_loc=\s*(.*?)\s*$/ ) {
+                            $env->{INVENTORY_DIR} = $1;
+                        }
+                    }
+                    $oraInstFh->close();
+                }
+            }
+            elsif ( $name eq 'ORACLE_BASE' ) {
+                $env->{GRID_BASE} = $val;
+            }
+        }
+    }
+
+    my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+
+            if ( $name eq 'ORACLE_HOME' ) {
+                $env->{ORACLE_HOME} = $val;
+            }
+            elsif ( $name eq 'ORACLE_BASE' ) {
+                $env->{ORACLE_BASE} = $val;
+            }
+        }
+    }
+
+    return $env;
+}
+
+sub getScanInfo {
+    my ($osUser) = @_;
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    # [oracle@myrac1 ~]$ srvctl config scan
+    # SCAN name: myrac-scan, Network: 1
+    # Subnet IPv4: 192.168.0.0/255.255.254.0/ens192, static
+    # Subnet IPv6:
+    # SCAN 1 IPv4 VIP: 192.168.0.110
+    # SCAN VIP is enabled.
+    my @scanVips   = ();
+    my $scanVipTxt = `su - '$osUser' -c "$envLine srvctl config scan"`;
+
+    #print("DEBUG:$scanVipTxt");
+    while ( $scanVipTxt =~ /VIP:\s*([\d\.]{7,15})/isg ) {
+        push( @scanVips, $1 );
+    }
+
+    return \@scanVips;
+}
+
+sub getLsnrAddrs {
+    my ($osUser) = @_;
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    # [oracle@myrac1 ~]$ lsnrctl status|grep DESCRIPTION
+    # (DESCRIPTION=(ADDRESS=(PROTOCOL=ipc)(KEY=LISTENER)))
+    # (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=192.168.0.111)(PORT=1521)))
+    # (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=192.168.0.112)(PORT=1521)))
+    # [oracle@myrac1 ~]$
+
+    my @addrs      = ();
+    my $scanVipTxt = `su - '$osUser' -c "$envLine lsnrctl status LISTENER"`;
+
+    while ( $scanVipTxt =~ /\(HOST\s*=\s*([^\)]+)\s*\).?\(PORT\s*=\s*(\d+)\)/isg ) {
+        my $host = $1;
+        my $port = $2;
+        if ( $scanVipTxt =~ /DESCRIPTION/ ) {
+            if ( $host !~ /^[\d\.]+$/ ) {
+                my $packedIp = gethostbyname($host);
+                if ( defined($packedIp) ) {
+                    $host = inet_ntoa($packedIp);
+                }
+                else {
+                    print("WARN: Can not determine hsot:$host ip.\n");
+                    next;
+                }
+            }
+            push( @addrs, { host => $host, port => $port } );
+        }
+    }
+
+    my @sortedAddrs = sort { $a->{host} . ':' . $a->{port} <=> $b->{host} . ':' . $b->{port} } (@addrs);
+    return \@sortedAddrs;
+}
+
+sub getNodesIpInfo {
+    my ( $localNodeName, $nodeNames ) = @_;
+
+    my $nodesIpInfo = {};
+
+    my $gridNodeIpTxt      = '';
+    my $gridNodeIpInfo     = {};
+    my @allGridNodesInfo   = ();
+    my @otherGridNodesInfo = ();
+    my @thisNodesInfo      = ();
+
+    my @nodeNamesArray = sort ( split( "\n", $nodeNames ) );
+    my $otherNodeNames = '';
+    foreach my $gridNode (@nodeNamesArray) {
+        my $ipAddr;
+        my $packedIp = gethostbyname($gridNode);
+        if ( defined($packedIp) ) {
+            $ipAddr        = inet_ntoa($packedIp);
+            $gridNodeIpTxt = $gridNodeIpTxt . $gridNode . " " . $ipAddr . "\n";
+            push( @allGridNodesInfo, { 'ip' => $ipAddr } );
+            $gridNodeIpInfo->{$gridNode} = $ipAddr;
+        }
+        else {
+            print("WARN: Can not determine ip for node:$gridNode.\n");
+            next;
+        }
+        $gridNode =~ s/^\s*|\s*$//g;
+        if ( $gridNode eq $localNodeName ) {
+            push( @thisNodesInfo, { 'ip' => $ipAddr } );
+        }
+        else {
+            $otherNodeNames = $otherNodeNames . $gridNode . "\n";
+            push( @otherGridNodesInfo, { 'ip' => $ipAddr } );
+        }
+    }
+
+    $nodesIpInfo->{allGridNodesInfo}   = \@allGridNodesInfo;
+    $nodesIpInfo->{otherGridNodesInfo} = \@otherGridNodesInfo;
+    $nodesIpInfo->{thisNodesInfo}      = \@thisNodesInfo;
+    $nodesIpInfo->{gridNodeIpInfo}     = $gridNodeIpInfo;
+    $nodesIpInfo->{gridNodeIpTxt}      = $gridNodeIpTxt;
+
+    if ( scalar(@otherGridNodesInfo) > 0 ) {
+        $nodesIpInfo->{operNodeInfo} = [ $otherGridNodesInfo[0] ];
+    }
+
+    $otherNodeNames =~ s/^\s*|\s*$//g;
+    $nodesIpInfo->{otherNodeNames} = $otherNodeNames;
+
+    return $nodesIpInfo;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            GRID_USER=s
+            ORACLE_USER=s
+            DB_NAME=s
+            DB_UNIQUE_NAME=s
+        }
+    );
+
+    my $hasOptErr    = 0;
+    my $dbName       = $opts->{DB_NAME};
+    my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
+    my $ORACLE_USER  = $opts->{ORACLE_USER};
+    my $GRID_USER    = $opts->{GRID_USER};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($GRID_USER) or $GRID_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined GRID_USER by option --GRID_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    my $out = {};
+
+    my $userEnv = getUserEnv( $GRID_USER, $ORACLE_USER );
+    $out->{GRID_HOME}     = $userEnv->{GRID_HOME};
+    $out->{GRID_BASE}     = $userEnv->{GRID_BASE};
+    $out->{INVENTORY_DIR} = $userEnv->{INVENTORY_DIR};
+    $out->{ORACLE_HOME}   = $userEnv->{ORACLE_HOME};
+    $out->{ORACLE_BASE}   = $userEnv->{ORACLE_BASE};
+
+    my $gridHome = getCrsHome( $ORACLE_USER, $userEnv->{ORACLE_HOME} );
+
+    if ( ( defined($GRID_USER) and $GRID_USER ne $ORACLE_USER ) or ( defined($gridHome) and $gridHome ne '' ) ) {
+        my $racInfo = getRacDBInfo( $GRID_USER, $dbUniqueName );
+        my $dbName  = $racInfo->{DB_NAME};
+        $out->{dbUniqueName} = $dbUniqueName;
+        $out->{dbName}       = $dbName;
+
+        my $crsInfo       = getCrsInfo($GRID_USER);
+        my $localNodeName = $crsInfo->{LOCAL_NODE_NAME};
+        $out->{nodeName}     = $localNodeName;
+        $out->{crsName}      = $crsInfo->{NAME};
+        $out->{allNodeNames} = $crsInfo->{ALL_NODE_NAMES};
+
+        my $nodesIpInfo = getNodesIpInfo( $localNodeName, $crsInfo->{ALL_NODE_NAMES} );
+        $out->{allGridNodesInfo}   = $nodesIpInfo->{allGridNodesInfo};
+        $out->{otherGridNodesInfo} = $nodesIpInfo->{otherGridNodesInfo};
+        $out->{thisNodesInfo}      = $nodesIpInfo->{thisNodesInfo};
+        $out->{gridNodeIpInfo}     = $nodesIpInfo->{gridNodeIpInfo};
+        $out->{gridNodeIpTxt}      = $nodesIpInfo->{gridNodeIpTxt};
+        $out->{operNodeInfo}       = $nodesIpInfo->{operNodeInfo};
+        $out->{otherNodeNames}     = $nodesIpInfo->{otherNodeNames};
+
+        my $gridNodeIpInfo   = $nodesIpInfo->{gridNodeIpInfo};
+        my $nodesVipMap      = $crsInfo->{NODES_VIP};
+        my $dbInstancesIpTxt = '';
+        my ( $localInsName, $dbInstancesIpInfo ) = getDBInstances( $GRID_USER, $dbUniqueName, $localNodeName );
+        foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
+            my $insInfo  = $dbInstancesIpInfo->{$insName};
+            my $nodeName = $insInfo->{hostName};
+            $insInfo->{ip}    = $gridNodeIpInfo->{$nodeName};
+            $insInfo->{vip}   = $nodesVipMap->{$nodeName};
+            $dbInstancesIpTxt = $dbInstancesIpTxt . "\n" . "$insName $nodeName" . $insInfo->{hostname} . ' ' . $insInfo->{ip} . ' ' . $insInfo->{vip};
+        }
+        $out->{dbInstancesIpInfo} = $dbInstancesIpInfo;
+        $out->{dbInstancesIpTxt}  = $dbInstancesIpTxt;
+
+        if ( not defined($localInsName) or $localInsName eq '' ) {
+            my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
+            $oraSid =~ s/^\s*|\s*$//g;
+            $localInsName = $oraSid;
+        }
+        $out->{instanceName} = $localInsName;
+
+        my $lsnAddrs = getLsnrAddrs($GRID_USER);
+        my $port     = 1521;
+        if ( scalar(@$lsnAddrs) > 0 ) {
+            $port = $$lsnAddrs[0]->{port};
+
+            # tnstestdbdg =
+            # (DESCRIPTION =
+            #     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.43)(PORT = 1522))
+            #     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.44)(PORT = 1522))
+            #     (CONNECT_DATA =
+            #     (SERVER = DEDICATED)
+            #     (SERVICE_NAME = testdbdg)
+            #     )
+            # )
+            my $uniqDbTnsConf = "$dbUniqueName = \n";
+            $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
+            my $dbTnsConf = "$dbName = \n";
+            $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
+            foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
+                my $insInfo  = $dbInstancesIpInfo->{$insName};
+                my $nodeName = $insInfo->{hostName};
+                my $vip      = $insInfo->{vip};
+                my $ip       = $insInfo->{ip};
+                if ( defined($vip) ) {
+                    $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $vip)(PORT = $port))\n";
+                    $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $vip)(PORT = $port))\n";
+                }
+                elsif ( defined($ip) ) {
+                    $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                    $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                }
+            }
+            $uniqDbTnsConf        = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+            $dbTnsConf            = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+            $out->{uniqDbTnsConf} = $uniqDbTnsConf;
+            $out->{dbTnsConf}     = $dbTnsConf;
+
+            my $racScanTnsConf = "$dbName = \n";
+            $racScanTnsConf = $racScanTnsConf . "  (DESCRIPTION =\n";
+            my $scanVips = getScanInfo($ORACLE_USER);
+            foreach my $scanVip (@$scanVips) {
+                $racScanTnsConf = $racScanTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $scanVip)(PORT = $port))\n";
+            }
+            $racScanTnsConf = $racScanTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+            $out->{racScanTnsConf} = $racScanTnsConf;
+        }
+
+        my ( $dbSequence, $tempFilesCount ) = getConfig( $ORACLE_USER, $localInsName );
+        $out->{dbSequence}     = $dbSequence;
+        $out->{tempFilesCount} = $tempFilesCount;
+    }
+    else {
+        if ( not defined($dbUniqueName) or $dbUniqueName eq '' or not defined($dbName) or $dbName eq '' ) {
+            my $dbInfo = getDBNameInfo($ORACLE_USER);
+            if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
+                $dbUniqueName = $dbInfo->{db_unique_name};
+            }
+            if ( not defined($dbName) or $dbName eq '' ) {
+                $dbName = $dbInfo->{db_name};
+            }
+        }
+
+        my $lsnAddrs = getLsnrAddrs($ORACLE_USER);
+        my $ip       = $ENV{MGMT_IP};
+        my $port     = 1521;
+        if ( scalar(@$lsnAddrs) > 0 ) {
+            my $lsnrInfo = $$lsnAddrs[0];
+            $ip   = $lsnrInfo->{host};
+            $port = $lsnrInfo->{port};
+
+            my $uniqDbTnsConf = "$dbUniqueName = \n";
+            $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
+            $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+            $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+
+            my $dbTnsConf = "$dbName = \n";
+            $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
+            $dbTnsConf = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+            $dbTnsConf = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+
+            $out->{uniqDbTnsConf} = $uniqDbTnsConf;
+            $out->{dbTnsConf}     = $dbTnsConf;
+        }
+
+        my ( $dbSequence, $tempFilesCount ) = getConfig($ORACLE_USER);
+        $out->{dbSequence}     = $dbSequence;
+        $out->{tempFilesCount} = $tempFilesCount;
+    }
+
+    $out->{hostsConfTxt} = AutoExecUtils::getFileContent('/etc/hosts');
+    AutoExecUtils::saveOutput($out);
+
+    return 0;
+}
+
+exit( main() );
