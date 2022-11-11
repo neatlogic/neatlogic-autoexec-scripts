@@ -30,7 +30,7 @@
             "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
             "type": "text",
             "defaultValue": "",
-            "required": "true",
+            "required": "false",
             "validate": ""
         }
     ],
