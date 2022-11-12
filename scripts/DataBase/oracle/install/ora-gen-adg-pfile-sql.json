@@ -4,7 +4,7 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "生成SID Listener配置文本(同时支持RAC和非RAC)",
+    "description": "生成Pfile内容和ADG配置SQL",
     "option": [
         {
             "opt": "ORACLE_USER",

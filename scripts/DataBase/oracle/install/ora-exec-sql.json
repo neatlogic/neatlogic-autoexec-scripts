@@ -5,15 +5,6 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "连接到远程Oracle主机本地执行SQL",
-    "argument": {
-        "name": "SQL内容",
-        "type": "text",
-        "defaultValue": "",
-        "help": "SQL脚本，支持一或多条SQL语句",
-        "count": 0,
-        "validate": "",
-        "required": "false"
-    },
     "option": [
         {
             "opt": "ORACLE_USER",
@@ -29,6 +20,15 @@
             "name": "ORACLE_SID",
             "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
             "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SQL",
+            "name": "SQL内容",
+            "help": "SQL脚本，支持一或多条SQL语句",
+            "type": "textarea",
             "defaultValue": "",
             "required": "false",
             "validate": ""
