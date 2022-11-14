@@ -1,0 +1,197 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_HOME <ORACLE_HOME> \n");
+    print("--ORACLE_SID <ORACLE_SID> --DB_UNIQUE_NAME <DB_UNIQUE_NAME>\n");
+    print("--PFILE_CONTENT <PFILE_CONTENT>\n");
+    exit(1);
+}
+
+sub getUserEnv {
+    my ($ORACLE_USER) = @_;
+
+    my $env       = {};
+    my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+            $env->{$name} = $val;
+        }
+    }
+    return $env;
+}
+
+sub getCrsHome {
+    my ( $osUser, $ORACLE_HOME ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $gridHome = '';
+    my $cmdFile  = "$ORACLE_HOME/srvm/admin/getcrshome";
+    if ( -e $cmdFile ) {
+        $gridHome = `su - '$osUser' -c '$cmdFile'`;
+        if ( $? == 0 ) {
+            $gridHome =~ s/^\s*|\s*$//g;
+        }
+    }
+
+    return $gridHome;
+}
+
+sub setOraAsmPrivilege {
+    my ( $osUser, $GRID_HOME ) = @_;
+
+    #/db/oracle/app/19.3.0/grid/bin/setasmgidwrap
+    my $exitCode = system("su - '$osUser' -c '$GRID_HOME/bin/setasmgidwrap'");
+    if ( $exitCode == 0 ) {
+        print("INFO: Set asm gid for binanry oracle asm privilege success.\n");
+    }
+    else {
+        print("ERROR: Set asm gid for binanry oracle asm privilege failed.\n");
+    }
+    return $exitCode;
+}
+
+sub addClusterDatabase {
+    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName ) = @_;
+
+    my $exitCode;
+    my $addDbTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add database -d $dbUniqueName -o $ORACLE_HOME'`;
+    $exitCode = $?;
+    if ( $exitCode != 0 and $addDbTxt !~ /already exists/is ) {
+        print("ERROR: $addDbTxt\n");
+        return $exitCode;
+    }
+
+    $exitCode = system("su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add instance -d $dbUniqueName -i mydb1 -n $ORACLE_SID'");
+    return $exitCode;
+}
+
+sub startNoMountByPfile {
+    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent );
+
+    my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
+    my $fh        = IO::File->new(">$pFilePath");
+    if ( defined($fh) ) {
+        print $fh ($pFileContent);
+        $fh->close();
+    }
+    else {
+        print("ERROR: Open file:$pFilePath failed, $!.\n");
+    }
+
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $ORACLE_SID );
+
+    my $exitCode = 0;
+
+    $exitCode = $sqlplus->do(
+        sql     => "startup nomount pfile='$pFilePath';",
+        verbose => 1
+    );
+
+    $exitCode = $sqlplus->do(
+        sql     => "shutdown immediate;",
+        verbose => 1
+    );
+
+    $exitCode = $sqlplus->do(
+        sql     => "startup nomount pfile='$pFilePath';",
+        verbose => 1
+    );
+}
+
+#$ORACLE_HOME/srvm/admin/getcrshome
+#/db/oracle/app/19.3.0/grid
+#/db/oracle/app/19.3.0/grid/bin/setasmgidwrap
+#chgrp asmadmin $ORACLE_HOME/bin/oracle
+#chmod 6751 $ORACLE_HOME/bin/oracle
+
+#srvctl add database -d mydb_standby -o $ORACLE_HOME
+#srvctl add instance -d mydb_standby -i mydb1 -n myrac1
+#srvctl add instance -d mydb_standby -i mydb2 -n myrac2
+
+#cp initmydb1.ora $ORACLE_HOME/dbs/
+#sqlplus:
+#startup nomount pfile='initmydb1.ora';
+#create spfile from pfile='initmydb1.ora';
+#shutdown immediate;
+#startup nomount;
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            ORACLE_HOME=s
+            ORACLE_SID=s
+            DB_UNIQUE_NAME=s
+            PFILE_CONTENT=s
+        }
+    );
+
+    my $pFileContent = $opts->{PFILE_CONTENT};
+    my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
+    my $ORACLE_USER  = $opts->{ORACLE_USER};
+    my $ORACLE_HOME  = $opts->{ORACLE_HOME};
+    my $ORACLE_SID   = $opts->{ORACLE_SID};
+
+    my $hasOptErr = 0;
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined DB_UNIQUE_NAME by option --DB_UNIQUE_NAME.\n");
+    }
+    if ( not defined($pFileContent) or $pFileContent eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined PFILE_CONTENT by option --PFILE_CONTENT.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    if ( not defined($ORACLE_HOME) or $ORACLE_HOME eq '' or not defined($ORACLE_SID) or $ORACLE_SID eq '' ) {
+        my $userEnv = getUserEnv($ORACLE_USER);
+        $ORACLE_HOME = $userEnv->{ORACLE_HOME};
+        $ORACLE_SID  = $userEnv->{ORACLE_SID};
+    }
+
+    my $exitCode = 0;
+
+    $pFileContent =~ s/^\s*|\s*$//sg;
+    $pFileContent =~ s/\\n/\n/g;
+
+    my $crsHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
+    if ( defined($crsHome) and $crsHome ne '' ) {
+        $exitCode = setOraAsmPrivilege( $ORACLE_USER, $crsHome );
+        if ( $exitCode != 0 ) {
+            return $exitCode;
+        }
+
+        $exitCode = addClusterDatabase( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName );
+        if ( $exitCode != 0 ) {
+            return $exitCode;
+        }
+    }
+
+    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent );
+    if ( $exitCode != 0 ) {
+        return $exitCode;
+    }
+}
+
+exit( main() );

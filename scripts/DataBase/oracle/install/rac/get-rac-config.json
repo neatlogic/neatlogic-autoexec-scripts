@@ -4,8 +4,9 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "在某个Oracle节点执行, 获取当前节点和集群相关的节点等信息",
-    "option": [{
+    "description": "在RAC集群中某个节点执行，获取集群相关的节点等信息",
+    "option": [
+        {
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "Oracle Grid软件的OS用户",
@@ -33,18 +34,11 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "crsName",
             "name": "集群名",
             "help": "不带数字序号的集群节点名称",
-            "type": "text",
-            "defaultValue": null,
-            "required": "false"
-        },
-        {
-            "opt": "crsHome",
-            "name": "集群Home目录",
-            "help": "通过$ORACLE_HOME/srvm/admin/getcrshome获取的CRS Home目录",
             "type": "text",
             "defaultValue": null,
             "required": "false"
@@ -195,8 +189,8 @@
         },
         {
             "opt": "operNodeInfo",
-            "name": "其他第一个操作节点",
-            "help": "除当前节点外可以执行集群操作的第一个节点",
+            "name": "集群操作节点",
+            "help": "除当前节点外可以执行集群操作的节点",
             "type": "node",
             "defaultValue": null,
             "required": "false"

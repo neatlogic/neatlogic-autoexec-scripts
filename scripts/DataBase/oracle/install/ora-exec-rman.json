@@ -1,0 +1,82 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "执行Oracle RMAN命令",
+    "option": [{
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "Oracle库安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "TARGET_DB_UNIQUE_NAME",
+            "name": "Target DB唯一名",
+            "help": "复制源DB唯一名, 对应于rman命令的TARGET",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "AUXILIARY_DB_UNIQUE_NAME",
+            "name": "辅助DB唯一名",
+            "help": "复制目标DB唯一名, 对应于rman命令的AUXILIARY",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SYS_PASSWORD",
+            "name": "SYS用户密码",
+            "help": "源和目标DB的sys用户密码，要求两个DB要一致",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "CATALOG_DB",
+            "name": "Catalog库Tns名",
+            "help": "连接Catalog库的tns名称, 需要提前配置tnsnames.ora, 留空, 代表不使用Catalog",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "CATALOG_USER",
+            "name": "Catalog库用户",
+            "help": "RMAN Catalog库的用户名",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "CATALOG_PASSWORD",
+            "name": "Catalog库密码",
+            "help": "RMAN Catalog库的用户的密码",
+            "type": "password",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SCRIPT",
+            "name": "RMAN脚本",
+            "help": "需要执行的RMAN脚本",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

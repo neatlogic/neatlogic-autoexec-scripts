@@ -1,0 +1,125 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use POSIX qw(uname);
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_SID <ORACLE_SID>\n");
+    exit(1);
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            TARGET_DB_UNIQUE_NAME=s
+            AUXILIARY_DB_UNIQUE_NAME=s
+            SYS_PASSWORD=s
+            CATALOG_DB=s
+            CATALOG_USER=s
+            CATALOG_PASSWORD=s
+            SCRIPT=s
+        }
+    );
+
+    my $hasOptErr                = 0;
+    my $ORACLE_USER              = $opts->{ORACLE_USER};
+    my $TARGET_DB_UNIQUE_NAME    = $opts->{TARGET_DB_UNIQUE_NAME};
+    my $AUXILIARY_DB_UNIQUE_NAME = $opts->{AUXILIARY_DB_UNIQUE_NAME};
+    my $SYS_PASSWORD             = $opts->{SYS_PASSWORD};
+    my $CATALOG_DB               = $opts->{CATALOG_DB};
+    my $CATALOG_USER             = $opts->{CATALOG_USER};
+    my $CATALOG_PASSWORD         = $opts->{CATALOG_PASSWORD};
+
+    my $sqlTxt = $opts->{SCRIPT};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($TARGET_DB_UNIQUE_NAME) or $TARGET_DB_UNIQUE_NAME eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined TARGET_DB_UNIQUE_NAME by option --TARGET_DB_UNIQUE_NAME.\n");
+    }
+
+    if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
+        if ( not defined($CATALOG_USER) or $CATALOG_USER eq '' ) {
+            $hasOptErr = 1;
+            print("ERROR: Must defined CATALOG_USER by option --CATALOG_USER.\n");
+        }
+        if ( not defined($CATALOG_PASSWORD) or $CATALOG_PASSWORD eq '' ) {
+            $hasOptErr = 1;
+            print("ERROR: Must defined CATALOG_PASSWORD by option --CATALOG_PASSWORD.\n");
+        }
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    my @uname  = uname();
+    my $osType = $uname[0];
+    $osType =~ s/\s.*$//;
+
+    my $uid = $<;
+
+    my $rmanCmd = qq{rman TARGET sys/${SYS_PASSWORD}@${TARGET_DB_UNIQUE_NAME}};
+    if ( defined($AUXILIARY_DB_UNIQUE_NAME) and $AUXILIARY_DB_UNIQUE_NAME ne '' ) {
+        $rmanCmd = $rmanCmd . qq{ AUXILIARY sys/${SYS_PASSWORD}@${AUXILIARY_DB_UNIQUE_NAME}};
+    }
+    if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
+        $rmanCmd = $rmanCmd . qq{ CATALOG ${CATALOG_USER}/${CATALOG_PASSWORD}@${CATALOG_DB}};
+    }
+
+    if ( $osType ne 'Windows' and $uid == 0 and $ORACLE_USER ne 'root' ) {
+        $rmanCmd = qq(su - $ORACLE_USER -c '$rmanCmd');
+    }
+
+    $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/g;
+
+    my $cmd;
+    if ( $osType ne 'Windows' ) {
+        $cmd = qq{$rmanCmd << "EOF"
+               $sqlTxt
+               exit;
+               EOF
+              };
+        $cmd =~ s/^\s*//mg;
+    }
+    else {
+        use File::Temp;
+        $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.rmn' );
+        my $fname = $sqlFH->filename;
+        print $sqlFH ( "run {\n", $sqlTxt, "\n\}]\n" );
+        $sqlFH->close();
+
+        $cmd = qq{$rmanCmd @"$fname"};
+    }
+
+    $exitCode = system($cmd);
+
+    if ( $exitCode != 0 ) {
+        $hasError = 1;
+        print("ERROR: Errors occur while executing rman scripts.\n");
+    }
+
+    if ( $hasError == 0 ) {
+        print("FINE: Execute rman scripts success.\n");
+    }
+
+    return $hasError;
+}
+
+exit( main() );

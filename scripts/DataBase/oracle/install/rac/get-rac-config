@@ -408,7 +408,6 @@ sub main {
     $out->{ORACLE_BASE}   = $userEnv->{ORACLE_BASE};
 
     my $gridHome = getCrsHome( $ORACLE_USER, $userEnv->{ORACLE_HOME} );
-    $out->{crsHome} = $gridHome;
 
     if ( ( defined($GRID_USER) and $GRID_USER ne $ORACLE_USER ) or ( defined($gridHome) and $gridHome ne '' ) ) {
         my $racInfo = getRacDBInfo( $GRID_USER, $dbUniqueName );
