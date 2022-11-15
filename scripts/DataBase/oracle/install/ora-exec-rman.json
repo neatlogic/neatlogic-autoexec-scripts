@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "执行Oracle RMAN命令",
-    "option": [{
+    "option": [
+        {
             "opt": "ORACLE_USER",
             "name": "ORACLE_USER",
             "help": "Oracle库安装用户",

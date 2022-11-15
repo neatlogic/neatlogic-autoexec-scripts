@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "在某个Oracle节点执行, 获取当前节点和集群相关的节点等信息",
-    "option": [{
+    "option": [
+        {
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "Oracle Grid软件的OS用户",
@@ -33,7 +34,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "crsName",
             "name": "集群名",
             "help": "不带数字序号的集群节点名称",

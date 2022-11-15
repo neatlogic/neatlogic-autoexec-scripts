@@ -108,6 +108,22 @@
             "type": "json",
             "defaultValue": null,
             "required": "false"
+        },
+        {
+            "opt": "asmDirs",
+            "name": "ASM目录列表",
+            "help": "目标生成库存PFILE参数配置中的ASM目录",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "fileSysDirs",
+            "name": "普通文件系统目录列表",
+            "help": "目标生成库存PFILE参数配置中的普通文件系统目录",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
         }
     ]
 }

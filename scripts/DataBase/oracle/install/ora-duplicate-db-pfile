@@ -191,8 +191,10 @@ sub getPfileConfDirs {
     my $controlFiles    = '';
     my $controlFileDirs = '';
     my $logArchDestDir;
-    my $otherDirs  = '';
-    my $dirConfMap = {};
+    my $otherDirs   = '';
+    my $asmDirs     = '';
+    my $fileSysDirs = '';
+    my $dirConfMap  = {};
 
     foreach my $line ( split( /\n/, $pfileContent ) ) {
         if ( $line =~ /^\s*#/ ) {
@@ -206,8 +208,15 @@ sub getPfileConfDirs {
             $controlFilesConf =~ s/^\s*|\s*$//g;
             foreach my $controlFile ( split( /\s*,\s*/, $controlFilesConf ) ) {
                 $controlFile =~ s/^\s*['"]|['"]\s*$//g;
-                $controlFiles    = $controlFiles . $controlFile . "\n";
-                $controlFileDirs = $controlFileDirs . dirname($controlFile) . "\n";
+                $controlFiles = $controlFiles . $controlFile . "\n";
+                my $controlFileDir = dirname($controlFile);
+                $controlFileDirs = $controlFileDirs . $controlFileDir . "\n";
+                if ( $controlFileDir =~ /^\+/ ) {
+                    $asmDirs = $asmDirs . $controlFileDir . "\n";
+                }
+                else {
+                    $fileSysDirs = $fileSysDirs . $controlFileDir . "\n";
+                }
             }
             $controlFiles    =~ s/\s*$//;
             $controlFileDirs =~ s/\s*$//;
@@ -223,6 +232,13 @@ sub getPfileConfDirs {
                 $logArchDestDir = $1;
             }
             $dirConfMap->{ $lineInfo[0] } = $logArchDestDir;
+
+            if ( $logArchDestDir =~ /^\+/ ) {
+                $asmDirs = $asmDirs . $logArchDestDir . "\n";
+            }
+            else {
+                $fileSysDirs = $fileSysDirs . $logArchDestDir . "\n";
+            }
         }
         elsif ( $lineInfo[1] =~ /^'\// or $lineInfo[1] =~ /^'\+\w+/ ) {
             my $dirConfVal = '';
@@ -231,19 +247,30 @@ sub getPfileConfDirs {
             foreach my $file ( split( /\s*,\s*/, $filesConf ) ) {
                 $file =~ s/^\s*['"]|['"]\s*$//g;
                 $dirConfVal = $dirConfVal . $file . "\n";
+
+                if ( $file =~ /^\+/ ) {
+                    $asmDirs = $asmDirs . $file . "\n";
+                }
+                else {
+                    $fileSysDirs = $fileSysDirs . $file . "\n";
+                }
             }
             $otherDirs = $otherDirs . $dirConfVal;
             $dirConfVal =~ s/\s*$//;
             $dirConfMap->{ $lineInfo[0] } = $dirConfVal;
         }
     }
-    $otherDirs =~ s/\s*$//;
+    $otherDirs   =~ s/\s*$//;
+    $asmDirs     =~ s/\s*$//;
+    $fileSysDirs =~ s/\s*$//;
 
     my $pfileDirsInfo = {
         controlFiles    => $controlFiles,
         controlFileDirs => $controlFileDirs,
         logArchDestDir  => $logArchDestDir,
         otherDirs       => $otherDirs,
+        asmDirs         => $asmDirs,
+        fileSysDirs     => $fileSysDirs,
         dirConfMap      => $dirConfMap
     };
 
