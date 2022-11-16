@@ -20,6 +20,30 @@ sub getStdbyLogSql {
     my ( $osUser, $sid ) = @_;
     my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
 
+    my $stdbyQueryLogSql = q{
+        SELECT
+            a."GROUP#",
+            a."THREAD#",
+            a.BYTES,
+            b.MEMBER
+        FROM
+            v$standby_log a,
+            v$logfile b 
+        WHERE
+            a."GROUP#" = b."GROUP#" 
+        ORDER BY
+            "THREAD#",
+            "GROUP#";
+    };
+    my $rows = $sqlplus->query(
+        sql     => $stdbyQueryLogSql,
+        verbose => 1
+    );
+    if ( scalar(@$rows) > 0 ) {
+        print("WARN: Standby log groups already exists.\n");
+        return "SELECT 'WARN: Standby log groups already exists' as MESSAGE from dual;";
+    }
+
     my $queryLogsSql = q{
         SELECT
             a."GROUP#",

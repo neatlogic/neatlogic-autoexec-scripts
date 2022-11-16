@@ -212,6 +212,22 @@
             "required": "false"
         },
         {
+            "opt": "lsnrOraConfPath",
+            "name": "listener.ora路径",
+            "help": "文件listener.ora的路径, RAC使用的是GRID_HOME下的, 非RAC是ORACLE_HOME下的",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "tnsOraConfPath",
+            "name": "tnsnames.ora路径",
+            "help": "tnsnames.ora的路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "dbTnsConf",
             "name": "使用DB_NAME的tns配置",
             "help": "基于实例VIP的tnsnames.ora的配置",
