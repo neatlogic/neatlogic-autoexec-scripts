@@ -48,7 +48,7 @@
             "help": "DB唯一名称, 在DG同步和切换中确定主备库, 为空保持跟DB_NAME一致",
             "type": "text",
             "defaultValue": "",
-            "required": "false",
+            "required": "true",
             "validate": ""
         }
     ],

@@ -34,37 +34,6 @@ sub getCrsHome {
     return $gridHome;
 }
 
-sub getDBInstances {
-    my ( $osUser, $ORACLE_HOME, $dbUniqueName ) = @_;
-
-    my $envLine = 'LANG=en_US.UTF-8';
-
-    my $localNodeName = `su - '$osUser' -c '$envLine olsnodes -l'`;
-    if ( $? != 0 ) {
-        return;
-    }
-    $localNodeName =~ s/^\s*|\s*$//g;
-
-    # [oracle@myrac1 ~]$ srvctl status database -d mydb_primary
-    # Instance mydb1 is not running on node myrac1
-    # Instance mydb2 is not running on node myrac2
-    # Instance mydb3 is not running on node myrac3
-    my $dbStatusTxt = `su - '$osUser' -c "$envLine srvctl status database -d $dbUniqueName"`;
-
-    my $localInsName;
-    foreach my $line ( split( /\n/, $dbStatusTxt ) ) {
-        if ( $line =~ /Instance\s+(\w+).*?\snode\s+(\w+)/ ) {
-            my $insName  = $1;
-            my $nodeName = $2;
-            if ( $nodeName eq $localNodeName ) {
-                $localInsName = $insName;
-            }
-        }
-    }
-
-    return $localInsName;
-}
-
 sub getUserEnv {
     my ($ORACLE_USER) = @_;
 
@@ -95,11 +64,13 @@ sub getDBLocalInstance {
 
     my $envLine = 'LANG=en_US.UTF-8';
 
-    my $localNodeName = `su - '$osUser' -c '$envLine olsnodes -l'`;
+    my $localNodeName = `su - '$osUser' -c "$envLine '$GRID_HOME/bin/olsnodes' -l"`;
     if ( $? != 0 ) {
         return;
     }
     $localNodeName =~ s/^\s*|\s*$//g;
+
+    print("INFO: Local node:$localNodeName\n");
 
     # [oracle@myrac1 ~]$ srvctl status database -d mydb_primary
     # Instance mydb1 is not running on node myrac1
@@ -116,6 +87,13 @@ sub getDBLocalInstance {
                 $localInsName = $insName;
             }
         }
+    }
+
+    if ( defined($localInsName) ) {
+        print("INFO: Local db instance:$localInsName.\n");
+    }
+    else {
+        print("ERROR: Can not determine local db instance.\n");
     }
 
     return $localInsName;
@@ -223,11 +201,7 @@ sub main {
     if ( defined($gridHome) and $gridHome ne '' ) {
         my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
         my $GRID_USER    = $opts->{GRID_USER};
-        my $GRID_HOME    = $opts->{GRID_HOME};
-        if ( not defined($GRID_HOME) or $GRID_HOME eq '' ) {
-            my $oraEnv = getUserEnv($GRID_USER);
-            $GRID_HOME = $oraEnv->{ORACLE_HOME};
-        }
+        my $GRID_HOME    = $gridHome;
 
         my $racInfo = getRacDBInfo( $GRID_USER, $GRID_HOME, $dbUniqueName );
         my $dbName  = $racInfo->{DB_NAME};

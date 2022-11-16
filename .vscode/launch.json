@@ -106,6 +106,31 @@
             "reloadModules": true,
             "stopOnEntry": false,
             "console": "integratedTerminal"
+        },
+        {
+            "name": "ora-gen-stdby-logfile-sql.pl",
+            "type": "perl",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/DataBase/oracle/install/ora-gen-stdby-logfile-sql",
+            "inc": [
+                "${workspaceFolder}/lib"
+            ],
+            "env": {
+                "PERL5LIB": "${workspaceFolder}/lib",
+                "OUTPUT_PATH": "/tmp/output.json",
+                "RUNNER_ID": "1",
+                "AUTOEXEC_TENANT": "develop",
+                "AUTOEXEC_JOBID": "736961878614016"
+            },
+            "args": [
+                "--ORACLE_USER",
+                "oracle",
+                "--ORACLE_SID",
+                "mydb1"
+            ],
+            "reloadModules": true,
+            "stopOnEntry": false,
+            "console": "integratedTerminal"
         }
     ]
 }

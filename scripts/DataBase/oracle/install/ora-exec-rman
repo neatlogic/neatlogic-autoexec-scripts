@@ -4,6 +4,7 @@ use lib "$FindBin::Bin/lib";
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 
 use strict;
+use File::Temp;
 use POSIX qw(uname);
 use IO::File;
 use Getopt::Long;
@@ -99,8 +100,7 @@ sub main {
         $cmd =~ s/^\s*//mg;
     }
     else {
-        use File::Temp;
-        $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.rmn' );
+        my $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.rmn' );
         my $fname = $sqlFH->filename;
         print $sqlFH ( "run {\n", $sqlTxt, "\n\}]\n" );
         $sqlFH->close();
@@ -108,7 +108,7 @@ sub main {
         $cmd = qq{$rmanCmd @"$fname"};
     }
 
-    $exitCode = system($cmd);
+    my $exitCode = system($cmd);
 
     if ( $exitCode != 0 ) {
         $hasError = 1;

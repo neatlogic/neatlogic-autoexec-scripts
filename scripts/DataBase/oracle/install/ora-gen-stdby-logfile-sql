@@ -33,8 +33,10 @@ sub getStdbyLogSql {
         WHERE
             a."GROUP#" = b."GROUP#" 
         ORDER BY
+            "THREAD#",
             "GROUP#";
     };
+
     my $rows = $sqlplus->query(
         sql     => $queryLogsSql,
         verbose => 1
@@ -61,7 +63,7 @@ sub getStdbyLogSql {
         }
 
         $groupInfo->{THREAD_NO} = $threadNo;
-        $groupInfo->{BYTES}     = $row->{'BYTES'};
+        $groupInfo->{BYTES}     = $row->{BYTES};
         my $member = $groupInfo->{MEMBER};
         if ( not defined($member) ) {
             $member = [ $row->{MEMBER} ];
@@ -77,9 +79,10 @@ sub getStdbyLogSql {
             $threadInfoMap->{$threadNo} = $threadInfo;
         }
 
-        my $groups = $groupInfoMap->{GROUPS};
+        my $groups = $threadInfo->{GROUPS};
         if ( not defined($groups) ) {
             $groups = [$groupInfo];
+            $threadInfo->{GROUPS} = $groups;
         }
         else {
             push( @$groups, $groupInfo );
@@ -96,8 +99,8 @@ sub getStdbyLogSql {
         my $bytes;
         foreach my $groupInfo (@$groups) {
             my $members = $groupInfo->{MEMBER};
-            my $bytes   = $groupInfo->{BYTES};
-            my $sql     = "ALTER DATABASE ADD STANDBY LOGFILE THREAD $threadNo GROUP $currentGroupNo SIZE $bytes;";
+            $bytes = $groupInfo->{BYTES};
+            my $sql = "ALTER DATABASE ADD STANDBY LOGFILE THREAD $threadNo GROUP $currentGroupNo SIZE $bytes;";
             $createStdbyLogGroupSql = $createStdbyLogGroupSql . $sql . "\n";
             $currentGroupNo         = $currentGroupNo + 1;
         }
@@ -144,3 +147,5 @@ sub main {
         return 1;
     }
 }
+
+exit( main() );

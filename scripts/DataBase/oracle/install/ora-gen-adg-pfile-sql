@@ -5,14 +5,19 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 
 use strict;
 use IO::File;
+use File::Temp;
 use Getopt::Long;
 use SqlplusExec;
 use AutoExecUtils;
 
 sub getPfileContent {
     my ( $osUser, $sid ) = @_;
-    my $sqlplus   = SqlplusExec->new( osUser => $osUser, sid => $sid );
-    my $pfilePath = "$osUser.pfile.txt";
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+    my $pfileFH   = File::Temp->new( UNLINK => 1, SUFFIX => '.pfile.txt' );
+    my $pfilePath = $pfileFH->filename;
+    chmod( 0666, $pfilePath );
+    $pfileFH->close();
 
     #create pfile='/home/oracle/pfile_20190818' from spfile;
     my $exitCode = $sqlplus->do(
@@ -30,7 +35,7 @@ sub getPfileContent {
 
 sub getDBMajorVersion {
     my ( $osUser, $sid ) = @_;
-    print("Try to get oracle database version by command:oraversion -majorVersion\n");
+    print("INFO: Try to get oracle database version by command:oraversion -majorVersion\n");
     my $majorVersion = `su - '$osUser' -c 'oraversion -majorVersion'`;
     if ( $? == 0 ) {
         $majorVersion =~ s/^\s*|\s*$//g;
@@ -38,7 +43,7 @@ sub getDBMajorVersion {
     else {
         undef($majorVersion);
     }
-
+    print("INFO: DB major version:$majorVersion.\n");
     return $majorVersion;
 }
 
@@ -55,7 +60,7 @@ sub main {
     );
 
     my $ORACLE_USER            = $opts->{ORACLE_USER};
-    my $MY_UNIQUE_NAME         = $opts->{DB_UNIQUE_NAME};
+    my $MY_UNIQUE_NAME         = $opts->{MY_UNIQUE_NAME};
     my $OTHER_SITE_UNIQUE_NAME = $opts->{OTHER_SITE_UNIQUE_NAME};
     my $LOG_ARCHIVE_DEST       = $opts->{LOG_ARCHIVE_DEST};
 
@@ -107,4 +112,8 @@ sub main {
     $out->{pfileAlterSql} = $cmds;
 
     AutoExecUtils::saveOutput($out);
+
+    return 0;
 }
+
+exit( main() );
