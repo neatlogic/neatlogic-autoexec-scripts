@@ -83,7 +83,7 @@ sub main {
     }
 
     if ( $osType ne 'Windows' and $uid == 0 and $ORACLE_USER ne 'root' ) {
-        $rmanCmd = qq(su - $ORACLE_USER -c '$rmanCmd');
+        $rmanCmd = qq(su - $ORACLE_USER -c 'LANG=en_US.UTF-8 NLS_LANG=AMERICAN_AMERICA.AL32UTF8 $rmanCmd');
     }
 
     $sqlTxt =~ s/^\s*|\s*$//sg;
@@ -106,6 +106,12 @@ sub main {
 
         $cmd = qq{$rmanCmd @"$fname"};
     }
+
+    print("Execute RMAN: -----------------------------------------\n");
+    my $printCmd = $cmd;
+    $printCmd =~ s/\/.*?\@/\/\*\*\*\*\*\*\@/g;
+    print($printCmd);
+    print("-------------------------------------------------------\n");
 
     my $exitCode = system($cmd);
 
