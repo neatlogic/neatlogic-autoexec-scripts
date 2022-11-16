@@ -362,6 +362,8 @@ sub main {
         controlFileDirs => $pfileDirsInfo->{controlFileDirs},
         logArchDestDir  => $pfileDirsInfo->{logArchDestDir},
         otherDirs       => $pfileDirsInfo->{otherDirs},
+        asmDirs         => $pfileDirsInfo->{asmDirs},
+        fileSysDirs     => $pfileDirsInfo->{fileSysDirs},
         dirConfMap      => $pfileDirsInfo->{dirConfMap}
     };
 

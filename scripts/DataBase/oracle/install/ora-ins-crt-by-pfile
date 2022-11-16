@@ -24,10 +24,11 @@ sub getUserEnv {
     my $env       = {};
     my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
     foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
-        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+        if ( $envLine =~ /^(\w+)=(.*)$/ ) {
             my $name = $1;
             my $val  = $2;
             $env->{$name} = $val;
+            print("$name=$val\n");
         }
     }
     return $env;
@@ -65,9 +66,10 @@ sub setOraAsmPrivilege {
 }
 
 sub addClusterDatabase {
-    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName ) = @_;
+    my ( $GRID_HOME, $osUser, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName ) = @_;
 
     my $exitCode;
+    print("Execute: srvctl add database -d $dbUniqueName -o $ORACLE_HOME\n");
     my $addDbTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add database -d $dbUniqueName -o $ORACLE_HOME'`;
     $exitCode = $?;
     if ( $exitCode != 0 and $addDbTxt !~ /already exists/is ) {
@@ -75,12 +77,27 @@ sub addClusterDatabase {
         return $exitCode;
     }
 
-    $exitCode = system("su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add instance -d $dbUniqueName -i mydb1 -n $ORACLE_SID'");
-    return $exitCode;
+    my $localNodeName = `'$GRID_HOME/bin/olsnodes' -l`;
+    $localNodeName =~ s/^\s*|\s*$//g;
+    if ( $localNodeName eq '' ) {
+        $exitCode = 2;
+        print("ERROR: Can not get local node name by command: $GRID_HOME/bin/olsnodes -l\n");
+        return $exitCode;
+    }
+    print("Execute: srvctl add instance -d $dbUniqueName -i $ORACLE_SID -n $localNodeName\n");
+
+    my $addNodeTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add instance -d $dbUniqueName -i $ORACLE_SID -n $localNodeName'`;
+    $exitCode = $?;
+    if ( $exitCode != 0 and $addNodeTxt !~ /already exists/is ) {
+        print("ERROR: $addNodeTxt\n");
+        return $exitCode;
+    }
+
+    return 0;
 }
 
 sub startNoMountByPfile {
-    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent );
+    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent ) = @_;
 
     my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
     my $fh        = IO::File->new(">$pFilePath");
@@ -96,18 +113,33 @@ sub startNoMountByPfile {
 
     my $exitCode = 0;
 
+    print("Try to shutdown db...\n");
+    $sqlplus->do(
+        sql     => "shutdown immediate;",
+        verbose => 1
+    );
+
+    print("Try to startup by pfile:$pFilePath...\n");
     $exitCode = $sqlplus->do(
         sql     => "startup nomount pfile='$pFilePath';",
         verbose => 1
     );
 
+    print("Try to create spfile...\n");
+    $exitCode = $sqlplus->do(
+        sql     => "create spfile from pfile;",
+        verbose => 1
+    );
+
+    print("Try to shutdown db...\n");
     $exitCode = $sqlplus->do(
         sql     => "shutdown immediate;",
         verbose => 1
     );
 
+    print("Try to startup db to nomount again...\n");
     $exitCode = $sqlplus->do(
-        sql     => "startup nomount pfile='$pFilePath';",
+        sql     => "startup nomount;",
         verbose => 1
     );
 }
@@ -182,16 +214,14 @@ sub main {
             return $exitCode;
         }
 
-        $exitCode = addClusterDatabase( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName );
+        $exitCode = addClusterDatabase( $crsHome, $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName );
         if ( $exitCode != 0 ) {
             return $exitCode;
         }
     }
 
     $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent );
-    if ( $exitCode != 0 ) {
-        return $exitCode;
-    }
+    return $exitCode;
 }
 
 exit( main() );

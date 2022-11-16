@@ -126,6 +126,8 @@ sub main {
         print("ERROR: Can not modify file:$filePath, $!\n");
         $exitCode = 1;
     }
+
+    return $exitCode;
 }
 
 exit( main() )

@@ -20,9 +20,9 @@ sub main {
     my $opts = {};
     GetOptions(
         $opts, qw{
-          ORACLE_USER=s
-          ORACLE_SID=s
-          SQL=s
+            ORACLE_USER=s
+            ORACLE_SID=s
+            SQL=s
         }
     );
 
@@ -41,11 +41,10 @@ sub main {
 
     my $hasError = 0;
 
-
     $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/sg;
 
-    my $sqlplus =
-      SqlplusExec->new( osUser => $ORACLE_USER, sid => $ORACLE_SID );
+    my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, sid => $ORACLE_SID );
 
     my $exitCode = $sqlplus->do(
         sql     => $sqlTxt,

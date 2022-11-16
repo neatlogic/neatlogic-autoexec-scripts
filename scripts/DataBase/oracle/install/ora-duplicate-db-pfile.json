@@ -25,7 +25,7 @@
             "validate": ""
         },
         {
-            "opt": "dbintances",
+            "opt": "dbinstances",
             "name": "生成DB实例名",
             "help": "生成目标DB的实例名, 一行一个实例名",
             "type": "textarea",

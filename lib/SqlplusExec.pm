@@ -88,7 +88,7 @@ sub new {
     }
 
     if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows' ) {
-        $sqlplusCmd = qq{su - $osUser -c "ORACLE_SID=$oraSid $sqlplusCmd"};
+        $sqlplusCmd = qq{su - $osUser -c "LANG=en_US.UTF-8 NLS_LANG=AMERICAN_AMERICA.AL32UTF8 ORACLE_SID=$oraSid $sqlplusCmd"};
     }
 
     if (    defined( $args{username} )
@@ -210,6 +210,36 @@ sub evalProfile {
     }
 }
 
+sub _checkError {
+    my ( $self, $output, $isVerbose ) = @_;
+    my @lines      = split( /\n/, $output );
+    my $linesCount = scalar(@lines);
+
+    my $hasError = 0;
+
+    for ( my $i = 0 ; $i < $linesCount ; $i++ ) {
+        my $line = $lines[$i];
+        if ( $isVerbose == 1 ) {
+            print( $line, "\n" );
+        }
+
+        #错误识别
+        #ERROR at line 1:
+        #ORA-00907: missing right parenthesis
+        if ( $line =~ /^ERROR/ ) {
+            if ( $lines[ $i + 1 ] =~ /^ORA-\d+:/ ) {
+                $hasError = 1;
+                if ( $isVerbose != 1 ) {
+                    print( $line,            "\n" );
+                    print( $lines[ $i + 1 ], "\n" );
+                }
+            }
+        }
+    }
+    print("----------------------------------------------------------\n");
+    return ( undef, undef, $hasError );
+}
+
 sub _parseOutput {
     my ( $self, $output, $isVerbose ) = @_;
     my @lines      = split( /\n/, $output );
@@ -229,6 +259,14 @@ sub _parseOutput {
     my $hasData = 0;
     for ( $pos = 0 ; $pos < $linesCount ; $pos++ ) {
         my $line = $lines[$pos];
+        if ( $line =~ /^ERROR/ ) {
+            if ( $lines[ $pos + 1 ] =~ /^ORA-\d+:/ ) {
+                $hasError = 1;
+                print( $line,              "\n" );
+                print( $lines[ $pos + 1 ], "\n" );
+            }
+        }
+
         if ( $line =~ /^[-\s]+$/ ) {
             $hasData = 1;
             last;
@@ -411,6 +449,10 @@ sub _parseOutput {
 
 sub _execSql {
     my ( $self, %args ) = @_;
+
+    $ENV{NLS_LANG} = 'AMERICAN_AMERICA.AL32UTF8';
+    $ENV{LANG}     = 'en_US.UTF-8';
+
     my $sql       = $args{sql};
     my $isVerbose = $args{verbose};
     my $parseData = $args{parseData};
@@ -419,10 +461,15 @@ sub _execSql {
         $sql = $sql . ';';
     }
 
+    my $sqlplusCmd = $self->{sqlplusCmd};
+    if ( not $parseData ) {
+        $sqlplusCmd =~ s/sqlplus -s -R 1 -L /sqlplus -R 1 -L /;
+    }
+
     my $sqlFH;
     my $cmd;
     if ( $self->{osType} ne 'Windows' ) {
-        $cmd = qq{$self->{sqlplusCmd} << "EOF"
+        $cmd = qq{$sqlplusCmd << "EOF"
                set linesize 256 pagesize 9999 echo off feedback off tab off trimout on underline on wrap on;
                $sql
                exit;
@@ -438,13 +485,13 @@ sub _execSql {
         print $sqlFH ("\nexit;\n");
         $sqlFH->close();
 
-        my $sqlplusCmd = $self->{sqlplusCmd};
         $cmd = qq{$sqlplusCmd @"$fname"};
     }
 
     if ($isVerbose) {
         print("INFO: Execute sql:\n");
-        print( $sql, "\n\n" );
+        print( $sql, "\n" );
+        print("----------------------------------------------------------\n");
 
         #my $len = length($sql);
         #print( '=' x $len, "\n" );
@@ -454,15 +501,16 @@ sub _execSql {
     my $status = $?;
     if ( $status ne 0 ) {
         print("ERROR: Execute cmd failed\n $output\n");
+        print("----------------------------------------------------------\n");
         return ( undef, undef, $status );
     }
-
-    if ($parseData) {
-        return $self->_parseOutput( $output, $isVerbose );
-    }
-    elsif ($isVerbose) {
-        print($output);
-        return ( undef, undef, $status );
+    else {
+        if ($parseData) {
+            return $self->_parseOutput( $output, $isVerbose );
+        }
+        else {
+            return $self->_checkError( $output, $isVerbose );
+        }
     }
 }
 

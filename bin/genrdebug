@@ -1,0 +1,26 @@
+#!/bin/bash
+#generate remote debug execute folder
+BIN_DIR=$0
+HAS_DIR=$(echo $BIN_DIR | grep /)
+if [ -z "$HAS_DIR" ]; then
+    BIN_DIR=$(which gosys)
+fi
+
+AUTOEXEC_DIR=$(dirname "$BIN_DIR")
+AUTOEXEC_DIR=$(
+    cd $AUTOEXEC_DIR/..
+    pwd
+)
+
+if [ -e "/tmp/autoexec-debug" ]; then
+    rm -rf /tmp/autoexec-debug
+fi
+
+mkdir /tmp/autoexec-debug
+
+cp -rf $AUTOEXEC_DIR/lib /tmp/autoexec-debug && echo Directory /tmp/autoexec-debug generated.
+
+for plugin in $*; do
+    cp -rf $AUTOEXEC_DIR/scripts/$plugin /tmp/autoexec-debug/
+    chmod 775 /tmp/autoexec-debug/$plugin
+done

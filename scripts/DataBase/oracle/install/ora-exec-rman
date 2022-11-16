@@ -8,7 +8,6 @@ use File::Temp;
 use POSIX qw(uname);
 use IO::File;
 use Getopt::Long;
-use SqlplusExec;
 use AutoExecUtils;
 
 sub usage {
@@ -75,12 +74,12 @@ sub main {
 
     my $uid = $<;
 
-    my $rmanCmd = qq{rman TARGET sys/${SYS_PASSWORD}@${TARGET_DB_UNIQUE_NAME}};
+    my $rmanCmd = qq{rman TARGET sys/${SYS_PASSWORD}\@${TARGET_DB_UNIQUE_NAME}};
     if ( defined($AUXILIARY_DB_UNIQUE_NAME) and $AUXILIARY_DB_UNIQUE_NAME ne '' ) {
-        $rmanCmd = $rmanCmd . qq{ AUXILIARY sys/${SYS_PASSWORD}@${AUXILIARY_DB_UNIQUE_NAME}};
+        $rmanCmd = $rmanCmd . qq{ AUXILIARY sys/${SYS_PASSWORD}\@${AUXILIARY_DB_UNIQUE_NAME}};
     }
     if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
-        $rmanCmd = $rmanCmd . qq{ CATALOG ${CATALOG_USER}/${CATALOG_PASSWORD}@${CATALOG_DB}};
+        $rmanCmd = $rmanCmd . qq{ CATALOG ${CATALOG_USER}/${CATALOG_PASSWORD}\@${CATALOG_DB}};
     }
 
     if ( $osType ne 'Windows' and $uid == 0 and $ORACLE_USER ne 'root' ) {
