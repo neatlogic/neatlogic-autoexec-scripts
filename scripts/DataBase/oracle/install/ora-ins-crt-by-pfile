@@ -114,7 +114,7 @@ sub startNoMountByPfile {
     my $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' force=y file='$pwdFilePath' password='$sysPassword'"};
     my $orapwdExitCode = system($pwdCmd);
     if ( $orapwdExitCode != 0 ) {
-        $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' format=12.1 force=y file='$pwdFilePath' password='$sysPassword'"};
+        $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' format=12 force=y file='$pwdFilePath' password='$sysPassword'"};
         $orapwdExitCode = system($pwdCmd);
     }
     if ( $orapwdExitCode != 0 ) {
