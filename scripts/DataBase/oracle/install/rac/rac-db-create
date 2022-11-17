@@ -315,6 +315,14 @@ ALTER PLUGGABLE DATABASE ${PDB_NAME} SAVE STATE;
 EXIT;
 EOF
 
+if [ "$DB_NAME" != "$DB_UNIQUE_NAME" ]; then
+    echo "******************************************************************************"
+    echo "Set service names to :$DB_NAME,$DB_UNIQUE_NAME"
+    echo "srvctl add service -db ${DB_UNIQUE_NAME} -service ${DB_NAME}"
+    echo "******************************************************************************"
+    SUDO_CMD $ORACLE_USER srvctl add service -db ${DB_UNIQUE_NAME} -service ${DB_NAME}
+fi
+
 echo "******************************************************************************"
 echo "Check cluster configuration." $(date)
 echo "******************************************************************************"
@@ -325,17 +333,17 @@ echo "**************************************************************************
 SUDO_CMD_CONT $ORACLE_USER ${GRID_HOME}/bin/crsctl stat res -t
 
 echo "******************************************************************************"
-echo "Output from srvctl config database -d ${DB_NAME}" $(date)
+echo "Output from srvctl config database -d ${DB_UNIQUE_NAME}"
 echo "******************************************************************************"
-SUDO_CMD $ORACLE_USER srvctl config database -d ${DB_NAME}
+SUDO_CMD $ORACLE_USER srvctl config database -d ${DB_UNIQUE_NAME}
 
 echo "******************************************************************************"
-echo "Output from srvctl status database -d ${DB_NAME}" $(date)
+echo "Output from srvctl status database -d ${DB_UNIQUE_NAME}"
 echo "******************************************************************************"
-SUDO_CMD_CONT $ORACLE_USER srvctl status database -d ${DB_NAME}
+SUDO_CMD_CONT $ORACLE_USER srvctl status database -d ${DB_UNIQUE_NAME}
 
 echo "******************************************************************************"
-echo "Output from v\$active_instances" $(date)
+echo "Output from v\$active_instances"
 echo "******************************************************************************"
 su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
 SELECT inst_name FROM v\$active_instances;
