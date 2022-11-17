@@ -34,6 +34,20 @@ sub getCrsHome {
     return $gridHome;
 }
 
+sub getDBMajorVersion {
+    my ($osUser) = @_;
+    print("INFO: Try to get oracle database version by command:oraversion -majorVersion\n");
+    my $majorVersion = `su - '$osUser' -c 'oraversion -majorVersion'`;
+    if ( $? == 0 ) {
+        $majorVersion =~ s/^\s*|\s*$//g;
+    }
+    else {
+        undef($majorVersion);
+    }
+    print("INFO: DB major version:$majorVersion.\n");
+    return $majorVersion;
+}
+
 sub getConfig {
     my ( $osUser, $sid ) = @_;
     my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
@@ -410,6 +424,9 @@ sub main {
     my $gridHome = getCrsHome( $ORACLE_USER, $userEnv->{ORACLE_HOME} );
     $out->{crsHome} = $gridHome;
 
+    my $majorVersion = getDBMajorVersion($ORACLE_USER);
+    $out->{majorVersion} = $majorVersion;
+
     if ( ( defined($GRID_USER) and $GRID_USER ne $ORACLE_USER ) or ( defined($gridHome) and $gridHome ne '' ) ) {
         my $racInfo = getRacDBInfo( $GRID_USER, $dbUniqueName );
         my $dbName  = $racInfo->{DB_NAME};
@@ -484,7 +501,15 @@ sub main {
                     $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
                 }
             }
-            $uniqDbTnsConf        = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+            if ( $majorVersion >= 10 ) {
+
+                #Oracle版本大于等于10，增加了UR=A的设定，让tns可以再实例监听处于BLOCKED状态仍然可以进行管理连接
+                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+            }
+            else {
+                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+            }
+
             $dbTnsConf            = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
             $out->{uniqDbTnsConf} = $uniqDbTnsConf;
             $out->{dbTnsConf}     = $dbTnsConf;
@@ -533,7 +558,14 @@ sub main {
             my $uniqDbTnsConf = "$dbUniqueName = \n";
             $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
             $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-            $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+            if ( $majorVersion >= 10 ) {
+
+                #Oracle版本大于等于10，增加了UR=A的设定，让tns可以再实例监听处于BLOCKED状态仍然可以进行管理连接
+                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+            }
+            else {
+                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+            }
 
             my $dbTnsConf = "$dbName = \n";
             $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";

@@ -44,6 +44,14 @@
             "required": "false"
         },
         {
+            "opt": "majorVersion",
+            "name": "Oracle主版本号",
+            "help": "Oracle软件的主版本号",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "crsHome",
             "name": "集群Home目录",
             "help": "通过$ORACLE_HOME/srvm/admin/getcrshome获取的CRS Home目录",
