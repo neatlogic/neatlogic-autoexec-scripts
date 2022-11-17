@@ -43,6 +43,15 @@
             "validate": ""
         },
         {
+            "opt": "SYS_PASSWORD",
+            "name": "SYS用户密码",
+            "help": "源和目标DB的sys用户密码，要求两个DB要一致",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "PFILE_CONTENT",
             "name": "PFILE内容",
             "help": "可用于目标生成库的pfile配置内容",

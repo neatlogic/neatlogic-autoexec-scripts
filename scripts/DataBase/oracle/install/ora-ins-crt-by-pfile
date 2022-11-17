@@ -97,7 +97,7 @@ sub addClusterDatabase {
 }
 
 sub startNoMountByPfile {
-    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent ) = @_;
+    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword ) = @_;
 
     my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
     my $fh        = IO::File->new(">$pFilePath");
@@ -107,6 +107,19 @@ sub startNoMountByPfile {
     }
     else {
         print("ERROR: Open file:$pFilePath failed, $!.\n");
+    }
+
+    #设置密码文件
+    my $pwdFilePath    = "$ORACLE_HOME/dbs/orapw$ORACLE_SID";
+    my $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' force=y file='$pwdFilePath' password='$sysPassword'"};
+    my $orapwdExitCode = system($pwdCmd);
+    if ( $orapwdExitCode != 0 ) {
+        $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' format=12.1 force=y file='$pwdFilePath' password='$sysPassword'"};
+        $orapwdExitCode = system($pwdCmd);
+    }
+    if ( $orapwdExitCode != 0 ) {
+        print("ERROR: Can not set password for oracle user sys.\n");
+        return $orapwdExitCode;
     }
 
     my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $ORACLE_SID );
@@ -169,6 +182,7 @@ sub main {
             ORACLE_HOME=s
             ORACLE_SID=s
             DB_UNIQUE_NAME=s
+            SYS_PASSWORD=s
             PFILE_CONTENT=s
         }
     );
@@ -178,6 +192,7 @@ sub main {
     my $ORACLE_USER  = $opts->{ORACLE_USER};
     my $ORACLE_HOME  = $opts->{ORACLE_HOME};
     my $ORACLE_SID   = $opts->{ORACLE_SID};
+    my $sysPassword  = $opts->{SYS_PASSWORD};
 
     my $hasOptErr = 0;
     if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
@@ -220,7 +235,7 @@ sub main {
         }
     }
 
-    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent );
+    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword );
     return $exitCode;
 }
 

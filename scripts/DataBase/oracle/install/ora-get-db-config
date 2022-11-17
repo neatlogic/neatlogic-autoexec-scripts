@@ -484,7 +484,7 @@ sub main {
                     $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
                 }
             }
-            $uniqDbTnsConf        = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+            $uniqDbTnsConf        = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
             $dbTnsConf            = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
             $out->{uniqDbTnsConf} = $uniqDbTnsConf;
             $out->{dbTnsConf}     = $dbTnsConf;
@@ -533,7 +533,7 @@ sub main {
             my $uniqDbTnsConf = "$dbUniqueName = \n";
             $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
             $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-            $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+            $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
 
             my $dbTnsConf = "$dbName = \n";
             $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
