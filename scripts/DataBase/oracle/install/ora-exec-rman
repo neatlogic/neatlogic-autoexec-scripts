@@ -72,14 +72,19 @@ sub main {
     my $osType = $uname[0];
     $osType =~ s/\s.*$//;
 
-    my $uid = $<;
+    my $uid        = $<;
+    my $targetDesc = qq{sys/${SYS_PASSWORD}\@${TARGET_DB_UNIQUE_NAME}};
 
-    my $rmanCmd = qq{rman TARGET sys/${SYS_PASSWORD}\@${TARGET_DB_UNIQUE_NAME}};
+    my $rmanCmd = qq{rman TARGET $targetDesc};
     if ( defined($AUXILIARY_DB_UNIQUE_NAME) and $AUXILIARY_DB_UNIQUE_NAME ne '' ) {
-        $rmanCmd = $rmanCmd . qq{ AUXILIARY sys/${SYS_PASSWORD}\@${AUXILIARY_DB_UNIQUE_NAME}};
+        my $auxiliaryDesc = qq{sys/${SYS_PASSWORD}\@${AUXILIARY_DB_UNIQUE_NAME}};
+        $rmanCmd = $rmanCmd . qq{ AUXILIARY $auxiliaryDesc};
     }
     if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
         $rmanCmd = $rmanCmd . qq{ CATALOG ${CATALOG_USER}/${CATALOG_PASSWORD}\@${CATALOG_DB}};
+    }
+    else {
+        $rmanCmd = $rmanCmd . ' NOCATALOG';
     }
 
     if ( $osType ne 'Windows' and $uid == 0 and $ORACLE_USER ne 'root' ) {

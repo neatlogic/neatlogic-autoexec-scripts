@@ -11,7 +11,7 @@ use Mojo::JSON qw(to_json from_json);
 use Data::UUID;
 use URI::Escape;
 use Digest::SHA qw(hmac_sha1_base64);
-use Data::Dumper;
+
 use File::Basename;
 use MIME::Base64;
 

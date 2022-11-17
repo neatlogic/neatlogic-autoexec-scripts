@@ -220,7 +220,7 @@ sub main {
             #     )
             #   )
             $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n    (SID_DESC =\n";
-            $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbName)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbUniqueName)\n";
             $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
             $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
             $sidLsnrConf = $sidLsnrConf . "    )\n";
@@ -233,6 +233,7 @@ sub main {
         $lsnrOraConfPath = "$GRID_HOME/network/admin/listener.ora";
     }
     else {
+        my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
         my $ORACLE_SID;
         if ( not defined($ORACLE_HOME) or $ORACLE_HOME eq '' ) {
             my $oraEnv = getUserEnv($ORACLE_USER);
@@ -253,7 +254,7 @@ sub main {
         #     )
         #   )
         $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n    (SID_DESC =\n";
-        $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbName)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbUniqueName)\n";
         $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
         $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
         $sidLsnrConf = $sidLsnrConf . "    )\n";

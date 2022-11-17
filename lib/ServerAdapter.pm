@@ -13,7 +13,6 @@ use Fcntl qw(:flock O_RDWR O_CREAT O_SYNC);
 
 use WebCtl;
 use ServerConf;
-use Data::Dumper;
 
 sub new {
     my ($pkg) = @_;

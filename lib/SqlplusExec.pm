@@ -6,8 +6,6 @@ package SqlplusExec;
 use POSIX qw(uname);
 use Carp;
 
-#use Data::Dumper;
-
 #sqlplus的执行工具类，当执行出现ORA错误是会自动exit非0值，失败退出进程
 
 sub new {

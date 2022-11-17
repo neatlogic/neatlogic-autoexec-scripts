@@ -5,7 +5,6 @@ package MongoDBExec;
 
 use POSIX qw(uname);
 use Carp;
-use Data::Dumper;
 
 #mongodb的执行工具类，当执行出现ORA错误是会自动exit非0值，失败退出进程
 
@@ -72,7 +71,7 @@ sub new {
         $mongodbCmd = "$mongodbCmd -p '$args{password}'";
     }
 
-    if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows') {
+    if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows' ) {
         $mongodbCmd = qq{su - $osUser -c "$mongodbCmd"};
     }
     $self->{mongodbCmd} = $mongodbCmd;
@@ -144,7 +143,7 @@ sub _execSql {
         };
         $cmd =~ s/^\s*//mg;
     }
-    else{
+    else {
         use File::Temp;
         $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.sql' );
         my $fname = $sqlFH->filename;

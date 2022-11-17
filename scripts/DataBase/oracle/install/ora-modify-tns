@@ -53,7 +53,7 @@ sub main {
     $configItemsTxt =~ s/\\n/\n/g;
 
     my $descRe;
-    $descRe = qr/\((?:(?>[^()]+)|(??{$descRe}))*\)/x;
+    $descRe = qr/\((?:(?>[^()]+)|(??{$descRe}))*\)|[\w\d]+/x;
 
     #分析输入
     my @newItems    = ();
