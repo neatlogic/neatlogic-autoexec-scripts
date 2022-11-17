@@ -95,6 +95,7 @@ sub convertPfileRef {
     my @pfileRefArray = split( /\n/, $pfileReference );
     my $refDbName;
     my $refDbUniqName;
+    my $refServiceNames;
     foreach my $line (@pfileRefArray) {
         $line =~ s/^\s*|\s*$//g;
         if ( $line =~ /^#/ or $line =~ /_oracle_base\s*=/ ) {
@@ -136,9 +137,29 @@ sub convertPfileRef {
                 $refDbUniqName = $lineInfo[1];
                 $refDbUniqName =~ s/^\s*['"]|['"]\s*$//g;
             }
+            elsif ( $lineInfo[0] =~ /\.service_names$/ ) {
+                $refServiceNames = $lineInfo[1];
+                $refServiceNames = ~s/^\s*['"]|['"]\s*$//g;
+            }
             $pfileContent = $pfileContent . $line . "\n";
         }
     }
+
+    my $dbServiceNames;
+    if ( defined($refServiceNames) or $refServiceNames eq '' ) {
+        $dbServiceNames = "$refDbName,$dbUniqName";
+    }
+    else {
+        my @oldServiceNames = split( /\s*,\s*/, $refServiceNames );
+        my @newServiceNames = ( $refDbName, $dbUniqName );
+        foreach my $serviceName (@oldServiceNames) {
+            if ( $serviceName ne $refDbName and $serviceName ne $refDbUniqName ) {
+                push( @newServiceNames, $serviceName );
+            }
+        }
+        $dbServiceNames = join( ',', @newServiceNames );
+    }
+    $pfileContent = $pfileContent . "*.service_names=$dbServiceNames\n";
 
     my @instancesConf   = ();
     my @oldDBInstances  = sort( keys(%$perDbConfMap) );
@@ -168,9 +189,10 @@ sub convertPfileRef {
     }
 
     my $pfileInfo = {
-        content    => $pfileContent,
-        dbName     => $refDbName,
-        dbUniqName => $dbUniqName
+        content        => $pfileContent,
+        dbName         => $refDbName,
+        dbUniqName     => $dbUniqName,
+        dbServiceNames => $dbServiceNames
     };
 
     return $pfileInfo;
