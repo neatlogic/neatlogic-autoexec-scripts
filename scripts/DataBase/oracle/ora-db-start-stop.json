@@ -1,0 +1,132 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "Oracle整库启停, 支持RAC和非RAC",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "Oracle库安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "Oracle库软件安装目录, 留空代表使用用户环境变量ORACLE_HOME",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "DB_UNIQUE_NAME",
+            "name": "数据库唯一名",
+            "help": "留空代表使用Oracle用户自动获取",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "action",
+            "name": "操作",
+            "help": "启停操作",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "start",
+                        "value": "start"
+                    },
+                    {
+                        "text": "restart",
+                        "value": "restart"
+                    },
+                    {
+                        "text": "stop",
+                        "value": "stop"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "start",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "startoption",
+            "name": "启动参数",
+            "help": "OracleDB启动目标",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "NOMOUNT",
+                        "value": "NOMOUNT"
+                    },
+                    {
+                        "text": "MOUNT",
+                        "value": "MOUNT"
+                    },
+                    {
+                        "text": "OPEN",
+                        "value": "OPEN"
+                    },
+                    {
+                        "text": "RESTRICT",
+                        "value": "RESTRICT"
+                    },
+                    {
+                        "text": "NONE",
+                        "value": "NONE"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "NONE",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "stopoption",
+            "name": "停止参数",
+            "help": "OracleDB停止参数, 留空, 代表启动前不需要执行停止操作",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "NORMAL",
+                        "value": "NORMAL"
+                    },
+                    {
+                        "text": "IMMEDIATE",
+                        "value": "IMMEDIATE"
+                    },
+                    {
+                        "text": "TRANSACTIONAL",
+                        "value": "TRANSACTIONAL"
+                    },
+                    {
+                        "text": "ABORT",
+                        "value": "ABORT"
+                    },
+                    {
+                        "text": "NONE",
+                        "value": "NONE"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "NONE",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

@@ -1,0 +1,254 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use AutoExecUtils;
+use SqlplusExec;
+
+#切换前对原主库进行检查，确认可以切换
+#input：
+#db主机节点（DB主节点）
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+#dbName：库名
+#primaryDbUniqueName：主库实例名
+#standbyDbUniqueName：备库实例名
+#primarySequence: 主库sequence
+#standbySequence: 备库sequence
+
+#output:
+#无，如果检查失败会返回失败
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --sid <sid> --dbname <dbname> --primaryuniquename <primaryuniquename> --standbyuniquename <standbyuniquename> --primarysequence <primarysequence> --standbysequence <standbysequence>\n");
+    exit(1);
+}
+
+sub primaryCheck {
+    my ($opts) = @_;
+
+    my $sid                 = $opts->{sid};
+    my $dbName              = $opts->{dbname};
+    my $primaryDbUniqueName = $opts->{primaryuniquename};
+    my $standbyDbUniqueName = $opts->{standbyuniquename};
+    my $primarySequence     = $opts->{primarysequence};
+    my $standbySequence     = $opts->{standbysequence};
+
+    my $hasError = 0;
+
+    my $sqlplus = SqlplusExec->new( sid => $sid );
+
+    print("INFO: Begin check log archive config and db broker status.\n");
+
+    #==========================
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT NAME,VALUE FROM V$PARAMETER WHERE NAME IN ('log_archive_config', 'dg_broker_start')},
+        verbose => 1
+    );
+
+    my $parameters = {};
+    if ( defined($rows) ) {
+        foreach my $row (@$rows) {
+            $parameters->{ $row->{NAME} } = $row->{VALUE};
+        }
+    }
+
+    my $logArchiveConfig = $parameters->{log_archive_config};
+    if ( $logArchiveConfig !~ /\W$primaryDbUniqueName\W/ ) {
+        print("ERROR： Archive config $logArchiveConfig not include priamary instance:$primaryDbUniqueName\n");
+        $hasError = 1;
+    }
+    if ( $logArchiveConfig !~ /\W$standbyDbUniqueName\W/ ) {
+        print("ERROR： Archive config $logArchiveConfig not include standby instance:$standbyDbUniqueName\n");
+        $hasError = 1;
+    }
+
+    if ( $hasError == 0 ) {
+        print("INFO: Check log archive config:$logArchiveConfig success.\n");
+    }
+
+    # my $dbBrokerStart = $parameters->{dg_broker_start};
+    # if ( $dbBrokerStart ne 'TRUE' ) {
+    #     print("ERROR： DG broker status:$dbBrokerStart is not TRUE.\n");
+    #     $hasError = 1;
+    # }
+    # else {
+    #     print("INFO: DG borker status:$dbBrokerStart, check success.\n");
+    # }
+
+    print("INFO: Begin check DG synchronize status.\n");
+
+    #=================================
+    $rows = $sqlplus->query(
+        sql     => q{SELECT STATUS, FAIL_SEQUENCE, ERROR FROM GV$ARCHIVE_DEST GVAD WHERE DEST_NAME = 'LOG_ARCHIVE_DEST_2' AND INST_ID = 1 ORDER BY INST_ID, DEST_ID},
+        verbose => 1
+    );
+    my $archiveStatus = {};
+    if ( defined($rows) ) {
+        $archiveStatus = $$rows[0];
+    }
+    if ( $archiveStatus->{STATUS} eq 'VALID' and $archiveStatus->{FAIL_SEQUENCE} eq '0' and $archiveStatus->{ERROR} eq '' ) {
+        print("INFO: DG synchronize status is fine.\n");
+    }
+    else {
+        $hasError = 1;
+        print("ERROR: DG synchronize status is abornormal, STATUS must to be 'VALID', FAIL_SEQUENCE must to be 0, and ERROR must be empty.\n");
+    }
+
+    print("INFO: Begin check if data file has error.\n");
+
+    #==============================================
+    #SELECT count(1) as offline_datafiles_count FROM V$DATAFILE WHERE STATUS not in ('ONLINE','SYSTEM');
+    $rows = $sqlplus->query(
+        sql     => q{SELECT COUNT(1) AS OFFLINE_DATAFILES_COUNT FROM V$DATAFILE WHERE STATUS NOT IN ('ONLINE','SYSTEM')},
+        verbose => 1
+    );
+    my $offlineDatafilesCount = 0;
+    if ($rows) {
+        $offlineDatafilesCount = int( $$rows[0]->{OFFLINE_DATAFILES_COUNT} );
+    }
+    if ( $offlineDatafilesCount > 0 ) {
+        $hasError = 1;
+        print("ERROR: Offline datafile count bigger than 0.\n");
+    }
+    else {
+        print("INFO: Check offline datafiles count success.\n");
+    }
+
+    print("INFO: Begin check if primary db has running dba job.\n");
+
+    #==============================================
+    #select count(1) as dba_jobs_count from dba_jobs_running;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT COUNT(1) AS DBA_JOBS_COUNT FROM DBA_JOBS_RUNNING},
+        verbose => 1
+    );
+    my $dbaJobsCount = 0;
+    if ($rows) {
+        $dbaJobsCount = int( $$rows[0]->{DBA_JOBS_COUNT} );
+    }
+    if ( $dbaJobsCount > 0 ) {
+        $hasError = 1;
+        print("ERROR: DBA jobs count bigger than 0.\n");
+    }
+    else {
+        print("INFO: Check DBA jobs count success.\n");
+    }
+
+    print("INFO: Begin check if primary db has running dba scheduler.\n");
+
+    #==============================================
+    #SELECT COUNT(1) AS DBA_SCHEDULER_COUNT FROM DBA_SCHEDULER_RUNNING_JOBS
+    $rows = $sqlplus->query(
+        sql     => q{SELECT COUNT(1) AS DBA_SCHEDULER_COUNT FROM DBA_SCHEDULER_RUNNING_JOBS},
+        verbose => 1
+    );
+    my $dbaSchedulerCount = 0;
+    if ($rows) {
+        $dbaSchedulerCount = int( $$rows[0]->{DBA_SCHEDULER_COUNT} );
+    }
+    if ( $dbaSchedulerCount > 0 ) {
+        $hasError = 1;
+        print("ERROR: DBA schedulers count bigger than 0.\n");
+    }
+    else {
+        print("INFO: Check DBA schedulers count success.\n");
+    }
+
+    print("INFO: Begin check if primary db's role is PRIMARY.\n");
+
+    #==============================================
+    #SELECT DATABASE_ROLE FROM  GV$DATABASE WHERE INST_ID=1
+    $rows = $sqlplus->query(
+        sql     => q{SELECT DATABASE_ROLE FROM V$DATABASE},
+        verbose => 1
+    );
+    my $databaseRole = '';
+    if ($rows) {
+        $databaseRole = $$rows[0]->{DATABASE_ROLE};
+    }
+    if ( $databaseRole ne 'PRIMARY' ) {
+        $hasError = 1;
+        print("ERROR: Primary db is not in role:PRIMARY, can not switch.\n");
+    }
+    else {
+        print("INFO: Primary db is not in role PRIMARY.\n");
+    }
+
+    print("INFO: Begin check switchover status.\n");
+
+    #==============================================
+    #SELECT SWITCHOVER_STATUS, LOG_MODE FROM V$DATABASE;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT SWITCHOVER_STATUS, LOG_MODE FROM V$DATABASE},
+        verbose => 1
+    );
+    my $switchoverStatus = '';
+    my $logMode          = '';
+    if ($rows) {
+        $switchoverStatus = $$rows[0]->{SWITCHOVER_STATUS};
+        $logMode          = $$rows[0]->{LOG_MODE};
+    }
+    if ( $switchoverStatus ne 'TO STANDBY' and $switchoverStatus ne 'SESSIONS ACTIVE' ) {
+        $hasError = 1;
+        print("ERROR: Primary db switch over status is not valid, must to be 'TO STANDBY' or 'SESSIONS ACTIVE'.\n");
+    }
+    else {
+        print("INFO: Primary db switch over status is valid.\n");
+    }
+    if ( $logMode ne 'ARCHIVELOG' ) {
+        $hasError = 1;
+        print("ERROR: Log mode is not 'ARCHIVELOG', can not switch.\n");
+    }
+    else {
+        print("INFO: Log mode is valid.\n");
+    }
+
+    #SELECT VERSION FROM V$INSTANCE;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT VERSION FROM V$INSTANCE},
+        verbose => 1
+    );
+    my $version;
+    if ($rows) {
+        $version = $$rows[0]->{VERSION};
+        $version =~ s/\..*$//;
+        $version = int($version);
+    }
+
+    if ( $version > 11 ) {
+
+        #ALTER DATABASE SWITCHOVER TO $第一步查询出来的备库的DB_NAME$ VERIFY;
+        $sqlplus->do(
+            sql     => qq{ALTER DATABASE SWITCHOVER TO $standbyDbUniqueName VERIFY},
+            verbose => 1
+        );
+    }
+
+    return $hasError;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            sid=s
+            dbname=s
+            primaryuniquename=s
+            standbyuniquename=s
+            primarysequence=s
+            standbysequence=s
+        }
+    );
+
+    my $errorCount = 0;
+    $errorCount = primaryCheck($opts);
+    return $errorCount;
+}
+
+exit( main() );

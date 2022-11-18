@@ -1,0 +1,99 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use AutoExecUtils;
+use SqlplusExec;
+
+#最后一个步骤，切换后在现主库，原备库执行切换后的回切验证VERIFY
+#input：
+#db主机节点，原备库，现主库
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+#primaryDbUniqueName: 原来主库的实例名，用于做回切验证测试
+
+#output:
+#无
+
+#入参声明，使用时注释掉
+my ( $sid, $primaryDbUniqueName );
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --sid <sid> --primaryuniquename <primary db unique name>\n");
+    exit(1);
+}
+
+sub afterSwitchCheck {
+    my $opts                = @_;
+    my $sid                 = $opts->{sid};
+    my $primaryDbUniqueName = $opts->{primaryuniquename};
+
+    my $sqlplus = SqlplusExec->new( sid => $sid );
+
+    #ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=DEFER;
+    #ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=ENABLE;
+    #ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_3=DEFER;
+    #ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_3=ENABLE;
+    my $rows = $sqlplus->do(
+        sql     => q{ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=DEFER},
+        verbose => 1
+    );
+
+    my $rows = $sqlplus->do(
+        sql     => q{ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=ENABLE},
+        verbose => 1
+    );
+
+    my $rows = $sqlplus->do(
+        sql     => q{ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_3=DEFER},
+        verbose => 1
+    );
+
+    my $rows = $sqlplus->do(
+        sql     => q{ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_3=ENABLE},
+        verbose => 1
+    );
+
+    #SELECT VERSION FROM V$INSTANCE;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT VERSION FROM V$INSTANCE},
+        verbose => 1
+    );
+    my $version;
+    if ($rows) {
+        $version = $$rows[0]->{VERSION};
+        $version =~ s/\..*$//;
+        $version = int($version);
+    }
+
+    if ( $version > 11 ) {
+        print("INFO: Verify switch to orignal primary database...");
+        $sqlplus->do(
+            sql     => qq{ALTER DATABASE SWITCHOVER TO $primaryDbUniqueName VERIFY},
+            verbose => 1
+        );
+    }
+
+    return 0;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            sid=s
+            primaryuniquename=s
+        }
+    );
+
+    my $hasError = afterSwitchCheck($opts);
+    return $hasError;
+}
+
+exit( main() );
+

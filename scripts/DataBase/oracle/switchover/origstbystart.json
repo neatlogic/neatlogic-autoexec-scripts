@@ -1,0 +1,51 @@
+{
+    "opType": "target",
+    "typeName": "DR_SWITCH",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "原备库（现主库）启动，需要在现备库启动前启动",
+    "option": [
+        {
+            "opt": "sid",
+            "name": "SID",
+            "help": "如不设置则直接使用环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "dbname",
+            "name": "DB库名",
+            "help": "库名，主备是一致的",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "israc",
+            "name": "是否是RAC",
+            "help": "当前节点是否是ORACLE RAC的成员",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "否",
+                        "value": "0"
+                    },
+                    {
+                        "text": "是",
+                        "value": "1"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

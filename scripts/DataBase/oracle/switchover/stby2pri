@@ -1,0 +1,79 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use AutoExecUtils;
+use SqlplusExec;
+
+#把备库切换为Primary
+#input：
+#db主机节点（DB备节点）
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+
+#output:
+#无，如果检查失败会返回失败
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --sid <sid>\n");
+    exit(1);
+}
+
+sub switchToPrimary {
+    my ($sid) = @_;
+
+    #alter database commit to switchover to physical standby with session shutdown;
+    my $hasError = 0;
+    my $sqlplus  = SqlplusExec->new( sid => $sid );
+
+    print("INFO: Try to switch to primary...\n");
+    $sqlplus->do(
+        sql     => qq{alter database commit to switchover to primary with session shutdown;},
+        verbose => 1
+    );
+
+    my $switched  = 0;
+    my $loopCount = 300;
+    while ( $switched == 0 and $loopCount > 0 ) {
+        my $rows = $sqlplus->query(
+            sql     => q{SELECT OPEN_MODE FROM V$DATABASE},
+            verbose => 1
+        );
+
+        my $openMode = '';
+        if ($rows) {
+            $openMode = $$rows[0]->{OPEN_MODE};
+        }
+        if ( $openMode eq 'MOUNTED' or $openMode eq 'READ WRITE' ) {
+            $switched = 1;
+            print("FINE: Switch to primary success.\n");
+        }
+        sleep(2);
+        $loopCount--;
+    }
+    if ( $loopCount <= 0 ) {
+        $hasError = 1;
+        print("ERROR: Wait the db instance switchover status to 'MOUNTED' or 'READ WRITE' timeout.\n");
+    }
+
+    return $hasError;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            sid=s
+        }
+    );
+
+    my $hasError = switchToPrimary( $opts->{sid} );
+    return $hasError;
+}
+
+exit( main() );

@@ -1,0 +1,203 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use AutoExecUtils;
+use SqlplusExec;
+
+#切换前对原备库进行检查，确认可以切换
+#input：
+#db主机节点（DB主节点）
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+#dbName：库名
+#primaryDbUniqueName：主库实例名
+#standbyDbUniqueName：备库实例名
+#primarySequence: 主库sequence
+#standbySequence: 备库sequence
+
+#output:
+#无，如果检查失败会返回失败
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --sid <sid> --dbname <dbname> --primaryuniquename <primaryuniquename> --standbyuniquename <standbyuniquename> --primarysequence <primarysequence> --standbysequence <standbysequence>\n");
+    exit(1);
+}
+
+sub standbyCheck {
+    my ($opts) = @_;
+
+    my $sid                 = $opts->{sid};
+    my $dbName              = $opts->{dbname};
+    my $primaryDbUniqueName = $opts->{primaryuniquename};
+    my $standbyDbUniqueName = $opts->{standbyuniquename};
+    my $primarySequence     = $opts->{primarysequence};
+    my $standbySequence     = $opts->{standbysequence};
+
+    my $hasError = 0;
+
+    my $sqlplus = SqlplusExec->new( sid => $sid );
+
+    #Check the sequence gap
+    #============================
+    my $sequenceGap = abs( int($primarySequence) - int($standbySequence) );
+    if ( $sequenceGap > 10 ) {
+        $hasError = 1;
+        print("ERROR: Synchronize sequence gap:$sequenceGap too big, more than 10.\n");
+    }
+
+    print("INFO: Begin check log archive config and db broker status.\n");
+
+    #==========================
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT NAME,VALUE FROM V$PARAMETER WHERE NAME IN ('log_archive_config', 'dg_broker_start')},
+        verbose => 1
+    );
+
+    my $parameters = {};
+    if ( defined($rows) ) {
+        foreach my $row (@$rows) {
+            $parameters->{ $row->{NAME} } = $row->{VALUE};
+        }
+    }
+
+    my $logArchiveConfig = $parameters->{log_archive_config};
+    if ( $logArchiveConfig =~ /\W$primaryDbUniqueName\W/ ) {
+        print("ERROR： Archive config $logArchiveConfig not include priamary instance:$primaryDbUniqueName\n");
+        $hasError = 1;
+    }
+    if ( $logArchiveConfig =~ /\W$standbyDbUniqueName\W/ ) {
+        print("ERROR： Archive config $logArchiveConfig not include standby instance:$standbyDbUniqueName\n");
+        $hasError = 1;
+    }
+
+    if ( $hasError == 0 ) {
+        print("INFO: Check log archive config:$logArchiveConfig success.\n");
+    }
+
+    # my $dbBrokerStart = $parameters->{dg_broker_start};
+    # if ( $dbBrokerStart ne 'TRUE' ) {
+    #     print("ERROR： DG broker status:$dbBrokerStart is not TRUE.\n");
+    #     $hasError = 1;
+    # }
+    # else {
+    #     print("INFO: DG borker status:$dbBrokerStart, check success.\n");
+    # }
+
+    print("INFO: Begin check standby db open mode.\n");
+
+    #==============================================
+    #SELECT OPEN_MODE FROM V$DATABASE;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT OPEN_MODE FROM V$DATABASE)},
+        verbose => 1
+    );
+    my $openMode;
+    if ( defined($rows) ) {
+        $openMode = $$rows[0]->{OPEN_MODE};
+    }
+    if ( $openMode ne 'READ ONLY WITH APPLY' ) {
+        $hasError = 1;
+        print("ERROR: Standby db open mode:$openMode, must to be 'READ ONLY WITH APPLY'\n");
+    }
+    else {
+        print("INFO: Check standby db open mode success.\n");
+    }
+
+    print("INFO: Begin check if data file has error.\n");
+
+    #==============================================
+    #SELECT count(1) as offline_datafiles_count FROM V$DATAFILE WHERE STATUS not in ('ONLINE','SYSTEM');
+    $rows = $sqlplus->query(
+        sql     => q{SELECT count(1) as offline_datafiles_count FROM V$DATAFILE WHERE STATUS not in ('ONLINE','SYSTEM')},
+        verbose => 1
+    );
+    my $offlineDatafilesCount = 0;
+    if ($rows) {
+        $offlineDatafilesCount = int( $$rows[0]->{OFFLINE_DATAFILES_COUNT} );
+    }
+    if ( $offlineDatafilesCount > 0 ) {
+        $hasError = 1;
+        print("ERROR: Offline datafile count bigger than 0.\n");
+    }
+    else {
+        print("INFO: Check offline datafiles count success.\n");
+    }
+
+    print("INFO: Begin check if standby db's role is 'PHYSICAL STANDBY'.\n");
+
+    #==============================================
+    #SELECT DATABASE_ROLE FROM  GV$DATABASE WHERE INST_ID=1
+    $rows = $sqlplus->query(
+        sql     => q{SELECT DATABASE_ROLE FROM V$DATABASE},
+        verbose => 1
+    );
+    my $databaseRole = '';
+    if ($rows) {
+        $databaseRole = $$rows[0]->{DATABASE_ROLE};
+    }
+    if ( $databaseRole ne 'PHYSICAL STANDBY' ) {
+        $hasError = 1;
+        print("ERROR: Standby db is not in role:PHYSICAL STANDBY, can not switch.\n");
+    }
+    else {
+        print("INFO: Standby db is not in role 'PHYSICAL STANDBY'.\n");
+    }
+
+    print("INFO: Begin check switchover status.\n");
+
+    #==============================================
+    #SELECT SWITCHOVER_STATUS, LOG_MODE FROM V$DATABASE;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT SWITCHOVER_STATUS, LOG_MODE FROM V$DATABASE},
+        verbose => 1
+    );
+    my $switchoverStatus = '';
+    my $logMode          = '';
+    if ($rows) {
+        $switchoverStatus = $$rows[0]->{SWITCHOVER_STATUS};
+        $logMode          = $$rows[0]->{LOG_MODE};
+    }
+    if ( $switchoverStatus ne 'NOT ALLOWED' ) {
+        $hasError = 1;
+        print("ERROR: Standby db switch over status is not valid, must to be 'NOT ALLOWED'.\n");
+    }
+    else {
+        print("INFO: Standby db switch over status is valid.\n");
+    }
+    if ( $logMode ne 'ARCHIVELOG' ) {
+        $hasError = 1;
+        print("ERROR: Log mode is not 'ARCHIVELOG', can not switch.\n");
+    }
+    else {
+        print("INFO: Log mode is valid.\n");
+    }
+
+    return $hasError;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            sid=s
+            dbname=s
+            primaryuniquename=s
+            standbyuniquename=s
+            primarysequence=s
+            standbysequence=s
+        }
+    );
+
+    my $errorCount = 0;
+    $errorCount = standbyCheck($opts);
+    return $errorCount;
+}
+
+exit( main() );

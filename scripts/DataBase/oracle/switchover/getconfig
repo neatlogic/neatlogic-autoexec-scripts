@@ -1,0 +1,132 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+#input：
+#db主机节点（DB主机节点可用的RAC其中一个节点）主备都要运行，获取主备的dbUniqueName和dbName和isRAC，两个参数分别传递给下一个步骤
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+
+#output:
+#dbName: xxx  (库名，主备是一致的)
+#dbUniqueName: yyy (实例名，RAC集群内一致，主备不一样)
+#dbSequence: zzz (同步的sequence)
+#tempFilesCount: (临时文件数量)
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --sid <sid>\n");
+    exit(1);
+}
+
+sub isRac {
+    my ($sqlplus) = @_;
+
+    #SELECT VALUE FROM V$PARAMETER WHERE NAME='cluster_database';
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT VALUE FROM V$PARAMETER WHERE NAME='cluster_database'},
+        verbose => 1
+    );
+    my $isCluster = 'FALSE';
+    if ($rows) {
+        $isCluster = $$rows[0]->{VALUE};
+    }
+
+    my $clustered = 0;
+
+    if ( $isCluster eq 'TRUE' ) {
+        $clustered = 1;
+    }
+    else {
+        my $israc = `ps -ef |grep crsd.bin |grep -v "grep crsd.bin" |sed -n '$='`;
+        if ( $israc eq '' ) {
+            $clustered = 0;
+        }
+        else {
+            $clustered = 1;
+        }
+    }
+
+    return $clustered;
+}
+
+sub getConfig {
+    my ($sid) = @_;
+    my $sqlplus = SqlplusExec->new( sid => $sid );
+
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT NAME,VALUE FROM V$PARAMETER WHERE NAME IN ('db_name', 'db_unique_name')},
+        verbose => 1
+    );
+
+    my $parameters = {};
+    if ( defined($rows) ) {
+        foreach my $row (@$rows) {
+            $parameters->{ $row->{NAME} } = $row->{VALUE};
+        }
+    }
+
+    my $DB_NAME        = $parameters->{db_name};
+    my $DB_UNIQUE_NAME = $parameters->{db_unique_name};
+
+    #SELECT SEQUENCE# FROM V$THREAD where THREAD#='1'
+    $rows = $sqlplus->query(
+        sql     => q{SELECT SEQUENCE# as SEQUENCE FROM V$THREAD where THREAD#='1'},
+        verbose => 1
+    );
+    my $SEQUENCE;
+    if ( defined($rows) ) {
+        $SEQUENCE = $$rows[0]->{SEQUENCE};
+    }
+
+    #SELECT COUNT(1) AS TEMP_FILES_COUNT FROM DBA_TEMP_FILES;
+    $rows = $sqlplus->query(
+        sql     => q{SELECT COUNT(1) AS TEMP_FILES_COUNT FROM DBA_TEMP_FILES},
+        verbose => 1
+    );
+    my $TEMP_FILES_COUNT;
+    if ( defined($rows) ) {
+        $TEMP_FILES_COUNT = $$rows[0]->{TEMP_FILES_COUNT};
+    }
+
+    my $isRAC = isRac($sqlplus);
+
+    return ( $DB_NAME, $isRAC, $DB_UNIQUE_NAME, $SEQUENCE, $TEMP_FILES_COUNT );
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            sid=s
+        }
+    );
+
+    my ( $dbName, $isRAC, $dbUniqueName, $dbSequence, $tempFilesCount ) = getConfig( $opts->{sid} );
+    my $out = {};
+    $out->{dbName}         = $dbName;
+    $out->{isRAC}          = $isRAC;
+    $out->{dbUniqueName}   = $dbUniqueName;
+    $out->{dbSequence}     = $dbSequence;
+    $out->{tempFilesCount} = $tempFilesCount;
+    AutoExecUtils::saveOutput($out);
+
+    if ( defined($dbName) and defined($dbUniqueName) and defined($dbSequence) ) {
+        print("INFO: Get db base config success.\n");
+    }
+    else {
+        print("ERROR: Get db base config failed.\n");
+        exit(-1);
+    }
+
+    return 0;
+}
+
+exit( main() );

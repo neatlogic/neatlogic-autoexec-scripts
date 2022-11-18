@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+use AutoExecUtils;
+use SqlplusExec;
+
+#原备库（现主库）启动，要优先于原主库（现备库）启动
+#input：
+#db主机节点（DB原备节点）
+#sid: oracle实例的SID, 用于设置环境变量ORACLE_SID，如果不提供使用原环境变量的ORACLE_SID
+#dbName: db名，就是第一步查询出来的dbName
+
+#output:
+#无，如果检查失败会返回失败
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --sid <sid> --dbname <db name> --israc <0|1>\n");
+    exit(1);
+}
+
+sub start {
+    my ($opts) = @_;
+
+    my $sid    = $opts->{sid};
+    my $dbName = $opts->{dbname};
+    my $rac    = $opts->{israc};
+
+    my $hasError = 0;
+
+    print("INFO: Try to start standby db...\n");
+
+    my $sqlplus = SqlplusExec->new( sid => $sid );
+
+    if ( $rac == 1 ) {
+        my $ret = system("srvctl start database -d $dbName -startoption open");
+        system("srvctl status database -db $dbName");
+        if ( $ret ne 0 ) {
+            print("ERROR: Open oracle rac db:$dbName failed, $!\n");
+            exit($ret);
+        }
+    }
+    else {
+        $sqlplus->do(
+            sql     => qq{ALTER DATABASE OPEN},
+            verbose => 1
+        );
+    }
+
+    # print("INFO: Try to disconnect log file...\n");
+    # $sqlplus->do(
+    #     sql     => qq{ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT FROM SESSION},
+    #     verbose => 1
+    # );
+
+    print("INFO: Waiting db start to standby...");
+    my $started   = 0;
+    my $loopCount = 300;
+    while ( $started == 0 and $loopCount > 0 ) {
+        my $rows = $sqlplus->query(
+            sql     => q{SELECT OPEN_MODE FROM V$DATABASE},
+            verbose => 1
+        );
+
+        my $openMode = '';
+        if ($rows) {
+            $openMode = $$rows[0]->{OPEN_MODE};
+        }
+        if ( $openMode eq 'READ WRITE' ) {
+            $started = 1;
+            print("FINE: Started in primary mode success.\n");
+        }
+        sleep(2);
+        $loopCount--;
+    }
+    if ( $loopCount <= 0 ) {
+        print("ERROR: Wait the db open mode to 'READ WRITE' timeout.\n");
+        exit(-1);
+    }
+
+    #==============================================
+    my $rows = $sqlplus->query(
+        sql     => q{SELECT DATABASE_ROLE FROM V$DATABASE},
+        verbose => 1
+    );
+    my $databaseRole = '';
+    if ($rows) {
+        $databaseRole = $$rows[0]->{DATABASE_ROLE};
+    }
+    if ( $databaseRole ne 'PRIMARY' ) {
+        $hasError = 1;
+        print("ERROR: Primary db is not in role 'PRIMARY', please check it.\n");
+    }
+    else {
+        print("INFO: Primary db is not in role 'PRIMARY'.\n");
+    }
+
+    return $hasError;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    $opts->{israc} = 0;
+    GetOptions(
+        $opts, qw{
+            sid=i
+            dbname=s
+            israc=s
+        }
+    );
+
+    my $hasError = start($opts);
+    return $hasError;
+}
+
+exit( main() );

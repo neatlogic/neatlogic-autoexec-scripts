@@ -1,0 +1,65 @@
+{
+    "opType": "target",
+    "typeName": "DR_SWITCH",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "切换前对原备库进行检查，确认可以切换",
+    "option": [
+        {
+            "opt": "sid",
+            "name": "SID",
+            "help": "如不设置则直接使用环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "dbname",
+            "name": "DB库名",
+            "help": "库名，主备是一致的",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "primaryuniquename",
+            "name": "主库DB唯一名",
+            "help": "原来主库的DB唯一名，主备名称不一样",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "standbyuniquename",
+            "name": "备库DB唯一名",
+            "help": "原来备库的DB唯一名，主备名称不一样",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "primarysequence",
+            "name": "主库Log Sequence号",
+            "help": "Archive Log同步，主库的Log Sequence号",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "standbysequence",
+            "name": "备库Log Sequence号",
+            "help": "Archive Log同步，备库的Log Sequence号",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

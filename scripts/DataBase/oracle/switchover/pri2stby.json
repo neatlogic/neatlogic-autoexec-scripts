@@ -1,0 +1,20 @@
+{
+    "opType": "target",
+    "typeName": "DR_SWITCH",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "在主库执行，切换到备库状态，需要在备库执行切换到主库前执行",
+    "option": [
+        {
+            "opt": "sid",
+            "name": "SID",
+            "help": "如不设置则直接使用环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
