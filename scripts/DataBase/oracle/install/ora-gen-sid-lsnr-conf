@@ -214,16 +214,34 @@ sub main {
             # SID_LIST_LISTENER =
             #   (SID_LIST =
             #     (SID_DESC =
+            #       (SID_NAME=testdb1)
             #       (GLOBAL_DBNAME = testdb)
             #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+            #     )
+            #     (SID_DESC =
             #       (SID_NAME=testdb1)
+            #       (GLOBAL_DBNAME = testdb_DGMGRL)
+            #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+            #       (ENVS="TNS_ADMIN=${GRID_HOME}/network/admin")
             #     )
             #   )
-            $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n    (SID_DESC =\n";
+            $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n";
+
+            #one SID_DESC
+            $sidLsnrConf = $sidLsnrConf . "    (SID_DESC =\n";
             $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbUniqueName)\n";
-            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
             $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
             $sidLsnrConf = $sidLsnrConf . "    )\n";
+
+            #dg broker needed sid_desc
+            $sidLsnrConf = $sidLsnrConf . "    (SID_DESC =\n";
+            $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = ${dbUniqueName}_DGMGRL)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (ENVS=\"TNS_ADMIN=${GRID_HOME}/network/admin\")\n";
+            $sidLsnrConf = $sidLsnrConf . "    )\n";
+
             $sidLsnrConf = $sidLsnrConf . "  )\n";
         }
         else {
@@ -248,16 +266,34 @@ sub main {
         # SID_LIST_LISTENER =
         #   (SID_LIST =
         #     (SID_DESC =
+        #       (SID_NAME=testdb1)
         #       (GLOBAL_DBNAME = testdb)
         #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+        #     )
+        #     (SID_DESC =
         #       (SID_NAME=testdb1)
+        #       (GLOBAL_DBNAME = testdb_DGMGRL)
+        #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+        #       (ENVS="TNS_ADMIN=${ORACLE_HOME}/network/admin")
         #     )
         #   )
-        $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n    (SID_DESC =\n";
+        $sidLsnrConf = "SID_LIST_LISTENER =\n  (SID_LIST =\n";
+
+        #one SID_DESC
+        $sidLsnrConf = $sidLsnrConf . "    (SID_DESC =\n";
         $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbUniqueName)\n";
-        $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
         $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
         $sidLsnrConf = $sidLsnrConf . "    )\n";
+
+        #dg broker needed sid_desc
+        $sidLsnrConf = $sidLsnrConf . "    (SID_DESC =\n";
+        $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = ${dbUniqueName}_DGMGRL)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
+        $sidLsnrConf = $sidLsnrConf . "      (ENVS=\"TNS_ADMIN=${ORACLE_HOME}/network/admin\")\n";
+        $sidLsnrConf = $sidLsnrConf . "    )\n";
+
         $sidLsnrConf = $sidLsnrConf . "  )\n";
 
         $lsnrOraConfPath = "$ORACLE_HOME/network/admin/listener.ora";

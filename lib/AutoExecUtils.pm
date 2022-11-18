@@ -505,5 +505,157 @@ sub getNodesArray {
     return \@nodesArray;
 }
 
+sub evalDsl {
+    my ( $data, $checkDsl ) = @_;
+    $checkDsl =~ s/\[\s*([^\]]+)\s*\]/\$data->\{'$1'\}/g;
+
+    my $ret = eval($checkDsl);
+
+    return $ret;
+}
+
+sub JsonToTableCheck {
+    my ( $obj, $fieldNames, $filter, $checkDsl ) = @_;
+
+    my $errorCode = 0;
+
+    my $tblHeader = {};
+    my $tblRows;
+
+    if ( ref($obj) eq 'HASH' ) {
+        $tblRows = hashToTable( $obj, undef, $tblHeader );
+    }
+    elsif ( ref($obj) eq 'ARRAY' ) {
+        foreach my $subObj (@$obj) {
+            my $myRows = hashToTable( $subObj, undef, $tblHeader );
+            push( @$tblRows, @$myRows );
+        }
+    }
+
+    if ( not defined($fieldNames) ) {
+        @$fieldNames = sort ( keys(%$tblHeader) );
+    }
+
+    foreach my $fieldName (@$fieldNames) {
+        print( $fieldName, "\t" );
+    }
+    print("\n");
+
+    my $matched = 0;
+    foreach my $row (@$tblRows) {
+        if ( defined($filter) ) {
+            my $filterRet = evalDsl( $row, $filter );
+            if ( not $filterRet ) {
+                next;
+            }
+        }
+
+        $matched = 1;
+        if ( defined($checkDsl) ) {
+            my $ret = evalDsl( $row, $checkDsl );
+            if ($ret) {
+                print("FINEST: ");
+            }
+            else {
+                $errorCode = 1;
+                print("ERROR: ");
+            }
+        }
+
+        foreach my $fieldName (@$fieldNames) {
+            print( $row->{$fieldName}, "\t" );
+        }
+        print("\n");
+    }
+
+    if ( $matched == 0 ) {
+        if ( defined($filter) ) {
+            print("ERROR: No data matched filter:$filter\n");
+        }
+        else {
+            print("ERROR: No data return from api.\n");
+        }
+        $errorCode = 2;
+    }
+
+    return $errorCode;
+}
+
+sub hashToTable {
+    my ( $obj, $parentPath, $tblHeader ) = @_;
+
+    #获取所有的简单属性，构造第一行
+    my $myRow = {};
+    while ( my ( $key, $val ) = each(%$obj) ) {
+        my $thisPath;
+        if ( defined($parentPath) ) {
+            $thisPath = "$parentPath.$key";
+        }
+        else {
+            $thisPath = "$key";
+        }
+
+        if ( ref($val) eq '' ) {
+            $tblHeader->{$thisPath} = 1;
+            $myRow->{$thisPath}     = $val;
+        }
+    }
+
+    my $myRows = [$myRow];
+
+    while ( my ( $key, $val ) = each(%$obj) ) {
+        if ( ref($val) eq '' ) {
+            next;
+        }
+
+        my $thisPath;
+        if ( defined($parentPath) ) {
+            $thisPath = "$parentPath.$key";
+        }
+        else {
+            $thisPath = "$key";
+        }
+
+        if ( ref($val) eq 'ARRAY' ) {
+            if ( scalar(@$val) > 0 ) {
+                my $newRows = [];
+                foreach my $subObj (@$val) {
+                    my $myChildRows = hashToTable( $subObj, $thisPath, $tblHeader );
+                    foreach my $childRow (@$myChildRows) {
+                        foreach my $curRow (@$myRows) {
+                            while ( my ( $curKey, $curVal ) = each(%$curRow) ) {
+                                $childRow->{$curKey} = $curVal;
+                            }
+                            push( @$newRows, $childRow );
+                        }
+                    }
+                }
+                if ( scalar(@$newRows) > 0 ) {
+                    $myRows = $newRows;
+                }
+            }
+        }
+        elsif ( ref($val) eq 'HASH' ) {
+            my $myChildRows = hashToTable( $val, $thisPath, $tblHeader );
+
+            if ( scalar(@$myChildRows) > 0 ) {
+                my $newRows = [];
+                foreach my $childRow (@$myChildRows) {
+                    my %tmpRow = %$childRow;
+                    foreach my $curRow (@$myRows) {
+                        while ( my ( $curKey, $curVal ) = each(%$curRow) ) {
+                            $childRow->{$curKey} = $curVal;
+                        }
+                        push( @$newRows, $childRow );
+                    }
+                }
+                $myRows = $newRows;
+            }
+        }
+    }
+
+    return $myRows;
+}
+
 1;
 
