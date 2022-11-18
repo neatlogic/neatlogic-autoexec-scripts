@@ -67,7 +67,7 @@
         {
             "opt": "chkdsl",
             "name": "检查DSL",
-            "help": "检查DSL，例如：[applicationModels.applicationStatus] eq '1'\n字符串比较操作符:eq、ne、=～/pattern/\n数值比较符: ==、!=、>、>=、<、<=",
+            "help": "检查DSL，例如：[applicationModels.applicationStatus] eq '1'\n字符串比较操作符:eq、ne、=~/pattern/\n数值比较符: ==、!=、>、>=、<、<=",
             "type": "textarea",
             "defaultValue": "",
             "required": "false",
