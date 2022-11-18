@@ -58,7 +58,7 @@
         {
             "opt": "filter",
             "name": "过滤条件",
-            "help": "对象过滤，例如：[applicationModels.applicationName] eq 'ATMP_ Subscriber' and [managePath] eq 'ATMP'\n字符串比较操作符:eq、ne、=～/pattern/\n数值比较符: ==、!=、>、>=、<、<=",
+            "help": "对象过滤，例如：[applicationModels.applicationName] eq 'ATMP_ Subscriber' and [managePath] eq 'ATMP'\n字符串比较操作符:eq、ne、=~/pattern/\n数值比较符: ==、!=、>、>=、<、<=",
             "type": "textarea",
             "defaultValue": "",
             "required": "false",
