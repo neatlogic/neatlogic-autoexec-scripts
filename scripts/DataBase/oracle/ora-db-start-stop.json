@@ -51,6 +51,10 @@
                     {
                         "text": "stop",
                         "value": "stop"
+                    },
+                    {
+                        "text": "modify",
+                        "value": "modify"
                     }
                 ],
                 "dataType": "static"

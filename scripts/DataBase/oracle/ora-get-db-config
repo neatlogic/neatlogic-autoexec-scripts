@@ -30,13 +30,12 @@ sub getCrsHome {
             $gridHome =~ s/^\s*|\s*$//g;
         }
     }
-
+    print("Oracle crs home:$gridHome\n");
     return $gridHome;
 }
 
 sub getDBMajorVersion {
     my ($osUser) = @_;
-    print("INFO: Try to get oracle database version by command:oraversion -majorVersion\n");
     my $majorVersion = `su - '$osUser' -c 'oraversion -majorVersion'`;
     if ( $? == 0 ) {
         $majorVersion =~ s/^\s*|\s*$//g;
@@ -44,7 +43,7 @@ sub getDBMajorVersion {
     else {
         undef($majorVersion);
     }
-    print("INFO: DB major version:$majorVersion.\n");
+    print("DB major version:$majorVersion.\n");
     return $majorVersion;
 }
 
@@ -92,6 +91,7 @@ sub getDBNameInfo {
     foreach my $row (@$rows) {
         $dbInfo->{ $row->{NAME} } = $row->{VALUE};
     }
+    print("Get database parameters finished.\n");
     return $dbInfo;
 }
 
@@ -119,6 +119,7 @@ sub getDBInstances {
         }
     }
 
+    print( "Cluster database nodes:" . join( ',', keys(%$instances) ) . "\n" );
     return ( $localInsName, $instances );
 }
 
@@ -185,6 +186,7 @@ sub getRacDBInfo {
     $racInfo->{INSTANCES}      = $dbConf->{'Database instances'};
     $racInfo->{NODES}          = $dbConf->{'Configured nodes'};
 
+    print("Get rac database config finished.\n");
     return $racInfo;
 }
 
@@ -221,6 +223,7 @@ sub getCrsInfo {
     }
     $crsInfo->{NODES_VIP} = $nodesVip;
 
+    print("Get oracle cluster node names ad vips finished.\n");
     return $crsInfo;
 }
 
@@ -290,6 +293,7 @@ sub getScanInfo {
         push( @scanVips, $1 );
     }
 
+    print( "Get oracle cluster scan ip:" . join( ',', @scanVips ) . "\n" );
     return \@scanVips;
 }
 
@@ -325,6 +329,8 @@ sub getLsnrAddrs {
     }
 
     my @sortedAddrs = sort { $a->{host} . ':' . $a->{port} <=> $b->{host} . ':' . $b->{port} } (@addrs);
+
+    print("Get listener config finished.\n");
     return \@sortedAddrs;
 }
 
@@ -524,9 +530,6 @@ sub main {
             $out->{racScanTnsConf} = $racScanTnsConf;
         }
 
-        my ( $dbSequence, $tempFilesCount ) = getConfig( $ORACLE_USER, $localInsName );
-        $out->{dbSequence}      = $dbSequence;
-        $out->{tempFilesCount}  = $tempFilesCount;
         $out->{lsnrOraConfPath} = $userEnv->{GRID_HOME} . '/network/admin/listener.ora';
         $out->{tnsOraConfPath}  = $userEnv->{ORACLE_HOME} . '/network/admin/tnsnames.ora';
         if ( not -e $out->{lsnrOraConfPath} ) {
@@ -547,9 +550,16 @@ sub main {
             }
         }
 
+        my $ip   = $ENV{MGMT_IP};
+        my $port = 1521;
+
+        $out->{allGridNodesInfo}   = [ { ip => $ip } ];
+        $out->{otherGridNodesInfo} = [];
+        $out->{thisNodesInfo}      = [ { ip => $ip } ];
+        $out->{operNodeInfo}       = [ { ip => $ip } ];
+        $out->{otherNodeNames}     = '';
+
         my $lsnAddrs = getLsnrAddrs($ORACLE_USER);
-        my $ip       = $ENV{MGMT_IP};
-        my $port     = 1521;
         if ( scalar(@$lsnAddrs) > 0 ) {
             my $lsnrInfo = $$lsnAddrs[0];
             $ip   = $lsnrInfo->{host};
@@ -576,9 +586,6 @@ sub main {
             $out->{dbTnsConf}     = $dbTnsConf;
         }
 
-        my ( $dbSequence, $tempFilesCount ) = getConfig($ORACLE_USER);
-        $out->{dbSequence}      = $dbSequence;
-        $out->{tempFilesCount}  = $tempFilesCount;
         $out->{lsnrOraConfPath} = $userEnv->{ORACLE_HOME} . '/network/admin/listener.ora';
         $out->{tnsOraConfPath}  = $userEnv->{ORACLE_HOME} . '/network/admin/tnsnames.ora';
 

@@ -136,6 +136,23 @@ sub main {
                 return $exitCode;
             }
         }
+        elsif ( $action eq 'modify' ) {
+            if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
+                $exitCode = system(qq{su - '$ORACLE_USER' -c "$envLine srvctl modify database -d $dbUniqueName -startoption $startOption"});
+
+                if ( $exitCode == 0 ) {
+                    print("FINE: Alter Database to $startOption success.\n");
+                }
+                else {
+                    print("ERROR: Alter Database to $startOption failed.\n");
+                    return $exitCode;
+                }
+            }
+            else {
+                $exitCode = 1;
+                print("ERROR: No start optiont defined.\n");
+            }
+        }
     }
     else {
         my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, oraHome => $ORACLE_HOME, sid => $ORACLE_SID );
@@ -172,6 +189,26 @@ sub main {
             else {
                 print("ERROR: Start up database failed.\n");
                 return $exitCode;
+            }
+        }
+        elsif ( $action eq 'modify' ) {
+            if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
+                $exitCode = $sqlplus->do(
+                    sql     => "ALTER DATABASE $startOption;",
+                    verbose => 1
+                );
+
+                if ( $exitCode == 0 ) {
+                    print("FINE: Alter Database to $startOption success.\n");
+                }
+                else {
+                    print("ERROR: Alter Database to $startOption failed.\n");
+                    return $exitCode;
+                }
+            }
+            else {
+                $exitCode = 1;
+                print("ERROR: No start optiont defined.\n");
             }
         }
     }

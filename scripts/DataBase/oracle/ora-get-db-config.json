@@ -132,14 +132,6 @@
             "required": "false"
         },
         {
-            "opt": "dbSequence",
-            "name": "同步Sequence号",
-            "help": "同步的归档日志的Sequence号",
-            "type": "text",
-            "defaultValue": null,
-            "required": "false"
-        },
-        {
             "opt": "gridNodeIpInfo",
             "name": "集群节点IP信息",
             "help": "集群节点IP对应关系",
@@ -193,6 +185,14 @@
             "help": "除当前节点以外的其他集群成员节点信息",
             "type": "node",
             "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "otherNodeNames",
+            "name": "当前节点以外节点名称",
+            "help": "除当前节点以外的其他集群成员节点名称",
+            "type": "textarea",
+            "defaultValue": "",
             "required": "false"
         },
         {
