@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "OracleDB安装执行root脚本(root用户执行)",

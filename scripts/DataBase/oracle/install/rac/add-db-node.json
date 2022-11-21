@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "增加集群DataBase节点(在某个老节点上执行)",

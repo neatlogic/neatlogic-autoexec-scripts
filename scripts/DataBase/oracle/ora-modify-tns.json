@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "修改tnsnames.ora或listeners.ora",

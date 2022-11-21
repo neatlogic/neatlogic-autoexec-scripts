@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "MEDIUM",
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "创建Oracle实例Listener",

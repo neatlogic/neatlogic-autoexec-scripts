@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "Oracle RAC 安装OS其他前置工作(root用户执行服务配置)",

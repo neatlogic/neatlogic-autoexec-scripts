@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "执行Oracle RMAN命令",

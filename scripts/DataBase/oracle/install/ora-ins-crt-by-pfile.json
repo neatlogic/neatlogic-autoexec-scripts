@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "MEDIUM",
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "通过Pfile内容启动DB到noumount状态",

@@ -1,7 +1,7 @@
 {
     "opType": "target",
     "typeName": "INSTALL",
-    "riskName": "LOW",
+    "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
     "description": "删除集群中某个Oracle实例(在非删除节点用root用户执行)",
