@@ -83,16 +83,20 @@ function manualUnInstall() {
 
         SUDO_ORA_CMD $GRID_USER lsnrctl stop
 
-        su - $GRID_USER -c 'LANG=en_US.UTF-8 sqlplus / as sysdba' <<EOF
+        su - $GRID_USER -c 'LANG=en_US.UTF-8 sqlplus / as sysasm' <<EOF
 shutdown immediate;
 EXIT;
 EOF
 
         echo "Try to ensure local node stoped..."
+        echo "crsctl stop has"
+        $ORACLE_HOME/bin/crsctl stop has
+
         echo "crsctl stop crs"
         $ORACLE_HOME/bin/crsctl stop crs
+
         LOCAL_NODE_NAME=$($ORACLE_HOME/bin/olsnodes -l)
-        if [ -n "$LOCAL_NODE_NAME" ]; then
+        if [ $?=0 ] && [ -n "$LOCAL_NODE_NAME" ]; then
             echo "crsctl delete node -n $LOCAL_NODE_NAME"
             $ORACLE_HOME/bin/crsctl delete node -n $LOCAL_NODE_NAME
         fi
