@@ -88,16 +88,16 @@ function manualUnInstall() {
 shutdown immediate;
 EXIT;
 EOF
+    fi
 
-        #kill oracle process
-        pkill -u $ORACLE_USER
-        sleep 3
-        pkill -u $ORACLE_USER
-        exitCode=$?
-        if [ $exitCode == 0 ]; then
-            sleep 5
-            pkill -9 -u $ORACLE_USER
-        fi
+    #kill oracle process
+    pkill -u $ORACLE_USER
+    sleep 3
+    pkill -u $ORACLE_USER
+    exitCode=$?
+    if [ $exitCode == 0 ]; then
+        sleep 5
+        pkill -9 -u $ORACLE_USER
     fi
 
     unalias rm 2>/dev/null
