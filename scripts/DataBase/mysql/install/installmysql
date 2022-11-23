@@ -3,7 +3,7 @@
 usage() {
     pname=$(basename $0)
     echo "Usage:"
-    echo "$pname --rootpwd <root password> --reinstall <Uninstall first and then install> --mycnf <mysql config file> --inspkg <install rpm pkg>"
+    echo "$pname --rootpwd <root password> --reinstall <Uninstall first and then install> --mycnf <mysql config file> --inspkg <install rpm pkg> --datapath <mysql data path>"
     exit -1
 }
 
@@ -27,6 +27,10 @@ parseOpts() {
                 ;;
             inspkg)
                 inspkg="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            datapath)
+                datapath="${!OPTIND}"
                 OPTIND=$(($OPTIND + 1))
                 ;;
             *)
@@ -69,9 +73,8 @@ function install() {
         echo "INFO: Add user mysql"
         DO_CMD useradd mysql
     fi
-    DO_CMD mkdir -p /home/mysql/data
+    DO_CMD mkdir -p $datapath
     DO_CMD mkdir -p /home/mysql/log
-    DO_CMD chown -R mysql:mysql /home/mysql
 
     DO_CMD cp $mycnf /etc/my.cnf
 
@@ -86,7 +89,16 @@ function install() {
     echo "INFO: Begin to init mysql db"
     DO_CMD /usr/bin/mysql_install_db
 
-    DO_CMD chown -R mysql:mysql /var/lib/mysql
+    DO_CMD cp -r /var/lib/mysql/* $datapath
+
+    DO_CMD chown -R mysql:mysql $datapath
+
+    DO_CMD chmod 755 $datapath
+
+    mysqlbin="log-bin=$datapath/mysql-bin"
+
+    DO_CMD sed -bi "/^\s*log-bin=.*$/c$mysqlbin" /etc/my.cnf
+    DO_CMD sed -bi "/^\s*datadir=.*$/c$datapath" /etc/init.d/mysql
 
     DO_CMD setenforce 0
 

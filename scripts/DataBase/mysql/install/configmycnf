@@ -5,7 +5,9 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 
+use IO::File;
 use strict;
+use Config::Tiny;
 use Getopt::Long;
 use JSON qw(to_json from_json encode_json);
 
@@ -41,9 +43,16 @@ sub main {
     my $serverid = $ip2serverJson->{$nodehost};
 
     my $exitCode = system("service mysql stop");
-    system("echo \"server_id=$serverid\" >>/etc/my.cnf");
-    system("echo \"log-slave-updates=1\" >>/etc/my.cnf");
-    system("echo \"relay_log=relay-bin-log\" >>/etc/my.cnf");
+
+    my $Config = Config::Tiny->new;
+    $Config = Config::Tiny->read( '/etc/my.cnf', 'utf8' );
+
+    $Config->{mysqld}->{server_id} = "$serverid";
+    $Config->{mysqld}->{log-slave-updates} = '1';
+    $Config->{mysqld}->{relay_log} = 'relay-bin-log';
+
+    $Config->write( '/etc/my.cnf', 'utf8' );
+
     $exitCode = system("service mysql start");
 
     return $exitCode;

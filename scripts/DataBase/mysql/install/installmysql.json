@@ -54,6 +54,15 @@
             "defaultValue": null,
             "required": "true",
             "validate": ""
+        },
+        {
+            "opt": "datapath",
+            "name": "mysql数据存放目录",
+            "help": "存放mysql数据文件路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
         }
     ],
     "output": []
