@@ -7,6 +7,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 
 use strict;
 use Getopt::Long;
+use MysqlExec;
 use JSON qw(to_json from_json encode_json);
 
 
@@ -58,14 +59,12 @@ sub main {
     my $exitCode = 0;
     my $errorState;
 
-    `mysql -v --connect-expired-password -uroot -p$rootpwd <<EOF
-        stop slave;
-        CHANGE MASTER TO MASTER_HOST='$ip',MASTER_USER='root',MASTER_PASSWORD='$rootpwd',MASTER_LOG_FILE='$binLogFile',MASTER_LOG_POS=$binLogOffset;
-        start slave;
-        show slave status\\G;
-EOF`;
-    $exitCode=`echo $?`;
-
+    my $mysqlexec = MysqlExec->new(host => "localhost", port => "3306", username => "root", password => "$rootpwd");
+    $exitCode = $mysqlexec->do(sql => "stop slave");
+    $exitCode = $mysqlexec->do(sql => "CHANGE MASTER TO MASTER_HOST='$ip',MASTER_USER='root',MASTER_PASSWORD='$rootpwd',MASTER_LOG_FILE='$binLogFile',MASTER_LOG_POS=$binLogOffset");
+    $exitCode = $mysqlexec->do(sql => "start slave");
+    $exitCode = $mysqlexec->do(sql => "show slave status\\G");
+    
     $errorState=`mysql -uroot -p$rootpwd 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print \$2}'
 	show slave status\\G;
 EOF`;
