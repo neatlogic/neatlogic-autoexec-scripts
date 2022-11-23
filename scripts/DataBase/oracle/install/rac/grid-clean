@@ -79,27 +79,30 @@ function removeUserAndGroups() {
 
 function manualUnInstall() {
     if [ -n "$GRID_UID" ]; then
-        INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
-
-        SUDO_ORA_CMD $GRID_USER lsnrctl stop
-
-        su - $GRID_USER -c 'LANG=en_US.UTF-8 sqlplus / as sysasm' <<EOF
-shutdown immediate;
-EXIT;
-EOF
-
-        echo "Try to ensure local node stoped..."
-        echo "crsctl stop has"
-        $ORACLE_HOME/bin/crsctl stop has
-
-        echo "crsctl stop crs"
-        $ORACLE_HOME/bin/crsctl stop crs
-
         LOCAL_NODE_NAME=$($ORACLE_HOME/bin/olsnodes -l)
+        if [ $? != 0 ]; then
+            LOCAL_NODE_NAME=''
+        fi
+
+        SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/bin/lsnrctl stop
+
         if [ $?=0 ] && [ -n "$LOCAL_NODE_NAME" ]; then
+            echo "crsctl stop vip"
+            $ORACLE_HOME/bin/srvctl stop vip -n $LOCAL_NODE_NAME
+
+            echo "srvctl stop local node asm"
+            SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/bin/srvctl stop asm -node $LOCAL_NODE_NAME -stopoption IMMEDIATE
+
             echo "crsctl delete node -n $LOCAL_NODE_NAME"
             $ORACLE_HOME/bin/crsctl delete node -n $LOCAL_NODE_NAME
         fi
+
+        echo "Try to ensure local node stoped..."
+        echo "crsctl stop has"
+        $ORACLE_HOME/bin/crsctl stop has -f
+
+        echo "crsctl stop crs"
+        $ORACLE_HOME/bin/crsctl stop crs -f
     fi
 
     #stop and disable service
@@ -175,6 +178,7 @@ EOF
         rm -rf "$ORACLE_BASE"
     fi
 
+    INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
     if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
         rm -rf "$INVENTORY_LOCATION"
     fi

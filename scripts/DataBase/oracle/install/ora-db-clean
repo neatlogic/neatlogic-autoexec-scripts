@@ -80,13 +80,11 @@ function removeUserAndGroups() {
 
 function manualUnInstall() {
     if [ -n "$ORACLE_UID" ]; then
-        INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
-
         SUDO_ORA_CMD $ORACLE_USER lsnrctl stop
 
         su - $ORACLE_USER -c 'LANG=en_US.UTF-8 sqlplus / as sysdba' <<EOF
 shutdown immediate;
-EXIT;
+exit;
 EOF
     fi
 
@@ -134,6 +132,7 @@ EOF
         rm -rf "$ORACLE_BASE"
     fi
 
+    INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
     if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
         rm -rf "$INVENTORY_LOCATION"
     fi
