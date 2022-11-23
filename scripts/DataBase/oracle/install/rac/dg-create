@@ -32,12 +32,14 @@ sub cerateDiskGroup {
     }
     my $disksStr = join( ',', @disks );
 
-    my $rows = $sqlplus->do(
+    my $exitCode = $sqlplus->do(
         sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'},
         verbose => 1
     );
 
-    my $exitCode = system("srvctl start diskgroup -diskgroup $dgName");
+    if ( $exitCode == 0 ) {
+        $exitCode = system("srvctl start diskgroup -diskgroup $dgName");
+    }
 
     return $exitCode;
 }

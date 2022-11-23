@@ -87,11 +87,17 @@ sub getDBNameInfo {
         sql     => q{SHOW PARAMETER NAME},
         verbose => 1
     );
+
     my $dbInfo = {};
-    foreach my $row (@$rows) {
-        $dbInfo->{ $row->{NAME} } = $row->{VALUE};
+    if ( defined($rows) ) {
+        foreach my $row (@$rows) {
+            $dbInfo->{ $row->{NAME} } = $row->{VALUE};
+        }
+        print("Get database parameters finished.\n");
     }
-    print("Get database parameters finished.\n");
+    else {
+        print("WARN: Get database parameters failed.\n");
+    }
     return $dbInfo;
 }
 

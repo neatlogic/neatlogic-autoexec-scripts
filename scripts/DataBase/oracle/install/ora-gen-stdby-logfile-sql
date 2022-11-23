@@ -39,7 +39,7 @@ sub getStdbyLogSql {
         sql     => $stdbyQueryLogSql,
         verbose => 1
     );
-    if ( scalar(@$rows) > 0 ) {
+    if ( defined($rows) and scalar(@$rows) > 0 ) {
         print("WARN: Standby log groups already exists.\n");
         return "SELECT 'WARN: Standby log groups already exists' as MESSAGE from dual;";
     }
@@ -61,10 +61,14 @@ sub getStdbyLogSql {
             "GROUP#";
     };
 
-    my $rows = $sqlplus->query(
+    my ( $exitCode, $rows ) = $sqlplus->query(
         sql     => $queryLogsSql,
         verbose => 1
     );
+
+    if ( $exitCode != 0 or not defined($rows) ) {
+        return undef;
+    }
 
     #alter database add logfile thread 1 group 9 ('+DATA/orcl/onlinelog/group_9_redo_log.log', '+BAK/orcl/onlinelog/group_9_redo_log.log') size 50m;
 
