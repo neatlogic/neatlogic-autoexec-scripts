@@ -145,22 +145,6 @@ sub convertPfileRef {
         }
     }
 
-    my $dbServiceNames;
-    if ( defined($refServiceNames) or $refServiceNames eq '' ) {
-        $dbServiceNames = "$refDbName,$dbUniqName";
-    }
-    else {
-        my @oldServiceNames = split( /\s*,\s*/, $refServiceNames );
-        my @newServiceNames = ( $refDbName, $dbUniqName );
-        foreach my $serviceName (@oldServiceNames) {
-            if ( $serviceName ne $refDbName and $serviceName ne $refDbUniqName ) {
-                push( @newServiceNames, $serviceName );
-            }
-        }
-        $dbServiceNames = join( ',', @newServiceNames );
-    }
-    $pfileContent = $pfileContent . "*.service_names=$dbServiceNames\n";
-
     my @instancesConf   = ();
     my @oldDBInstances  = sort( keys(%$perDbConfMap) );
     my @destDbInstances = sort(@$dbInstances);
@@ -184,9 +168,35 @@ sub convertPfileRef {
     my $ucDbUniqName    = uc($dbUniqName);
     my $ucRefDbUniqName = uc($refDbUniqName);
     if ( defined($refDbUniqName) and $dbUniqName ne $refDbUniqName ) {
-        $pfileContent =~ s/$refDbUniqName/$dbUniqName/g;
-        $pfileContent =~ s/$ucRefDbUniqName/$ucDbUniqName/g;
+        $pfileContent =~ s/${refDbUniqName}/${refDbUniqName}_FOR_REPL_/g;
+        $pfileContent =~ s/${ucRefDbUniqName}/${ucRefDbUniqName}_FOR_REPL_/g;
+
+        $pfileContent =~ s/${dbUniqName}/${refDbUniqName}/g;
+        $pfileContent =~ s/${ucDbUniqName}/${ucRefDbUniqName}/g;
+
+        $pfileContent =~ s/${refDbUniqName}_FOR_REPL_/${dbUniqName}/g;
+        $pfileContent =~ s/${ucRefDbUniqName}_FOR_REPL_/${ucDbUniqName}/g;
+
+        $pfileContent =~ s/db_name='\w+'/db_name='$refDbName'/g;
+
+        $pfileContent =~ s/log_archive_dest_state_(\d+)='\w'/log_archive_dest_state_$1='defer'/ig;
     }
+
+    my $dbServiceNames;
+    if ( defined($refServiceNames) or $refServiceNames eq '' ) {
+        $dbServiceNames = "$refDbName,$dbUniqName";
+    }
+    else {
+        my @oldServiceNames = split( /\s*,\s*/, $refServiceNames );
+        my @newServiceNames = ( $refDbName, $dbUniqName );
+        foreach my $serviceName (@oldServiceNames) {
+            if ( $serviceName ne $refDbName and $serviceName ne $refDbUniqName ) {
+                push( @newServiceNames, $serviceName );
+            }
+        }
+        $dbServiceNames = join( ',', @newServiceNames );
+    }
+    $pfileContent = $pfileContent . "*.service_names='$dbServiceNames'\n";
 
     my $pfileInfo = {
         content        => $pfileContent,
@@ -208,7 +218,7 @@ sub convertDir {
 }
 
 sub getPfileConfDirs {
-    my ( $pfileContent, $dirConvMap ) = @_;
+    my ( $dbUniqName, $pfileContent, $dirConvMap ) = @_;
 
     my $controlFiles    = '';
     my $controlFileDirs = '';
@@ -375,7 +385,7 @@ sub main {
     }
 
     my $pfileInfo     = convertPfileRef( $pfileReference, $dbUniqName, $memPercent, \@dbInstances, $dirConvMap );
-    my $pfileDirsInfo = getPfileConfDirs( $pfileInfo->{content} );
+    my $pfileDirsInfo = getPfileConfDirs( $dbUniqName, $pfileInfo->{content}, $dirConvMap );
 
     my $out = {
         pfile           => $pfileInfo->{content},

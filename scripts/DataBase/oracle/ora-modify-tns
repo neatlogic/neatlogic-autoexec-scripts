@@ -68,33 +68,35 @@ sub main {
     my $content;
 
     if ( $action eq 'modify' ) {
-
-        #读取文件内容
-        my $fh = IO::File->new("<$filePath");
-        if ( defined($fh) ) {
-            my $fSize = -s $filePath;
-            $fh->read( $content, $fSize );
-            $fh->close();
-        }
-        else {
-            print("ERROR: Can not open file:$filePath, $!\n");
-            $exitCode = 1;
-        }
-
         my @oldItems    = ();
         my $oldItemsMap = {};
-        while ( $content =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg ) {
-            my $name = $1;
-            my $desc = $2;
-            $oldItemsMap->{$name} = $desc;
-            push( @oldItems, { name => $name, desc => $desc } );
-        }
 
-        #更新content
-        foreach my $item (@oldItems) {
-            my $newDesc = $newItemsMap->{ $item->{name} };
-            if ( defined($newDesc) ) {
-                $item->{desc} = $newDesc;
+        #读取文件内容
+        if ( -f $filePath ) {
+            my $fh = IO::File->new("<$filePath");
+            if ( defined($fh) ) {
+                my $fSize = -s $filePath;
+                $fh->read( $content, $fSize );
+                $fh->close();
+            }
+            else {
+                print("ERROR: Can not open file:$filePath, $!\n");
+                $exitCode = 1;
+            }
+
+            while ( $content =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg ) {
+                my $name = $1;
+                my $desc = $2;
+                $oldItemsMap->{$name} = $desc;
+                push( @oldItems, { name => $name, desc => $desc } );
+            }
+
+            #更新content
+            foreach my $item (@oldItems) {
+                my $newDesc = $newItemsMap->{ $item->{name} };
+                if ( defined($newDesc) ) {
+                    $item->{desc} = $newDesc;
+                }
             }
         }
 

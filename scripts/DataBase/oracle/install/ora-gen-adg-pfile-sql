@@ -24,6 +24,18 @@ sub getPfileContent {
         sql     => qq{create pfile='$pfilePath' from spfile},
         verbose => 1
     );
+    if ( $exitCode != 0 ) {
+        print("WARN: Create pfile from spfile failed, Try with pfile.\n");
+        my $spfileFH   = File::Temp->new( UNLINK => 1, SUFFIX => '.spfile.txt' );
+        my $spfilePath = $spfileFH->filename;
+        chmod( 0666, $spfilePath );
+        $spfileFH->close();
+
+        $exitCode = $sqlplus->do(
+            sql     => qq{create spfile='$spfilePath' from pfile;create pfile='$pfilePath' from spfile='$spfilePath';},
+            verbose => 1
+        );
+    }
 
     my $pfileContent;
     if ( $exitCode == 0 ) {
@@ -55,6 +67,7 @@ sub main {
             ORACLE_HOME=s
             MY_UNIQUE_NAME=s
             OTHER_SITE_UNIQUE_NAME=s
+            DB_ROLE=s
             LOG_ARCHIVE_DEST=s
         }
     );
@@ -62,13 +75,11 @@ sub main {
     my $ORACLE_USER            = $opts->{ORACLE_USER};
     my $MY_UNIQUE_NAME         = $opts->{MY_UNIQUE_NAME};
     my $OTHER_SITE_UNIQUE_NAME = $opts->{OTHER_SITE_UNIQUE_NAME};
+    my $DB_ROLE                = $opts->{DB_ROLE};
     my $LOG_ARCHIVE_DEST       = $opts->{LOG_ARCHIVE_DEST};
 
-    my $pfileContent = getPfileContent($ORACLE_USER);
-
-    if ( not defined($pfileContent) ) {
-        print("ERROR: Can not get pfile content.\n");
-        return 2;
+    if ( not defined($DB_ROLE) ) {
+        $DB_ROLE = 'PRIMARY_STANDBY';
     }
 
     my $dbMajorVer = getDBMajorVersion($ORACLE_USER);
@@ -92,7 +103,7 @@ sub main {
     if ( $dbMajorVer > 9 ) {
 
         #9i以上log_archive_dest的配置
-        $cmds = $cmds . "alter system set log_archive_dest_$LOG_ARCHIVE_DEST='SERVICE=$OTHER_SITE_UNIQUE_NAME LGWR SYNC NOAFFIRM REOPEN=60 VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=$OTHER_SITE_UNIQUE_NAME';\n";
+        $cmds = $cmds . "alter system set log_archive_dest_$LOG_ARCHIVE_DEST='SERVICE=$OTHER_SITE_UNIQUE_NAME LGWR SYNC NOAFFIRM REOPEN=60 VALID_FOR=(ONLINE_LOGFILES,${DB_ROLE}) DB_UNIQUE_NAME=$OTHER_SITE_UNIQUE_NAME';\n";
     }
     else {
         #Oracle 9i及以下的log_archive_dest配置
@@ -100,12 +111,25 @@ sub main {
     }
 
     $cmds = $cmds . "alter system set log_archive_dest_state_1 = 'enable';\n";
-    $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'enable';\n";
+    if ( $DB_ROLE eq 'PRIMARY_ROLE' ) {
+        $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'enable';\n";
+    }
+    else {
+        $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'defer';\n";
+    }
+
     $cmds = $cmds . "alter system set db_file_name_convert='$OTHER_SITE_UNIQUE_NAME','$MY_UNIQUE_NAME'  scope=spfile;\n";
     $cmds = $cmds . "alter system set log_file_name_convert='$OTHER_SITE_UNIQUE_NAME','$MY_UNIQUE_NAME'  scope=spfile;\n";
     $cmds = $cmds . "alter system set standby_file_management=auto;\n";
     $cmds = $cmds . "alter system set fal_client='$MY_UNIQUE_NAME';\n";
     $cmds = $cmds . "alter system set fal_server='$OTHER_SITE_UNIQUE_NAME';\n";
+
+    my $pfileContent = getPfileContent($ORACLE_USER);
+
+    if ( not defined($pfileContent) ) {
+        print("ERROR: Can not get pfile content.\n");
+        return 2;
+    }
 
     my $out = {};
     $out->{pFileContent}  = $pfileContent;

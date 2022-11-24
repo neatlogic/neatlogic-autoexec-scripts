@@ -52,10 +52,10 @@ sub getCrsHome {
 }
 
 sub setOraAsmPrivilege {
-    my ( $osUser, $GRID_HOME ) = @_;
+    my ( $osUser, $GRID_HOME, $ORACLE_HOME ) = @_;
 
     #/db/oracle/app/19.3.0/grid/bin/setasmgidwrap
-    my $exitCode = system("su - '$osUser' -c '$GRID_HOME/bin/setasmgidwrap'");
+    my $exitCode = system( "$GRID_HOME/bin/setasmgidwrap", "oracle_binary_path=$ORACLE_HOME/bin/oracle" );
     if ( $exitCode == 0 ) {
         print("INFO: Set asm gid for binanry oracle asm privilege success.\n");
     }
@@ -99,8 +99,9 @@ sub addClusterDatabase {
 sub startNoMountByPfile {
     my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword ) = @_;
 
-    my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
-    my $fh        = IO::File->new(">$pFilePath");
+    my $pFilePath  = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
+    my $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
+    my $fh         = IO::File->new(">$pFilePath");
     if ( defined($fh) ) {
         print $fh ($pFileContent);
         $fh->close();
@@ -128,7 +129,7 @@ sub startNoMountByPfile {
 
     print("Try to shutdown db...\n");
     $sqlplus->do(
-        sql     => "shutdown immediate;",
+        sql     => "shutdown abort;",
         verbose => 1
     );
 
@@ -140,7 +141,7 @@ sub startNoMountByPfile {
 
     print("Try to create spfile...\n");
     $exitCode = $sqlplus->do(
-        sql     => "create spfile from pfile;",
+        sql     => "create spfile='$spFilePath' from pfile;",
         verbose => 1
     );
 
@@ -155,6 +156,12 @@ sub startNoMountByPfile {
         sql     => "startup nomount;",
         verbose => 1
     );
+
+    if ( $exitCode != 0 ) {
+        print("ERROR: Start database nomount failed.\n");
+    }
+
+    return $exitCode;
 }
 
 #$ORACLE_HOME/srvm/admin/getcrshome
@@ -224,7 +231,7 @@ sub main {
 
     my $crsHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
     if ( defined($crsHome) and $crsHome ne '' ) {
-        $exitCode = setOraAsmPrivilege( $ORACLE_USER, $crsHome );
+        $exitCode = setOraAsmPrivilege( $ORACLE_USER, $crsHome, $ORACLE_HOME );
         if ( $exitCode != 0 ) {
             return $exitCode;
         }
@@ -236,6 +243,7 @@ sub main {
     }
 
     $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword );
+
     return $exitCode;
 }
 
