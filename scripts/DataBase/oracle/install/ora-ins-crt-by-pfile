@@ -97,11 +97,22 @@ sub addClusterDatabase {
 }
 
 sub startNoMountByPfile {
-    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword ) = @_;
+    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword, $spFilePath, $spFileDirConvertArray ) = @_;
 
-    my $pFilePath  = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
-    my $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
-    my $fh         = IO::File->new(">$pFilePath");
+    my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
+    if ( not defined($spFilePath) or $spFilePath eq '' ) {
+        $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
+    }
+    else {
+        if ( defined($spFileDirConvertArray) ) {
+            my $srcPath  = $$spFileDirConvertArray[0];
+            my $destPath = $$spFileDirConvertArray[1];
+
+            $spFilePath =~ s/\Q$srcPath\E/\Q$destPath\E/;
+        }
+    }
+
+    my $fh = IO::File->new(">$pFilePath");
     if ( defined($fh) ) {
         print $fh ($pFileContent);
         $fh->close();
@@ -144,6 +155,16 @@ sub startNoMountByPfile {
         sql     => "create spfile='$spFilePath' from pfile;",
         verbose => 1
     );
+
+    print("Try to rewrite pfile point to spfile path:$spFilePath.\n");
+    my $fh = IO::File->new(">$pFilePath");
+    if ( defined($fh) ) {
+        print $fh (qq{spfile='$spFilePath'});
+        $fh->close();
+    }
+    else {
+        print("ERROR: Open file:$pFilePath failed, $!.\n");
+    }
 
     print("Try to shutdown db...\n");
     $exitCode = $sqlplus->do(
@@ -190,16 +211,20 @@ sub main {
             ORACLE_SID=s
             DB_UNIQUE_NAME=s
             SYS_PASSWORD=s
+            SPFILE_PATH=s
+            SPFILE_DIR_CONVERT=s
             PFILE_CONTENT=s
         }
     );
 
-    my $pFileContent = $opts->{PFILE_CONTENT};
-    my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
-    my $ORACLE_USER  = $opts->{ORACLE_USER};
-    my $ORACLE_HOME  = $opts->{ORACLE_HOME};
-    my $ORACLE_SID   = $opts->{ORACLE_SID};
-    my $sysPassword  = $opts->{SYS_PASSWORD};
+    my $pFileContent     = $opts->{PFILE_CONTENT};
+    my $dbUniqueName     = $opts->{DB_UNIQUE_NAME};
+    my $ORACLE_USER      = $opts->{ORACLE_USER};
+    my $ORACLE_HOME      = $opts->{ORACLE_HOME};
+    my $ORACLE_SID       = $opts->{ORACLE_SID};
+    my $sysPassword      = $opts->{SYS_PASSWORD};
+    my $spFilePath       = $opts->{SPFILE_PATH};
+    my $spFileDirConvert = $opts->{SPFILE_DIR_CONVERT};
 
     my $hasOptErr = 0;
     if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
@@ -214,8 +239,23 @@ sub main {
         $hasOptErr = 1;
         print("ERROR: Must defined PFILE_CONTENT by option --PFILE_CONTENT.\n");
     }
+
+    my @spFileDirConvertArray = ();
+    if ( define($spFileDirConvert) and $spFileDirConvert ne '' ) {
+        $spFileDirConvert =~ s/^\s*|\s*$//g;
+        @spFileDirConvertArray = split( /\s*,\s*/, $spFileDirConvert );
+        if ( scalar(@spFileDirConvertArray) != 2 ) {
+            $hasOptErr = 1;
+            print("ERROR: Malform format value for option SPFILE_DIR_CONVERT, config example:mydir1/testdb_primary,mydir2/testdb_standby\n");
+        }
+    }
+
     if ( $hasOptErr == 1 ) {
         usage();
+    }
+
+    if ( defined($spFilePath) and $spFilePath ne '' ) {
+        $spFilePath =~ s/^\s*|\s*$//g;
     }
 
     if ( not defined($ORACLE_HOME) or $ORACLE_HOME eq '' or not defined($ORACLE_SID) or $ORACLE_SID eq '' ) {
@@ -242,7 +282,7 @@ sub main {
         }
     }
 
-    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword );
+    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword, $spFilePath, \@spFileDirConvertArray );
 
     return $exitCode;
 }
