@@ -52,24 +52,6 @@
             "validate": ""
         },
         {
-            "opt": "SPFILE_PATH",
-            "name": "SPFILE路径",
-            "help": "SPFILE文件所在路径, 留空代表存放在$ORACLE_HOME/dbs下spfile{$sid}.ora",
-            "type": "text",
-            "defaultValue": "",
-            "required": "false",
-            "validate": ""
-        },
-        {
-            "opt": "SPFILE_DIR_CONVERT",
-            "name": "SPFILE路径转换",
-            "help": "对SPFILE路径进行替换处理,例如: 把+DATA/TESTDB替换为${ORACLE_BASE}/oradaba/TESTDB_STANDBY",
-            "type": "text",
-            "defaultValue": "+DATA/TESTDB,${ORACLE_BASE}/oradaba/TESTDB_STANDBY",
-            "required": "false",
-            "validate": ""
-        },
-        {
             "opt": "PFILE_CONTENT",
             "name": "PFILE内容",
             "help": "可用于目标生成库的pfile配置内容",

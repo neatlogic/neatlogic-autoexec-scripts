@@ -51,6 +51,22 @@ sub getCrsHome {
     return $gridHome;
 }
 
+sub getDBCreateFileDest {
+    my ($pfileContentArray) = @_;
+
+    my $dbCreateFileDest;
+    foreach my $line (@$pfileContentArray) {
+        $line =~ s/^\s*|\s*$//g;
+        my ( $name, $val ) = split( /\s*=\s*/, $line, 2 );
+        if ( $name =~ /\.db_create_file_dest$/ ) {
+            $val =~ s/^\s*['"]|['"]\s*$//g;
+            $dbCreateFileDest = $val;
+        }
+    }
+
+    return $dbCreateFileDest;
+}
+
 sub setOraAsmPrivilege {
     my ( $osUser, $GRID_HOME, $ORACLE_HOME ) = @_;
 
@@ -97,31 +113,9 @@ sub addClusterDatabase {
 }
 
 sub startNoMountByPfile {
-    my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword, $spFilePath, $spFileDirConvertArray ) = @_;
+    my ( $osUser, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, $pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome ) = @_;
 
-    my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
-
-    # if ( not defined($spFilePath) or $spFilePath eq '' ) {
-    #     $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
-    # }
-
-    if ( defined($spFilePath) and $spFilePath ne '' ) {
-        if ( defined($spFileDirConvertArray) ) {
-            my $srcPath  = $$spFileDirConvertArray[0];
-            my $destPath = $$spFileDirConvertArray[1];
-
-            $spFilePath =~ s/\Q$srcPath\E/$destPath/g;
-        }
-    }
-
-    my $fh = IO::File->new(">$pFilePath");
-    if ( defined($fh) ) {
-        print $fh ($pFileContent);
-        $fh->close();
-    }
-    else {
-        print("ERROR: Open file:$pFilePath failed, $!.\n");
-    }
+    my $pFileContent = join( "\n", @$pFileContentArray );
 
     #设置密码文件
     my $pwdFilePath    = "$ORACLE_HOME/dbs/orapw$ORACLE_SID";
@@ -154,44 +148,82 @@ sub startNoMountByPfile {
         );
     }
 
-    print("Try to startup by pfile:$pFilePath...\n");
-    $exitCode = $sqlplus->do(
-        sql     => "startup nomount pfile='$pFilePath';",
-        verbose => 1
-    );
+    my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
+    my $fh        = IO::File->new(">$pFilePath");
+    if ( defined($fh) ) {
+        print $fh ($pFileContent);
+        $fh->close();
+    }
+    else {
+        print("ERROR: Open file:$pFilePath failed, $!.\n");
+    }
 
-    if ( defined($spFilePath) and $spFilePath ne '' ) {
-        print("Try to create spfile:$spFilePath...\n");
+    if ( not defined($crsHome) or $crsHome eq '' ) {
+
+        #单例数据库
+        print("Try to startup by pfile:$pFilePath...\n");
         $exitCode = $sqlplus->do(
-            sql     => "create spfile='$spFilePath' from pfile;",
+            sql     => "startup nomount pfile='$pFilePath';",
             verbose => 1
         );
 
-        print("Try to rewrite pfile point to spfile path:$spFilePath.\n");
-        my $fh = IO::File->new(">$pFilePath");
-        if ( defined($fh) ) {
-            print $fh (qq{spfile='$spFilePath'});
-            $fh->close();
-        }
-        else {
-            print("ERROR: Open file:$pFilePath failed, $!.\n");
-        }
-
-        print("Try to shutdown db...\n");
+        my $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
+        print("Try to create spfile:$spFilePath\n");
         $exitCode = $sqlplus->do(
-            sql     => "shutdown immediate;",
-            verbose => 1
-        );
-
-        print("Try to startup db to nomount again...\n");
-        $exitCode = $sqlplus->do(
-            sql     => "startup nomount;",
+            sql     => "create spfile='$spFilePath' from pfile='$pFilePath';",
             verbose => 1
         );
     }
+    else {
+        #ASM集群
+        print("Try to startup by pfile:$pFilePath...\n");
+        $exitCode = $sqlplus->do(
+            sql     => "startup nomount pfile='$pFilePath';",
+            verbose => 1
+        );
+
+        my $spFilePath       = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
+        my $dbCreateFileDest = getDBCreateFileDest($pFileContentArray);
+        if ( $dbCreateFileDest =~ /^\+/ ) {
+            #使用了ASM磁盘组，把spfile放置到磁盘组中
+            my $spFileDir = "$dbCreateFileDest/" . uc($dbUniqueName);
+            print("Try to create diskgroup dir:$spFileDir\n");
+            $exitCode   = system("LANG=en_US.UTF8 '$crsHome/bin/asmcmd' -p mkdir '$spFileDir'");
+            $spFilePath = "$spFileDir/spfile$dbUniqueName.ora";
+        }
+
+        print("Try to create spfile:$spFilePath\n");
+        $exitCode = $sqlplus->do(
+            sql     => "create spfile='$spFilePath' from pfile='$pFilePath';",
+            verbose => 1
+        );
+
+        if ( $exitCode == 0 and $dbCreateFileDest =~ /^\+/ ) {
+            #使用了ASM磁盘组，设置多实例共享spfile
+            print("Try to modify database use spfile:$spFilePath\n");
+            my $setSpFileCmd = qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl' modify database -d $dbUniqueName -p '$spFilePath'"};
+            print("$setSpFileCmd\n");
+            $exitCode = system($setSpFileCmd);
+            if ( $exitCode != 0 ) {
+                print("ERROR: Modify database use spfile:$spFilePath failed.\n");
+            }
+        }
+    }
+
+    # print("Try to shutdown db...\n");
+    # $exitCode = $sqlplus->do(
+    #     sql     => "shutdown immediate;",
+    #     verbose => 1
+    # );
+
+    # print("Try to startup db to nomount again...\n");
+    # $exitCode = $sqlplus->do(
+    #     sql     => "startup nomount;",
+    #     verbose => 1
+    # );
 
     if ( $exitCode != 0 ) {
-        print("ERROR: Start database nomount failed.\n");
+        print("ERROR: Create database nomount by pfile failed.\n");
     }
 
     return $exitCode;
@@ -223,8 +255,6 @@ sub main {
             ORACLE_SID=s
             DB_UNIQUE_NAME=s
             SYS_PASSWORD=s
-            SPFILE_PATH=s
-            SPFILE_DIR_CONVERT=s
             PFILE_CONTENT=s
         }
     );
@@ -279,7 +309,9 @@ sub main {
     my $exitCode = 0;
 
     $pFileContent =~ s/^\s*|\s*$//sg;
-    $pFileContent =~ s/\\n/\n/g;
+    my @pFileContentArray = split( /\\n/, $pFileContent );
+
+    my $dbCreateFileDest = getDBCreateFileDest( \@pFileContentArray );
 
     my $crsHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
     if ( defined($crsHome) and $crsHome ne '' ) {
@@ -294,7 +326,7 @@ sub main {
         }
     }
 
-    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword, $spFilePath, \@spFileDirConvertArray );
+    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, \@pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome );
 
     return $exitCode;
 }
