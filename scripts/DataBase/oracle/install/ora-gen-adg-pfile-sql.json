@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "生成Pfile内容和ADG配置SQL",
-    "option": [{
+    "option": [
+        {
             "opt": "ORACLE_USER",
             "name": "ORACLE_USER",
             "help": "GRID安装用户",
@@ -47,7 +48,8 @@
             "help": "DG同步中, DB的角色",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "PRIMARY_ROLE",
                         "value": "PRIMARY_ROLE"
                     },
@@ -68,7 +70,8 @@
             "help": "Oracle库的Archive Log归档的目标号",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "2",
                         "value": "2"
                     },
@@ -96,7 +99,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "pFileContent",
             "name": "当前库pfile内容",
             "help": "用于作为拷贝目标库的参数配置模版",

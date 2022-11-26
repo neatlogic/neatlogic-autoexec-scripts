@@ -16,20 +16,20 @@
             "validate": ""
         },
         {
-            "opt": "TARGET_DB_UNIQUE_NAME",
-            "name": "Target DB唯一名",
-            "help": "复制源DB唯一名, 对应于rman命令的TARGET",
+            "opt": "TARGET_TNS_NAME",
+            "name": "TargetDB的TNS连接名",
+            "help": "复制源DB的TNS连接名, 对应于rman命令的TARGET",
             "type": "text",
-            "defaultValue": "",
+            "defaultValue": "${SRC_DB_UNIQUE_NAME}_rman",
             "required": "true",
             "validate": ""
         },
         {
-            "opt": "AUXILIARY_DB_UNIQUE_NAME",
-            "name": "辅助DB唯一名",
-            "help": "复制目标DB唯一名, 对应于rman命令的AUXILIARY",
+            "opt": "AUXILIARY_TNS_NAME",
+            "name": "辅助DB的TNS连接名",
+            "help": "复制目标DB的TNS连接名, 对应于rman命令的AUXILIARY",
             "type": "text",
-            "defaultValue": "",
+            "defaultValue": "${DEST_DB_UNIQUE_NAME}_rman",
             "required": "false",
             "validate": ""
         },

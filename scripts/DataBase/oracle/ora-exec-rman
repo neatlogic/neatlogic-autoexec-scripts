@@ -22,8 +22,8 @@ sub main {
     GetOptions(
         $opts, qw{
             ORACLE_USER=s
-            TARGET_DB_UNIQUE_NAME=s
-            AUXILIARY_DB_UNIQUE_NAME=s
+            TARGET_TNS_NAME=s
+            AUXILIARY_TNS_NAME=s
             SYS_PASSWORD=s
             CATALOG_DB=s
             CATALOG_USER=s
@@ -32,14 +32,14 @@ sub main {
         }
     );
 
-    my $hasOptErr                = 0;
-    my $ORACLE_USER              = $opts->{ORACLE_USER};
-    my $TARGET_DB_UNIQUE_NAME    = $opts->{TARGET_DB_UNIQUE_NAME};
-    my $AUXILIARY_DB_UNIQUE_NAME = $opts->{AUXILIARY_DB_UNIQUE_NAME};
-    my $SYS_PASSWORD             = $opts->{SYS_PASSWORD};
-    my $CATALOG_DB               = $opts->{CATALOG_DB};
-    my $CATALOG_USER             = $opts->{CATALOG_USER};
-    my $CATALOG_PASSWORD         = $opts->{CATALOG_PASSWORD};
+    my $hasOptErr          = 0;
+    my $ORACLE_USER        = $opts->{ORACLE_USER};
+    my $TARGET_TNS_NAME    = $opts->{TARGET_TNS_NAME};
+    my $AUXILIARY_TNS_NAME = $opts->{AUXILIARY_TNS_NAME};
+    my $SYS_PASSWORD       = $opts->{SYS_PASSWORD};
+    my $CATALOG_DB         = $opts->{CATALOG_DB};
+    my $CATALOG_USER       = $opts->{CATALOG_USER};
+    my $CATALOG_PASSWORD   = $opts->{CATALOG_PASSWORD};
 
     my $sqlTxt = $opts->{SCRIPT};
 
@@ -47,9 +47,9 @@ sub main {
         $hasOptErr = 1;
         print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
     }
-    if ( not defined($TARGET_DB_UNIQUE_NAME) or $TARGET_DB_UNIQUE_NAME eq '' ) {
+    if ( not defined($TARGET_TNS_NAME) or $TARGET_TNS_NAME eq '' ) {
         $hasOptErr = 1;
-        print("ERROR: Must defined TARGET_DB_UNIQUE_NAME by option --TARGET_DB_UNIQUE_NAME.\n");
+        print("ERROR: Must defined TARGET_TNS_NAME by option --TARGET_TNS_NAME.\n");
     }
 
     if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
@@ -73,11 +73,11 @@ sub main {
     $osType =~ s/\s.*$//;
 
     my $uid        = $<;
-    my $targetDesc = qq{sys/${SYS_PASSWORD}\@${TARGET_DB_UNIQUE_NAME}};
+    my $targetDesc = qq{sys/${SYS_PASSWORD}\@${TARGET_TNS_NAME}};
 
     my $rmanCmd = qq{rman TARGET $targetDesc};
-    if ( defined($AUXILIARY_DB_UNIQUE_NAME) and $AUXILIARY_DB_UNIQUE_NAME ne '' ) {
-        my $auxiliaryDesc = qq{sys/${SYS_PASSWORD}\@${AUXILIARY_DB_UNIQUE_NAME}};
+    if ( defined($AUXILIARY_TNS_NAME) and $AUXILIARY_TNS_NAME ne '' ) {
+        my $auxiliaryDesc = qq{sys/${SYS_PASSWORD}\@${AUXILIARY_TNS_NAME}};
         $rmanCmd = $rmanCmd . qq{ AUXILIARY $auxiliaryDesc};
     }
     if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {

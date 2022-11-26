@@ -20,19 +20,26 @@ sub getPfileContent {
     $pfileFH->close();
 
     #create pfile='/home/oracle/pfile_20190818' from spfile;
+    unlink($pfilePath);
     my $exitCode = $sqlplus->do(
         sql     => qq{create pfile='$pfilePath' from spfile},
         verbose => 1
     );
     if ( $exitCode != 0 ) {
-        print("WARN: Create pfile from spfile failed, Try with pfile.\n");
+        print("WARN: Create pfile from spfile failed, Try create with pfile.\n");
         my $spfileFH   = File::Temp->new( UNLINK => 1, SUFFIX => '.spfile.txt' );
         my $spfilePath = $spfileFH->filename;
         chmod( 0666, $spfilePath );
         $spfileFH->close();
 
+        unlink($spfilePath);
         $exitCode = $sqlplus->do(
-            sql     => qq{create spfile='$spfilePath' from pfile;create pfile='$pfilePath' from spfile='$spfilePath';},
+            sql     => qq{create spfile='$spfilePath' from pfile;},
+            verbose => 1
+        );
+        unlink($pfilePath);
+        $exitCode = $sqlplus->do(
+            sql     => qq{create pfile='$pfilePath' from spfile='$spfilePath';},
             verbose => 1
         );
     }

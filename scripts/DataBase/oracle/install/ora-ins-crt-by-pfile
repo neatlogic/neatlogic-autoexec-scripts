@@ -100,15 +100,17 @@ sub startNoMountByPfile {
     my ( $osUser, $ORACLE_HOME, $ORACLE_SID, $pFileContent, $sysPassword, $spFilePath, $spFileDirConvertArray ) = @_;
 
     my $pFilePath = "$ORACLE_HOME/dbs/init$ORACLE_SID.ora";
-    if ( not defined($spFilePath) or $spFilePath eq '' ) {
-        $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
-    }
-    else {
+
+    # if ( not defined($spFilePath) or $spFilePath eq '' ) {
+    #     $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
+    # }
+
+    if ( defined($spFilePath) and $spFilePath ne '' ) {
         if ( defined($spFileDirConvertArray) ) {
             my $srcPath  = $$spFileDirConvertArray[0];
             my $destPath = $$spFileDirConvertArray[1];
 
-            $spFilePath =~ s/\Q$srcPath\E/\Q$destPath\E/;
+            $spFilePath =~ s/\Q$srcPath\E/$destPath/g;
         }
     }
 
@@ -139,10 +141,18 @@ sub startNoMountByPfile {
     my $exitCode = 0;
 
     print("Try to shutdown db...\n");
-    $sqlplus->do(
-        sql     => "shutdown abort;",
+    $exitCode = $sqlplus->do(
+        sql     => "shutdown immediate;",
         verbose => 1
     );
+
+    if ( $exitCode != 0 ) {
+        print("Try to shutdown db abort...\n");
+        $exitCode = $sqlplus->do(
+            sql     => "shutdown abort;",
+            verbose => 1
+        );
+    }
 
     print("Try to startup by pfile:$pFilePath...\n");
     $exitCode = $sqlplus->do(
@@ -150,33 +160,35 @@ sub startNoMountByPfile {
         verbose => 1
     );
 
-    print("Try to create spfile...\n");
-    $exitCode = $sqlplus->do(
-        sql     => "create spfile='$spFilePath' from pfile;",
-        verbose => 1
-    );
+    if ( defined($spFilePath) and $spFilePath ne '' ) {
+        print("Try to create spfile:$spFilePath...\n");
+        $exitCode = $sqlplus->do(
+            sql     => "create spfile='$spFilePath' from pfile;",
+            verbose => 1
+        );
 
-    print("Try to rewrite pfile point to spfile path:$spFilePath.\n");
-    my $fh = IO::File->new(">$pFilePath");
-    if ( defined($fh) ) {
-        print $fh (qq{spfile='$spFilePath'});
-        $fh->close();
+        print("Try to rewrite pfile point to spfile path:$spFilePath.\n");
+        my $fh = IO::File->new(">$pFilePath");
+        if ( defined($fh) ) {
+            print $fh (qq{spfile='$spFilePath'});
+            $fh->close();
+        }
+        else {
+            print("ERROR: Open file:$pFilePath failed, $!.\n");
+        }
+
+        print("Try to shutdown db...\n");
+        $exitCode = $sqlplus->do(
+            sql     => "shutdown immediate;",
+            verbose => 1
+        );
+
+        print("Try to startup db to nomount again...\n");
+        $exitCode = $sqlplus->do(
+            sql     => "startup nomount;",
+            verbose => 1
+        );
     }
-    else {
-        print("ERROR: Open file:$pFilePath failed, $!.\n");
-    }
-
-    print("Try to shutdown db...\n");
-    $exitCode = $sqlplus->do(
-        sql     => "shutdown immediate;",
-        verbose => 1
-    );
-
-    print("Try to startup db to nomount again...\n");
-    $exitCode = $sqlplus->do(
-        sql     => "startup nomount;",
-        verbose => 1
-    );
 
     if ( $exitCode != 0 ) {
         print("ERROR: Start database nomount failed.\n");
@@ -241,7 +253,7 @@ sub main {
     }
 
     my @spFileDirConvertArray = ();
-    if ( define($spFileDirConvert) and $spFileDirConvert ne '' ) {
+    if ( defined($spFileDirConvert) and $spFileDirConvert ne '' ) {
         $spFileDirConvert =~ s/^\s*|\s*$//g;
         @spFileDirConvertArray = split( /\s*,\s*/, $spFileDirConvert );
         if ( scalar(@spFileDirConvertArray) != 2 ) {

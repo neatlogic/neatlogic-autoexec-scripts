@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "通过Pfile内容启动DB到noumount状态",
-    "option": [{
+    "option": [
+        {
             "opt": "ORACLE_USER",
             "name": "ORACLE_USER",
             "help": "Oracle库安装用户",

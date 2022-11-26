@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "在某个Oracle节点执行, 获取当前节点和集群相关的节点等信息",
-    "option": [{
+    "option": [
+        {
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "Oracle Grid软件的OS用户",
@@ -33,7 +34,8 @@
             "validate": ""
         }
     ],
-    "output": [{
+    "output": [
+        {
             "opt": "crsName",
             "name": "集群名",
             "help": "不带数字序号的集群节点名称",
@@ -250,11 +252,27 @@
             "required": "false"
         },
         {
+            "opt": "rmanDbTnsConf",
+            "name": "用于Rman远程复制的tns配置",
+            "help": "用于Ramn进行远程库复制的tns配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "spfilePath",
             "name": "spfile路径",
             "help": "spfile文件的路径",
             "type": "text",
             "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbParameters",
+            "name": "全部DB参数",
+            "help": "show parameter的所有参数",
+            "type": "json",
+            "defaultValue": {},
             "required": "false"
         }
     ]

@@ -84,8 +84,8 @@ sub getDBParameters {
 
     #SHOW PARAMETER NAME
     $rows = $sqlplus->query(
-        sql     => q{SHOW PARAMETER NAME},
-        verbose => 1
+        sql     => q{select name,value from v$parameter;},
+        verbose => 0
     );
 
     my $dbParameters = {};
@@ -441,12 +441,18 @@ sub main {
 
     if ( ( defined($GRID_USER) and $GRID_USER ne $ORACLE_USER ) or ( defined($gridHome) and $gridHome ne '' ) ) {
         my $racInfo = getRacDBInfo( $GRID_USER, $dbUniqueName );
-        my $dbName  = $racInfo->{DB_NAME};
+        $dbName = $racInfo->{DB_NAME};
+
         $out->{dbUniqueName} = $dbUniqueName;
-        $out->{dbName}       = $dbName;
 
         my $dbInfo = getDBParameters($ORACLE_USER);
-        $out->{spfilePath} = $dbInfo->{spfile};
+        $out->{dbParameters} = $dbInfo;
+        $out->{spfilePath}   = $dbInfo->{spfile};
+
+        if ( not defined($dbName) or $dbName eq '' ) {
+            $dbName = $dbInfo->{db_name};
+        }
+        $out->{dbName} = $dbName;
 
         my $crsInfo       = getCrsInfo($GRID_USER);
         my $localNodeName = $crsInfo->{LOCAL_NODE_NAME};
@@ -455,6 +461,8 @@ sub main {
         $out->{allNodeNames} = $crsInfo->{ALL_NODE_NAMES};
 
         my $nodesIpInfo = getNodesIpInfo( $localNodeName, $crsInfo->{ALL_NODE_NAMES} );
+        my $localIp     = ${ $nodesIpInfo->{thisNodesInfo} }[0]->{ip};
+
         $out->{allGridNodesInfo}   = $nodesIpInfo->{allGridNodesInfo};
         $out->{otherGridNodesInfo} = $nodesIpInfo->{otherGridNodesInfo};
         $out->{thisNodesInfo}      = $nodesIpInfo->{thisNodesInfo};
@@ -500,6 +508,7 @@ sub main {
             # )
             my $uniqDbTnsConf = "$dbUniqueName = \n";
             $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
+
             my $dbTnsConf = "$dbName = \n";
             $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
             foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
@@ -537,6 +546,12 @@ sub main {
             }
             $racScanTnsConf = $racScanTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
             $out->{racScanTnsConf} = $racScanTnsConf;
+
+            my $rmanDbTnsConf = "${dbUniqueName}_rman = \n";
+            $rmanDbTnsConf        = $rmanDbTnsConf . "  (DESCRIPTION =\n";
+            $rmanDbTnsConf        = $rmanDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $localIp)(PORT = $port))\n";
+            $rmanDbTnsConf        = $rmanDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SID = $localInsName))\n)\n";
+            $out->{rmanDbTnsConf} = $rmanDbTnsConf;
         }
 
         $out->{lsnrOraConfPath} = $userEnv->{GRID_HOME} . '/network/admin/listener.ora';
@@ -550,18 +565,28 @@ sub main {
     }
     else {
         my $dbInfo = getDBParameters($ORACLE_USER);
-        if ( not defined($dbUniqueName) or $dbUniqueName eq '' or not defined($dbName) or $dbName eq '' ) {
+
+        if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
             if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
                 $dbUniqueName = $dbInfo->{db_unique_name};
             }
-            if ( not defined($dbName) or $dbName eq '' ) {
-                $dbName = $dbInfo->{db_name};
-            }
+        }
+
+        if ( not defined($dbName) or $dbName eq '' ) {
+            $dbName = $dbInfo->{db_name};
+        }
+
+        my $localInsName = $dbInfo->{instance_name};
+        if ( not defined($localInsName) or $localInsName eq '' ) {
+            my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
+            $oraSid =~ s/^\s*|\s*$//g;
+            $localInsName = $oraSid;
         }
 
         my $ip   = $ENV{MGMT_IP};
         my $port = 1521;
 
+        $out->{dbParameters}       = $dbInfo;
         $out->{spfilePath}         = $dbInfo->{spfile};
         $out->{allGridNodesInfo}   = [ { ip => $ip } ];
         $out->{otherGridNodesInfo} = [];
@@ -591,6 +616,12 @@ sub main {
             $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
             $dbTnsConf = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
             $dbTnsConf = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+
+            my $rmanDbTnsConf = "${dbUniqueName}_rman = \n";
+            $rmanDbTnsConf        = $rmanDbTnsConf . "  (DESCRIPTION =\n";
+            $rmanDbTnsConf        = $rmanDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+            $rmanDbTnsConf        = $rmanDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SID = $localInsName))\n)\n";
+            $out->{rmanDbTnsConf} = $rmanDbTnsConf;
 
             $out->{uniqDbTnsConf} = $uniqDbTnsConf;
             $out->{dbTnsConf}     = $dbTnsConf;

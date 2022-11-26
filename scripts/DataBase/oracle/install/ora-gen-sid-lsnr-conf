@@ -216,12 +216,12 @@ sub main {
             #     (SID_DESC =
             #       (SID_NAME=testdb1)
             #       (GLOBAL_DBNAME = testdb)
-            #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+            #       (ORACLE_HOME = /db/oracle/app/oracle/product/19.3.0/db)
             #     )
             #     (SID_DESC =
             #       (SID_NAME=testdb1)
             #       (GLOBAL_DBNAME = testdb_DGMGRL)
-            #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+            #       (ORACLE_HOME = /db/oracle/app/oracle/product/19.3.0/db)
             #       (ENVS="TNS_ADMIN=${GRID_HOME}/network/admin")
             #     )
             #   )
@@ -231,14 +231,14 @@ sub main {
             $sidLsnrConf = $sidLsnrConf . "    (SID_DESC =\n";
             $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = $dbUniqueName)\n";
             $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
-            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
             $sidLsnrConf = $sidLsnrConf . "    )\n";
 
             #dg broker needed sid_desc
             $sidLsnrConf = $sidLsnrConf . "    (SID_DESC =\n";
             $sidLsnrConf = $sidLsnrConf . "      (GLOBAL_DBNAME = ${dbUniqueName}_DGMGRL)\n";
             $sidLsnrConf = $sidLsnrConf . "      (SID_NAME = $ORACLE_SID)\n";
-            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $GRID_HOME)\n";
+            $sidLsnrConf = $sidLsnrConf . "      (ORACLE_HOME = $ORACLE_HOME)\n";
             $sidLsnrConf = $sidLsnrConf . "      (ENVS=\"TNS_ADMIN=${GRID_HOME}/network/admin\")\n";
             $sidLsnrConf = $sidLsnrConf . "    )\n";
 
@@ -268,12 +268,12 @@ sub main {
         #     (SID_DESC =
         #       (SID_NAME=testdb1)
         #       (GLOBAL_DBNAME = testdb)
-        #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+        #       (ORACLE_HOME = /db/oracle/app/oracle/product/19.3.0/db)
         #     )
         #     (SID_DESC =
         #       (SID_NAME=testdb1)
         #       (GLOBAL_DBNAME = testdb_DGMGRL)
-        #       (ORACLE_HOME = /u01/app/11.2.0/grid)
+        #       (ORACLE_HOME = /db/oracle/app/oracle/product/19.3.0/db)
         #       (ENVS="TNS_ADMIN=${ORACLE_HOME}/network/admin")
         #     )
         #   )
