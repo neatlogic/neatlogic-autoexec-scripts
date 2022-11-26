@@ -10,6 +10,13 @@ use IO::File;
 use Getopt::Long;
 use AutoExecUtils;
 
+#Rman备份或恢复
+#如果直接两库对拷，需要使用SID连接目标库单个实例，所以使用的tns需要配置如下形式，只能配置一个节点
+# mydb_standby_rman=(DESCRIPTION =
+#     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.0.115)(PORT = 1521))
+#   (CONNECT_DATA = (SERVER = DEDICATED) (SID = mydb1))
+# )
+
 sub usage {
     my $pname = $FindBin::Script;
 
