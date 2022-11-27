@@ -168,14 +168,15 @@ sub convertPfileRef {
     my $ucDbUniqName    = uc($dbUniqName);
     my $ucRefDbUniqName = uc($refDbUniqName);
     if ( defined($refDbUniqName) and $dbUniqName ne $refDbUniqName ) {
-        $pfileContent =~ s/${refDbUniqName}/${refDbUniqName}_FOR_REPL_/g;
-        $pfileContent =~ s/${ucRefDbUniqName}/${ucRefDbUniqName}_FOR_REPL_/g;
+        #前面加上后向断言，后面加上前向断言，防止在一个单词内部出现db唯一名字串被替换
+        $pfileContent =~ s/(?<!\w)${refDbUniqName}(?!\w)/${refDbUniqName}_FOR_REPL_/g;
+        $pfileContent =~ s/(?<!\w)${ucRefDbUniqName}(?!\w)/${ucRefDbUniqName}_FOR_REPL_/g;
 
-        $pfileContent =~ s/${dbUniqName}/${refDbUniqName}/g;
-        $pfileContent =~ s/${ucDbUniqName}/${ucRefDbUniqName}/g;
+        $pfileContent =~ s/(?<!\w)${dbUniqName}(?!\w)/${refDbUniqName}/g;
+        $pfileContent =~ s/(?<!\w)${ucDbUniqName}(?!\w)/${ucRefDbUniqName}/g;
 
-        $pfileContent =~ s/${refDbUniqName}_FOR_REPL_/${dbUniqName}/g;
-        $pfileContent =~ s/${ucRefDbUniqName}_FOR_REPL_/${ucDbUniqName}/g;
+        $pfileContent =~ s/(?<!\w)${refDbUniqName}_FOR_REPL_(?!\w)/${dbUniqName}/g;
+        $pfileContent =~ s/(?<!\w)${ucRefDbUniqName}_FOR_REPL_(?!\w)/${ucDbUniqName}/g;
 
         $pfileContent =~ s/db_name='\w+'/db_name='$refDbName'/g;
 
