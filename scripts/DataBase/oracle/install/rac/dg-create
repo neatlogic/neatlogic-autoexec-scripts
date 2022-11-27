@@ -18,7 +18,7 @@ sub usage {
     exit(1);
 }
 
-sub cerateDiskGroup {
+sub createDiskGroup {
     my ( $gridUser, $dgName, $dgDisks ) = @_;
 
     my $sqlplus = SqlplusExec->new( osUser => $gridUser, sysasm => 1 );
@@ -32,12 +32,26 @@ sub cerateDiskGroup {
     }
     my $disksStr = join( ',', @disks );
 
-    my $exitCode = $sqlplus->do(
+    my $rows;
+    my $exitCode = 0;
+    ( $rows, $exitCode ) = $sqlplus->query(
+        sql     => qq{select Name from v\$asm_diskgroup where name='$dgName';},
+        verbose => 1
+    );
+    if ( defined($rows) ) {
+        $exitCode = $sqlplus->do(
+            sql     => qq{drop diskgroup '$dgName' including contents;},
+            verbose => 1
+        );
+    }
+
+    $exitCode = $sqlplus->do(
         sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'},
         verbose => 1
     );
 
     if ( $exitCode == 0 ) {
+        print("Start diskgroup by command: srvctl start diskgroup -diskgroup $dgName\n");
         $exitCode = system("srvctl start diskgroup -diskgroup $dgName");
     }
 
@@ -77,7 +91,7 @@ sub main {
 
     my $out = {};
     $dgDisks =~ s/\\n/,/g;
-    my $exitCode = cerateDiskGroup( $gridUser, $dgName, $dgDisks );
+    my $exitCode = createDiskGroup( $gridUser, $dgName, $dgDisks );
     if ( $exitCode != 0 ) {
         $hasError = 1;
         print("ERROR: Create disk group:$dgName:$dgDisks failed.\n");
