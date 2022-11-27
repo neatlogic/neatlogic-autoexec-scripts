@@ -43,6 +43,7 @@ sub main {
 
     $sqlTxt =~ s/^\s*|\s*$//sg;
     $sqlTxt =~ s/\\n/\n/sg;
+    $sqlTxt = $sqlTxt . "\n";
 
     my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, sid => $ORACLE_SID );
 
