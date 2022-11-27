@@ -210,17 +210,17 @@ sub startNoMountByPfile {
         }
     }
 
-    # print("Try to shutdown db...\n");
-    # $exitCode = $sqlplus->do(
-    #     sql     => "shutdown immediate;",
-    #     verbose => 1
-    # );
+    print("Try to shutdown db...\n");
+    $exitCode = $sqlplus->do(
+        sql     => "shutdown immediate;",
+        verbose => 1
+    );
 
-    # print("Try to startup db to nomount again...\n");
-    # $exitCode = $sqlplus->do(
-    #     sql     => "startup nomount;",
-    #     verbose => 1
-    # );
+    print("Try to startup db to nomount again...\n");
+    $exitCode = $sqlplus->do(
+        sql     => "startup nomount;",
+        verbose => 1
+    );
 
     if ( $exitCode != 0 ) {
         print("ERROR: Create database nomount by pfile failed.\n");
