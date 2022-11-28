@@ -18,41 +18,110 @@ sub usage {
     exit(1);
 }
 
+sub cleanDisk {
+    my ($diskPath) = @_;
+    if ( -e $diskPath ) {
+        my $ddCmd    = "dd bs=64k count=1 if=/dev/zero of=$diskPath";
+        my $exitCode = system($ddCmd);
+        if ( $exitCode != 0 ) {
+            print("WARN: Clean disk $diskPath by command:$ddCmd failed.\n");
+        }
+        else {
+            print("Clean disk $diskPath success.\n");
+        }
+    }
+    else {
+        print("WARN: Disk dev:$diskPath not exists.\n");
+    }
+}
+
 sub createDiskGroup {
-    my ( $gridUser, $dgName, $dgDisks ) = @_;
+    my ( $gridUser, $dgName, $compatible, $reCreate, $dgDisks ) = @_;
 
     my $sqlplus = SqlplusExec->new( osUser => $gridUser, sysasm => 1 );
 
-    my @disks = ();
+    my $crtDgDisksMap  = {};
+    my @disksWithQuote = ();
     foreach my $diskPath ( split( /\s*,\s*/, $dgDisks ) ) {
         $diskPath =~ s/^\s*|\s*$//g;
         if ( $diskPath ne '' ) {
-            push( @disks, "'$diskPath'" );
+            push( @disksWithQuote, "'$diskPath'" );
+            $crtDgDisksMap->{$diskPath} = 1;
         }
     }
-    my $disksStr = join( ',', @disks );
+    my $disksStr = join( ',', @disksWithQuote );
 
-    my $rows;
+    my $dgRows;
     my $exitCode = 0;
-    ( $rows, $exitCode ) = $sqlplus->query(
+    ( $exitCode, $dgRows ) = $sqlplus->query(
         sql     => qq{select Name from v\$asm_diskgroup where name='$dgName';},
         verbose => 1
     );
-    if ( defined($rows) ) {
+
+    if ( defined($dgRows) ) {
+        if ( $reCreate == 0 ) {
+            print("WARN: Disk group:$dgName already exists.\n");
+            return 0;
+        }
+
+        print("Disk group:$dgName already exists, Try to drop it.\n");
         $exitCode = $sqlplus->do(
-            sql     => qq{drop diskgroup '$dgName' including contents;},
+            sql     => qq{drop diskgroup '$dgName' force including contents;},
             verbose => 1
         );
+
+        if ( $exitCode == 0 ) {
+            print("Disk group:$dgName dropped, try to clean the disks.\n");
+
+            my $diskRows = $sqlplus->query(
+                sql     => qq{SELECT dg.name, d.path FROM V\$ASM_DISK d, V\$ASM_DISKGROUP dg WHERE dg.name = '$dgName' AND dg.group_number = d.group_number},
+                verbose => 1
+            );
+
+            if ( defined($diskRows) ) {
+                foreach my $row (@$diskRows) {
+                    cleanDisk( $row->{PATH} );
+                }
+            }
+        }
     }
 
-    $exitCode = $sqlplus->do(
-        sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'},
-        verbose => 1
-    );
+    if ( $exitCode == 0 ) {
+        if ( not defined($dgRows) ) {
+            my $diskRows = $sqlplus->query(
+                sql     => q{SELECT dg.name, d.path FROM V$ASM_DISK d, V$ASM_DISKGROUP dg WHERE dg.group_number = d.group_number;},
+                verbose => 1
+            );
+
+            if ( defined($diskRows) ) {
+                foreach my $diskRow (@$diskRows) {
+                    my $diskPath = $diskRow->{PATH};
+                    if ( defined( $crtDgDisksMap->{$diskPath} ) ) {
+                        $exitCode = 1;
+                        print("ERROR: $diskPath already in disk group:$diskRow->{NAME}.\n");
+                    }
+                }
+            }
+            if ( $exitCode == 0 ) {
+                foreach my $diskPath ( keys(%$crtDgDisksMap) ) {
+                    cleanDisk($diskPath);
+                }
+            }
+        }
+
+        if ( $exitCode == 0 ) {
+            print("Try to create disk group:$dgName.\n");
+            $exitCode = $sqlplus->do(
+                sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '$compatible', 'compatible.asm' = '$compatible'},
+                verbose => 1
+            );
+        }
+    }
 
     if ( $exitCode == 0 ) {
-        print("Start diskgroup by command: srvctl start diskgroup -diskgroup $dgName\n");
-        $exitCode = system("srvctl start diskgroup -diskgroup $dgName");
+        my $startDgCmd = "srvctl start diskgroup -diskgroup $dgName";
+        print("Start diskgroup by command: $startDgCmd\n");
+        $exitCode = system($startDgCmd);
     }
 
     return $exitCode;
@@ -60,12 +129,16 @@ sub createDiskGroup {
 
 sub main {
     my ( $isHelp, $dgName, $dgDisks );
-    my $gridUser = 'grid';
+    my $gridUser   = 'grid';
+    my $compatible = '12.0';
+    my $reCreate   = 0;
     GetOptions(
-        'h|help'     => \$isHelp,
-        'griduser=s' => \$gridUser,
-        'name=s'     => \$dgName,
-        'disks=s'    => \$dgDisks
+        'h|help'       => \$isHelp,
+        'griduser=s'   => \$gridUser,
+        'name=s'       => \$dgName,
+        'compatible=s' => \$compatible,
+        'recreate=i'   => \$reCreate,
+        'disks=s'      => \$dgDisks
     );
 
     if ($isHelp) {
@@ -91,7 +164,7 @@ sub main {
 
     my $out = {};
     $dgDisks =~ s/\\n/,/g;
-    my $exitCode = createDiskGroup( $gridUser, $dgName, $dgDisks );
+    my $exitCode = createDiskGroup( $gridUser, $dgName, $compatible, $reCreate, $dgDisks );
     if ( $exitCode != 0 ) {
         $hasError = 1;
         print("ERROR: Create disk group:$dgName:$dgDisks failed.\n");

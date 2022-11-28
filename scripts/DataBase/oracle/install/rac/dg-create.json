@@ -16,6 +16,58 @@
             "validate": ""
         },
         {
+            "opt": "compatible",
+            "name": "磁盘组兼容版本",
+            "help": "与Oracle版本对应, 兼容版本",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "11.1",
+                        "value": "11.1"
+                    },
+                    {
+                        "text": "11.2",
+                        "value": "11.2"
+                    },
+                    {
+                        "text": "12.0",
+                        "value": "12.0"
+                    },
+                    {
+                        "text": "19.0",
+                        "value": "19.0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "12.0",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "recreate",
+            "name": "是否重建",
+            "help": "如果磁盘组已经存在, 是否删除磁盘组",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "否",
+                        "value": "0"
+                    },
+                    {
+                        "text": "是",
+                        "value": "1"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "disks",
             "name": "磁盘列表",
             "help": "磁盘路径列表",
