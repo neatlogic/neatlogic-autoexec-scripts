@@ -1,5 +1,8 @@
 #!/usr/bin/perl
-#创建ASM磁盘组
+#创建Oracle ASM磁盘组，只支持redundancy=external模式
+#冗余级别为external时，ASM不保证数据的冗余，完全依赖于存储的冗余，
+#不能指定failgroup，但是默认会为每一个disk分配一个failgroup，
+#同一份数据只能存在一个failgroup中
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
