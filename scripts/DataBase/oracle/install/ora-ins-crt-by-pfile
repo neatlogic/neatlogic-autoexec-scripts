@@ -85,13 +85,6 @@ sub addClusterDatabase {
     my ( $GRID_HOME, $osUser, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName ) = @_;
 
     my $exitCode;
-    print("Execute: srvctl add database -d $dbUniqueName -o $ORACLE_HOME\n");
-    my $addDbTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add database -d $dbUniqueName -o $ORACLE_HOME'`;
-    $exitCode = $?;
-    if ( $exitCode != 0 and $addDbTxt !~ /already exists/is ) {
-        print("ERROR: $addDbTxt\n");
-        return $exitCode;
-    }
 
     my $localNodeName = `'$GRID_HOME/bin/olsnodes' -l`;
     $localNodeName =~ s/^\s*|\s*$//g;
@@ -100,13 +93,34 @@ sub addClusterDatabase {
         print("ERROR: Can not get local node name by command: $GRID_HOME/bin/olsnodes -l\n");
         return $exitCode;
     }
-    print("Execute: srvctl add instance -d $dbUniqueName -i $ORACLE_SID -n $localNodeName\n");
 
+    my $dbStatusTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl status database -d $dbUniqueName'`;
+    $exitCode = $?;
+    if ( $exitCode == 0 ) {
+        print("Database:$dbUniqueName already exists.\n");
+    }
+    else {
+        print("Execute: srvctl add database -d $dbUniqueName -o $ORACLE_HOME\n");
+        my $addDbTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add database -d $dbUniqueName -o "$ORACLE_HOME"'`;
+        $exitCode = $?;
+        if ( $exitCode != 0 and $addDbTxt !~ /already exists/is ) {
+            print("ERROR: $addDbTxt");
+            return $exitCode;
+        }
+        else {
+            print("WARN: Database:$dbUniqueName already exists(concurrently add database, maybe lead to some error).\n");
+        }
+    }
+
+    print("Execute: srvctl add instance -d $dbUniqueName -i $ORACLE_SID -n $localNodeName\n");
     my $addNodeTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add instance -d $dbUniqueName -i $ORACLE_SID -n $localNodeName'`;
     $exitCode = $?;
     if ( $exitCode != 0 and $addNodeTxt !~ /already exists/is ) {
-        print("ERROR: $addNodeTxt\n");
+        print("ERROR: $addNodeTxt");
         return $exitCode;
+    }
+    else {
+        print("Database $ORACLE_SID already config on node:$localNodeName.\n");
     }
 
     return 0;
@@ -122,6 +136,7 @@ sub startNoMountByPfile {
     my $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' force=y file='$pwdFilePath' password='$sysPassword'"};
     my $orapwdExitCode = system($pwdCmd);
     if ( $orapwdExitCode != 0 ) {
+        print("WARN: Password complexity failed, Try to use loosely complexity constraint.\n");
         $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' format=12 force=y file='$pwdFilePath' password='$sysPassword'"};
         $orapwdExitCode = system($pwdCmd);
     }
@@ -185,6 +200,7 @@ sub startNoMountByPfile {
         my $spFilePath       = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
         my $dbCreateFileDest = getDBCreateFileDest($pFileContentArray);
         if ( $dbCreateFileDest =~ /^\+/ ) {
+
             #使用了ASM磁盘组，把spfile放置到磁盘组中
             my $spFileDir = "$dbCreateFileDest/" . uc($dbUniqueName);
             print("Try to create diskgroup dir:$spFileDir\n");
@@ -199,6 +215,7 @@ sub startNoMountByPfile {
         );
 
         if ( $exitCode == 0 and $dbCreateFileDest =~ /^\+/ ) {
+
             #使用了ASM磁盘组，设置多实例共享spfile
             print("Try to modify database use spfile:$spFilePath\n");
             my $setSpFileCmd = qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl' modify database -d $dbUniqueName -p '$spFilePath'"};
