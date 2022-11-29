@@ -143,8 +143,8 @@ function uninstall() {
     if [ -e "/var/lib/mysql" ]; then
         DO_CMD rm -rf /var/lib/mysql
     fi
-    if [ -e "/home/mysql/data" ]; then
-        DO_CMD rm -rf /home/mysql/data
+    if [ -e $datapath ]; then
+        DO_CMD rm -rf $datapath
     fi
     if [ -e "/home/mysql/log" ]; then
         DO_CMD rm -rf /home/mysql/log
