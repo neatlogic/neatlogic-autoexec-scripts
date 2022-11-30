@@ -91,6 +91,10 @@ function install() {
 
     DO_CMD cp -r /var/lib/mysql/* $datapath
 
+    DO_CMD rm -rf /var/lib/mysql/*
+
+    DO_CMD rm -rf $datapath/mysql-bin.index
+
     DO_CMD chown -R mysql:mysql $datapath
 
     DO_CMD chmod 755 $datapath
