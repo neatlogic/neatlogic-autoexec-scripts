@@ -129,6 +129,10 @@ sub main {
         $exitCode = 1;
     }
 
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
+
     return $exitCode;
 }
 

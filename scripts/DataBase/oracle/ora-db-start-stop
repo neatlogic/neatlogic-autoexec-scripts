@@ -213,6 +213,10 @@ sub main {
         }
     }
 
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
+
     return $exitCode;
 }
 
