@@ -99,7 +99,7 @@ function install() {
     datadir="datadir=$datapath"
 
     DO_CMD sed -bi "/^\s*log-bin=.*$/c$mysqlbin" /etc/my.cnf
-    DO_CMD perl -i -pe 's/(datadir=\n)/'$datadir'/' /etc/init.d/mysql 
+    DO_CMD perl -i -pe 's/(datadir=\n)/$datadir\n/' /etc/init.d/mysql
 
     DO_CMD setenforce 0
 
