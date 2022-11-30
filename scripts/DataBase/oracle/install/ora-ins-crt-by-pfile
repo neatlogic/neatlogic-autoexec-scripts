@@ -333,17 +333,18 @@ sub main {
     my $crsHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
     if ( defined($crsHome) and $crsHome ne '' ) {
         $exitCode = setOraAsmPrivilege( $ORACLE_USER, $crsHome, $ORACLE_HOME );
-        if ( $exitCode != 0 ) {
-            return $exitCode;
-        }
-
-        $exitCode = addClusterDatabase( $crsHome, $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName );
-        if ( $exitCode != 0 ) {
-            return $exitCode;
+        if ( $exitCode == 0 ) {
+            $exitCode = addClusterDatabase( $crsHome, $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName );
         }
     }
 
-    $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, \@pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome );
+    if ( $exitCode == 0 ) {
+        $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, \@pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome );
+    }
+
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
 
     return $exitCode;
 }
