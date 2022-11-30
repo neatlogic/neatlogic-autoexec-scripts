@@ -96,9 +96,10 @@ function install() {
     DO_CMD chmod 755 $datapath
 
     mysqlbin="log-bin=$datapath/mysql-bin"
+    datadir="datadir=$datapath"
 
     DO_CMD sed -bi "/^\s*log-bin=.*$/c$mysqlbin" /etc/my.cnf
-    DO_CMD sed -bi "/^\s*datadir=.*$/c$datapath" /etc/init.d/mysql
+    DO_CMD perl -i -pe 's/(datadir=\n)/'$datadir'/' /etc/init.d/mysql 
 
     DO_CMD setenforce 0
 
