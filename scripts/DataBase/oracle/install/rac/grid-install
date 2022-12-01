@@ -198,6 +198,11 @@ if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
     ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
 fi
 
+#Truncate inventory_location dir
+if [ -n "$INVENTORY_LOCATION" ]; then
+    rm -rf $INVENTORY_LOCATION/*
+fi
+
 #安装前检查
 SUDO_ORA_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
 
