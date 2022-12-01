@@ -133,6 +133,11 @@ if [ -e "$ORACLE_HOME/runInstaller" ]; then
     INSTALLER_DIR=$ORACLE_HOME
 fi
 
+#Truncate inventory_location dir
+if [ -n "$INVENTORY_LOCATION" ]; then
+    rm -rf $INVENTORY_LOCATION/*
+fi
+
 ##runInstall exit code##
 # 0	All installations were successful.
 # 1	All installations were successful, but some optional configuration tools failed.
