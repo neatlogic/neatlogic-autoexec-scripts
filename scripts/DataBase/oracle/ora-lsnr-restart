@@ -17,12 +17,13 @@ sub getCrsHome {
 
     my $gridHome = '';
     my $cmdFile  = "\$ORACLE_HOME/srvm/admin/getcrshome";
-    if ( -e $cmdFile ) {
-        $gridHome = `su - '$osUser' -c '$cmdFile'`;
-        if ( $? == 0 ) {
-            $gridHome =~ s/^\s*|\s*$//g;
-        }
+
+    #print("su - '$osUser' -c '$cmdFile'\n");
+    $gridHome = `su - '$osUser' -c '$cmdFile'`;
+    if ( $? == 0 ) {
+        $gridHome =~ s/^\s*|\s*$//g;
     }
+
     print("Oracle crs home:$gridHome\n");
     return $gridHome;
 }
