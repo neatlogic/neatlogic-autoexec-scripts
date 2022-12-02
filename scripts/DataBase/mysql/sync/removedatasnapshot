@@ -59,5 +59,6 @@ function DO_CMD() {
     fi
 }
 
-DO_CMD lvremove /dev/$vgname/$snapname
+DO_CMD umount /var/$snapname
+DO_CMD lvremove -f /dev/$vgname/$snapname
 DO_CMD rm -rf /var/$snapname
