@@ -86,7 +86,7 @@ sub main {
     my $LOG_ARCHIVE_DEST       = $opts->{LOG_ARCHIVE_DEST};
 
     if ( not defined($DB_ROLE) ) {
-        $DB_ROLE = 'PRIMARY_STANDBY';
+        $DB_ROLE = 'PRIMARY_ROLE';
     }
 
     my $dbMajorVer = getDBMajorVersion($ORACLE_USER);
@@ -118,12 +118,7 @@ sub main {
     }
 
     $cmds = $cmds . "alter system set log_archive_dest_state_1 = 'enable';\n";
-    if ( $DB_ROLE eq 'PRIMARY_ROLE' ) {
-        $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'enable';\n";
-    }
-    else {
-        $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'defer';\n";
-    }
+    $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'enable';\n";
 
     $cmds = $cmds . "alter system set db_file_name_convert='$OTHER_SITE_UNIQUE_NAME','$MY_UNIQUE_NAME'  scope=spfile;\n";
     $cmds = $cmds . "alter system set log_file_name_convert='$OTHER_SITE_UNIQUE_NAME','$MY_UNIQUE_NAME'  scope=spfile;\n";
