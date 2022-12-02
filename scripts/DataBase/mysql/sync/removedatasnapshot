@@ -1,0 +1,63 @@
+#!/bin/bash
+
+usage() {
+    pname=$(basename $0)
+    echo "Usage:"
+    echo "$pname --vgname <vg group name, example:vg_centos> --lvname <mysql data lv name, example:lv_root> --snapname <create snapshot name, example:datasnap> "
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            vgname)
+                vgname="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            lvname)
+                lvname="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            snapname)
+                snapname="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option -- ${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if ["$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+parseOpts "$@"
+
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+
+    if [ $? != 0 ]; then
+        HAS_ERROR=$?
+        echo ERROR: Execute failed.
+        exit $HAS_ERROR
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+DO_CMD lvremove /dev/$vgname/$snapname
+DO_CMD rm -rf /var/$snapname
