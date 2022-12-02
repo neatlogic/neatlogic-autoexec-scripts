@@ -1,0 +1,38 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "description": "centos安装mysql",
+    "option": [
+        {
+            "opt": "vgname",
+            "name": "卷组volume group",
+            "help": "mysql数据目录所在volume group",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "lvname",
+            "name": "逻辑卷logical volume",
+            "help": "mysql数据目录所在logical volume",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "snapname",
+            "name": "快照名称",
+            "help": "数据快照名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

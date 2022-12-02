@@ -52,5 +52,22 @@
             "validate": ""
         }
     ],
-    "output": []
+    "output": [
+        {
+            "opt": "binLogOffset",
+            "name": "binlogoffsetPos位置开始",
+            "help": "配置mysql主从同步位置",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "binLogFile",
+            "name": "binlogfile文件名",
+            "help": "配置mysql主从同步binlog文件名",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        }
+    ]
 }
