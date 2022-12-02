@@ -93,5 +93,16 @@ EOF
 `
 echo $unlock
 
-DO_CMD mkdir /var/snap
+if [ -e "/var/$snapname" ]; then
+        DO_CMD rm -rf /var/$snapname
+fi
+DO_CMD mkdir /var/$snapname
 DO_CMD mount /dev/$vgname/$snapname /var/snap
+
+#Save bin-log
+cat <<EOF >"output.json"
+{
+    "binLogOffset":"$binLogOffset",
+    "binLogFile":"$binLogFile"
+}
+EOF
