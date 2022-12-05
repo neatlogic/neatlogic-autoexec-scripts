@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "重启Oracle实例listener",
-    "option": [{
+    "option": [
+        {
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "GRID安装用户",

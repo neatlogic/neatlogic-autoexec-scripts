@@ -5,6 +5,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 
 use strict;
 use IO::File;
+use File::Copy;
 use Getopt::Long;
 use SqlplusExec;
 use AutoExecUtils;
@@ -14,7 +15,7 @@ sub usage {
 
     print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_HOME <ORACLE_HOME> \n");
     print("--ORACLE_SID <ORACLE_SID> --DB_UNIQUE_NAME <DB_UNIQUE_NAME>\n");
-    print("--PFILE_CONTENT <PFILE_CONTENT>\n");
+    print("--IS_LEADER_NODE <0|1> --PFILE_CONTENT <PFILE_CONTENT>\n");
     exit(1);
 }
 
@@ -81,8 +82,75 @@ sub setOraAsmPrivilege {
     return $exitCode;
 }
 
+sub getRacDBInfo {
+    my ( $osUser, $dbUniqueName ) = @_;
+    my $racInfo = {};
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    if ( not defined($dbUniqueName) ) {
+        $dbUniqueName = `su - '$osUser' -c "$envLine srvctl config database"`;
+        $dbUniqueName =~ s/^\s*|\s*$//g;
+    }
+
+    #srvctl config database -d mydb_primary
+    # [oracle@myrac1 ~]$ srvctl config database -d mydb_primary
+    # Database unique name: mydb_primary
+    # Database name: mydb
+    # Oracle home: /db/oracle/app/oracle/product/19.3.0/db
+    # Oracle user: oracle
+    # Spfile: +DATA/MYDB_PRIMARY/PARAMETERFILE/spfile.275.1119294627
+    # Password file: +DATA/MYDB_PRIMARY/PASSWORD/pwdmydb_primary.256.1119292157
+    # Domain:
+    # Start options: open
+    # Stop options: immediate
+    # Database role: PRIMARY
+    # Management policy: AUTOMATIC
+    # Server pools:
+    # Disk Groups: ARCH,DATA
+    # Mount point paths:
+    # Services:
+    # Type: RAC
+    # Start concurrency:
+    # Stop concurrency:
+    # OSDBA group: dba
+    # OSOPER group: oper
+    # Database instances: mydb1,mydb2,mydb3
+    # Configured nodes: myrac1,myrac2,myrac3
+    # CSS critical: no
+    # CPU count: 0
+    # Memory target: 0
+    # Maximum memory: 0
+    # Default network number for database services:
+    # Database is administrator managed
+    my $dbConf    = {};
+    my $dbConfTxt = `su - '$osUser' -c "$envLine srvctl config database -d $dbUniqueName"`;
+    foreach my $dbConfLine ( split( /\n/, $dbConfTxt ) ) {
+        if ( $dbConfLine =~ /^\s*([^:]+):\s*(.*?)$/ ) {
+            $dbConf->{$1} = $2;
+        }
+        elsif ( $dbConfLine =~ /policy managed/ ) {
+            $dbConf->{'Policy Managed'} = 1;
+        }
+    }
+
+    $racInfo->{DB_UNIQUE_NAME} = $dbUniqueName;
+    $racInfo->{DB_NAME}        = $dbConf->{'Database name'};
+    $racInfo->{ORACLE_HOME}    = $dbConf->{'Oracle home'};
+    $racInfo->{SPFILE}         = $dbConf->{'Spfile'};
+    $racInfo->{PASSWORD_FILE}  = $dbConf->{'Password file'};
+    $racInfo->{DATABASE_ROLE}  = $dbConf->{'DATABASE_ROLE'};
+    $racInfo->{DISK_GROUPS}    = $dbConf->{'Disk Groups'};
+    $racInfo->{SERVER_POOLS}   = $dbConf->{'Server pools'};
+    $racInfo->{TYPE}           = $dbConf->{'Type'};
+    $racInfo->{INSTANCES}      = $dbConf->{'Database instances'};
+    $racInfo->{NODES}          = $dbConf->{'Configured nodes'};
+
+    print("Get rac database config finished.\n");
+    return $racInfo;
+}
+
 sub addClusterDatabase {
-    my ( $GRID_HOME, $osUser, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName ) = @_;
+    my ( $GRID_HOME, $osUser, $ORACLE_HOME, $ORACLE_SID, $isLeaderNode, $dbUniqueName ) = @_;
 
     my $exitCode;
 
@@ -94,21 +162,23 @@ sub addClusterDatabase {
         return $exitCode;
     }
 
-    my $dbStatusTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl status database -d $dbUniqueName'`;
-    $exitCode = $?;
-    if ( $exitCode == 0 ) {
-        print("Database:$dbUniqueName already exists.\n");
-    }
-    else {
-        print("Execute: srvctl add database -d $dbUniqueName -o $ORACLE_HOME\n");
-        my $addDbTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add database -d $dbUniqueName -o "$ORACLE_HOME"'`;
+    if ( $isLeaderNode == 1 ) {
+        my $dbStatusTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl status database -d $dbUniqueName'`;
         $exitCode = $?;
-        if ( $exitCode != 0 and $addDbTxt !~ /already exists/is ) {
-            print("ERROR: $addDbTxt");
-            return $exitCode;
+        if ( $exitCode == 0 ) {
+            print("Database:$dbUniqueName already exists.\n");
         }
         else {
-            print("WARN: Database:$dbUniqueName already exists(concurrently add database, maybe lead to some error).\n");
+            print("Execute: srvctl add database -d $dbUniqueName -o $ORACLE_HOME\n");
+            my $addDbTxt = `su - '$osUser' -c 'LANG=en_US.UTF-8 srvctl add database -d $dbUniqueName -o "$ORACLE_HOME"'`;
+            $exitCode = $?;
+            if ( $exitCode != 0 and $addDbTxt !~ /already exists/is ) {
+                print("ERROR: $addDbTxt");
+                return $exitCode;
+            }
+            else {
+                print("WARN: Database:$dbUniqueName already exists(concurrently add database, maybe lead to some error).\n");
+            }
         }
     }
 
@@ -127,23 +197,45 @@ sub addClusterDatabase {
 }
 
 sub startNoMountByPfile {
-    my ( $osUser, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, $pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome ) = @_;
+    my ( $osUser, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, $isLeaderNode, $pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome ) = @_;
 
     my $pFileContent = join( "\n", @$pFileContentArray );
 
     #设置密码文件
-    my $pwdFilePath    = "$ORACLE_HOME/dbs/orapw$ORACLE_SID";
-    my $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' force=y file='$pwdFilePath' password='$sysPassword'"};
-    my $orapwdExitCode = system($pwdCmd);
-    if ( $orapwdExitCode != 0 ) {
-        print("WARN: Password complexity failed, Try to use loosely complexity constraint.\n");
-        $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' format=12 force=y file='$pwdFilePath' password='$sysPassword'"};
-        $orapwdExitCode = system($pwdCmd);
+    #orapwd FILE='+data/test/password/orapwtest' dbuniquename=test INPUT_FILE='/u01/app/oracle/product/12.2.0/dbhome_1/dbs/orapwtest' FORCE=y
+    #[root@myrac1 ~]# /db/oracle/app/19.3.0/grid/bin/asmcmd pwget --dbuniquename mydb
+    #+DATA/MYDB/PASSWORD/pwdmydb.256.1122307267
+    #[root@myrac1 ~]# /db/oracle/app/19.3.0/grid/bin/asmcmd pwcopy +DATA/MYDB/PASSWORD/pwdmydb.256.1122307267 /tmp/orapwmydb1.ora
+    #copying +DATA/MYDB/PASSWORD/pwdmydb.256.1122307267 -> /tmp/orapwmydb1.ora
+
+    my $pwdFilePath    = "$ORACLE_HOME/dbs/orapw$dbUniqueName";
+    my $insPwdFilePath = "$ORACLE_HOME/dbs/orapw$ORACLE_SID";
+    if ( -f $pwdFilePath ) {
+        my @dbsStat = ( stat("$ORACLE_HOME/dbs") );
+        my $uid     = $dbsStat[4];
+        my $gid     = $dbStat[5];
+        if ( not copy( $pwdFilePath, $insPwdFilePath ) ) {
+            print("WARN: Copy password file $pwdFilePath to $insPwdFilePath failed.\n");
+        }
+        if ( not chown( $uid, $gid, $pwdFilePath, $insPwdFilePath ) ) {
+            print("WARN: Change owner ship of $pwdFilePath, $insPwdFilePath to oracle user failed.\n");
+        }
     }
-    if ( $orapwdExitCode != 0 ) {
-        print("ERROR: Can not set password for oracle user sys.\n");
-        return $orapwdExitCode;
+    else {
+        print("WARN: Password file $pwdFilePath not exist, it will cause the DG log dest failed, you should copy it from the source database to here.\n");
     }
+
+    # my $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' force=y file='$pwdFilePath' password='$sysPassword'"};
+    # my $orapwdExitCode = system($pwdCmd);
+    # if ( $orapwdExitCode != 0 ) {
+    #     print("WARN: Password complexity failed, Try to use loosely complexity constraint.\n");
+    #     $pwdCmd         = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' format=12 force=y file='$pwdFilePath' password='$sysPassword'"};
+    #     $orapwdExitCode = system($pwdCmd);
+    # }
+    # if ( $orapwdExitCode != 0 ) {
+    #     print("ERROR: Can not set password for oracle user sys.\n");
+    #     return $orapwdExitCode;
+    # }
 
     my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $ORACLE_SID );
 
@@ -182,12 +274,22 @@ sub startNoMountByPfile {
             verbose => 1
         );
 
+        if ( $exitCode != 0 ) {
+            print("ERROR: Start database by pfile failed.\n");
+            return $exitCode;
+        }
+
         my $spFilePath = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
         print("Try to create spfile:$spFilePath\n");
         $exitCode = $sqlplus->do(
             sql     => "create spfile='$spFilePath' from pfile='$pFilePath';",
             verbose => 1
         );
+
+        if ( $exitCode != 0 ) {
+            print("ERROR: Crate spfile failed.\n");
+            return $exitCode;
+        }
     }
     else {
         #ASM集群
@@ -197,32 +299,67 @@ sub startNoMountByPfile {
             verbose => 1
         );
 
-        my $spFilePath       = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
-        my $dbCreateFileDest = getDBCreateFileDest($pFileContentArray);
-        if ( $dbCreateFileDest =~ /^\+/ ) {
-
-            #使用了ASM磁盘组，把spfile放置到磁盘组中
-            my $spFileDir = "$dbCreateFileDest/" . uc($dbUniqueName);
-            print("Try to create diskgroup dir:$spFileDir\n");
-            $exitCode   = system("LANG=en_US.UTF8 '$crsHome/bin/asmcmd' -p mkdir '$spFileDir'");
-            $spFilePath = "$spFileDir/spfile$dbUniqueName.ora";
+        if ( $exitCode != 0 ) {
+            print("ERROR: Start database by pfile failed.\n");
+            return $exitCode;
         }
 
-        print("Try to create spfile:$spFilePath\n");
-        $exitCode = $sqlplus->do(
-            sql     => "create spfile='$spFilePath' from pfile='$pFilePath';",
-            verbose => 1
-        );
+        if ( $isLeaderNode == 1 ) {
+            my $spFilePath       = "$ORACLE_HOME/dbs/spfile$ORACLE_SID.ora";
+            my $dbCreateFileDest = getDBCreateFileDest($pFileContentArray);
+            if ( $dbCreateFileDest =~ /^\+/ ) {
 
-        if ( $exitCode == 0 and $dbCreateFileDest =~ /^\+/ ) {
+                #使用了ASM磁盘组，把spfile放置到磁盘组中
+                my $spFileDir = "$dbCreateFileDest/" . uc($dbUniqueName);
+                print("Try to create diskgroup dir:$spFileDir\n");
+                $exitCode   = system("LANG=en_US.UTF8 '$crsHome/bin/asmcmd' -p mkdir '$spFileDir'");
+                $spFilePath = "$spFileDir/spfile$dbUniqueName.ora";
+            }
 
-            #使用了ASM磁盘组，设置多实例共享spfile
-            print("Try to modify database use spfile:$spFilePath\n");
-            my $setSpFileCmd = qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl' modify database -d $dbUniqueName -p '$spFilePath'"};
-            print("$setSpFileCmd\n");
-            $exitCode = system($setSpFileCmd);
+            print("Try to create spfile:$spFilePath\n");
+            $exitCode = $sqlplus->do(
+                sql     => "create spfile='$spFilePath' from pfile='$pFilePath';",
+                verbose => 1
+            );
+
             if ( $exitCode != 0 ) {
-                print("ERROR: Modify database use spfile:$spFilePath failed.\n");
+                print("ERROR: Crate spfile failed.\n");
+                return $exitCode;
+            }
+
+            if ( $dbCreateFileDest =~ /^\+/ ) {
+
+                #使用了ASM磁盘组，设置多实例共享spfile
+                print("Try to modify database use spfile:$spFilePath\n");
+                my $setSpFileCmd = qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl' modify database -d $dbUniqueName -p '$spFilePath'"};
+                print("$setSpFileCmd\n");
+                $exitCode = system($setSpFileCmd);
+                if ( $exitCode != 0 ) {
+                    print("ERROR: Modify database use spfile:$spFilePath failed.\n");
+                }
+
+                #orapwd FILE='+data/test/password/orapwtest' dbuniquename=test INPUT_FILE='/u01/app/oracle/product/12.2.0/dbhome_1/dbs/orapwtest' FORCE=y
+                print("Try to move password file to asm disk group.\n");
+                my $pwdMoveCmd = qq{su - $osUser -c "'$ORACLE_HOME/bin/orapwd' file='$dbCreateFileDest' dbuniquename=$dbUniqueName input_file='$pwdFilePath' force=y"};
+                $exitCode = system($pwdMoveCmd);
+                if ( $exitCode == 0 ) {
+                    my $racInfo     = getRacDBInfo( $osUser, $dbUniqueName );
+                    my $pwdFilePath = $racInfo->{PASSWORD_FILE};
+                    if ( defined($pwdFilePath) and $pwdFilePath ne '' ) {
+
+                        #srvctl modify db -d mydb_standby -pwfile ' +DATA/MYDB_STANDBY/PASSWORD/pwdmydb_standby.356.1122654571'
+                        $exitCode = system(qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl modify db -d $dbUniqueName -pwfile '$pwFilePath'});
+                        if ( $exitCode != 0 ) {
+                            print("WARN: Setting password file path in asm diskgroup failed.\n");
+                        }
+                    }
+                    else {
+                        print("WARN: Can not find the password file path.\n");
+                    }
+                }
+                else {
+                    print("WARN: Copy password file from '$pwdFilePath' to '$dbCreateFileDest' failed.\n");
+                }
             }
         }
     }
@@ -270,6 +407,7 @@ sub main {
             ORACLE_USER=s
             ORACLE_HOME=s
             ORACLE_SID=s
+            IS_LEADER_NODE=i
             DB_UNIQUE_NAME=s
             SYS_PASSWORD=s
             PFILE_CONTENT=s
@@ -281,6 +419,7 @@ sub main {
     my $ORACLE_USER      = $opts->{ORACLE_USER};
     my $ORACLE_HOME      = $opts->{ORACLE_HOME};
     my $ORACLE_SID       = $opts->{ORACLE_SID};
+    my $isLeaderNode     = $opts->{LEADER_NODE};
     my $sysPassword      = $opts->{SYS_PASSWORD};
     my $spFilePath       = $opts->{SPFILE_PATH};
     my $spFileDirConvert = $opts->{SPFILE_DIR_CONVERT};
@@ -313,6 +452,10 @@ sub main {
         usage();
     }
 
+    if ( not defined($isLeaderNode) or $isLeaderNode eq '' ) {
+        $isLeaderNode = 0;
+    }
+
     if ( defined($spFilePath) and $spFilePath ne '' ) {
         $spFilePath =~ s/^\s*|\s*$//g;
     }
@@ -334,12 +477,12 @@ sub main {
     if ( defined($crsHome) and $crsHome ne '' ) {
         $exitCode = setOraAsmPrivilege( $ORACLE_USER, $crsHome, $ORACLE_HOME );
         if ( $exitCode == 0 ) {
-            $exitCode = addClusterDatabase( $crsHome, $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $dbUniqueName );
+            $exitCode = addClusterDatabase( $crsHome, $ORACLE_USER, $ORACLE_HOME, $ORACLE_SID, $isLeaderNode, $dbUniqueName );
         }
     }
 
     if ( $exitCode == 0 ) {
-        $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, \@pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome );
+        $exitCode = startNoMountByPfile( $ORACLE_USER, $ORACLE_HOME, $dbUniqueName, $ORACLE_SID, $isLeaderNode, \@pFileContentArray, $sysPassword, $dbCreateFileDest, $crsHome );
     }
 
     if ( $exitCode > 128 ) {

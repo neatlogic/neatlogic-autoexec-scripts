@@ -268,6 +268,22 @@
             "required": "false"
         },
         {
+            "opt": "pwdFilePath",
+            "name": "pwdFile路径",
+            "help": "RAC环境密码文件在服务器上的路径, 非RAC环境为空",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "pwdFile",
+            "name": "pwdFile文件",
+            "help": "下载到作业目录的RAC环境密码文件路径",
+            "type": "filepath",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "dbParameters",
             "name": "全部DB参数",
             "help": "show parameter的所有参数",

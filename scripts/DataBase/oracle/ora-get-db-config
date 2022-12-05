@@ -562,6 +562,27 @@ sub main {
         if ( not -e $out->{tnsOraConfPath} ) {
             system(qq{su - $ORACLE_USER -c "touch '$out->{tnsOraConfPath}'"});
         }
+
+        my $pwdFileName = "orapw$dbUniqueName.dat";
+        my $pwdFilePath = $racInfo->{PASSWORD_FILE};
+        $out->{pwdFilePath} = $pwdFilePath;
+
+        if ( not defined($pwdFilePath) or $pwdFilePath eq '' ) {
+            $pwdFilePath = $userEnv->{ORACLE_HOME} . "/dbs/orapw$localInsName";
+        }
+
+        if ( $pwdFilePath =~ /^\+/ ) {
+            system("'$userEnv->{GRID_HOME}/bin/asmcmd' pwcopy $pwdFilePath $pwdFileName");
+        }
+        else {
+            copy( $pwdFilePath, $pwdFileName );
+        }
+
+        if ( not -e $pwdFileName ) {
+            print("WARN: Copy password from $pwdFilePath failed.\n");
+        }
+
+        $out->{pwdFile} = $pwdFileName;
     }
     else {
         my $dbInfo = getDBParameters($ORACLE_USER);
@@ -636,6 +657,16 @@ sub main {
         if ( not -e $out->{tnsOraConfPath} ) {
             system(qq{su - $ORACLE_USER -c "touch '$out->{tnsOraConfPath}'"});
         }
+
+        my $pwdFileName = "orapw$dbUniqueName.dat";
+        my $pwdFilePath = $userEnv->{ORACLE_HOME} . "/dbs/orapw$localInsName";
+        $out->{pwdFilePath} = $pwdFilePath;
+        copy( $pwdFilePath, $pwdFileName );
+
+        if ( not -e $pwdFileName ) {
+            print("WARN: Copy password from $pwdFilePath failed.\n");
+        }
+        $out->{pwdFile} = $pwdFileName;
     }
 
     $out->{hostsConfTxt} = AutoExecUtils::getFileContent('/etc/hosts');

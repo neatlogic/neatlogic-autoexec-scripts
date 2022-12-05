@@ -43,6 +43,28 @@
             "validate": ""
         },
         {
+            "opt": "IS_LEADER_NODE",
+            "name": "是否首节点",
+            "help": "部分操作只会在首节点执行, 譬如:创建集群DB、spfile、passwordfile",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "1",
+            "required": "true",
+            "validate": ""
+        },
+        {
             "opt": "SYS_PASSWORD",
             "name": "SYS用户密码",
             "help": "源和目标DB的sys用户密码，要求两个DB要一致",
