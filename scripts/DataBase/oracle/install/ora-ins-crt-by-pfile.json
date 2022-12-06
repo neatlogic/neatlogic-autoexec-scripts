@@ -67,10 +67,19 @@
         {
             "opt": "SYS_PASSWORD",
             "name": "SYS用户密码",
-            "help": "源和目标DB的sys用户密码，要求两个DB要一致",
+            "help": "创建非DG库才需要, DG库采用复制密码文件的方式设置SYS用户密码",
             "type": "password",
-            "defaultValue": "",
+            "defaultValue": "{RC4}be56e2fc9aaac7d5908032",
             "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "PWD_FILEPATH",
+            "name": "密码文件路径",
+            "help": "从源库获取的密码文件(使用ora-get-db-config工具可以获取到),构建DG库必须提供",
+            "type": "filepath",
+            "defaultValue": "",
+            "required": "false",
             "validate": ""
         },
         {
