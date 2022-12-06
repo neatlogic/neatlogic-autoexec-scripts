@@ -4,6 +4,7 @@ use lib "$FindBin::Bin/lib";
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 
 use strict;
+use Cwd;
 use IO::File;
 use Socket;
 use Getopt::Long;
@@ -426,14 +427,17 @@ sub main {
 
     my $out = {};
 
-    my $userEnv = getUserEnv( $GRID_USER, $ORACLE_USER );
-    $out->{GRID_HOME}     = $userEnv->{GRID_HOME};
+    my $userEnv   = getUserEnv( $GRID_USER, $ORACLE_USER );
+    my $GRID_HOME = $userEnv->{GRID_HOME};
+    $out->{GRID_HOME}     = $GRID_HOME;
     $out->{GRID_BASE}     = $userEnv->{GRID_BASE};
     $out->{INVENTORY_DIR} = $userEnv->{INVENTORY_DIR};
-    $out->{ORACLE_HOME}   = $userEnv->{ORACLE_HOME};
-    $out->{ORACLE_BASE}   = $userEnv->{ORACLE_BASE};
 
-    my $gridHome = getCrsHome( $ORACLE_USER, $userEnv->{ORACLE_HOME} );
+    my $ORACLE_HOME = $userEnv->{ORACLE_HOME};
+    $out->{ORACLE_HOME} = $ORACLE_HOME;
+    $out->{ORACLE_BASE} = $userEnv->{ORACLE_BASE};
+
+    my $gridHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
     $out->{crsHome} = $gridHome;
 
     my $majorVersion = getDBMajorVersion($ORACLE_USER);
@@ -554,8 +558,8 @@ sub main {
             $out->{rmanDbTnsConf} = $rmanDbTnsConf;
         }
 
-        $out->{lsnrOraConfPath} = $userEnv->{GRID_HOME} . '/network/admin/listener.ora';
-        $out->{tnsOraConfPath}  = $userEnv->{ORACLE_HOME} . '/network/admin/tnsnames.ora';
+        $out->{lsnrOraConfPath} = $GRID_HOME . '/network/admin/listener.ora';
+        $out->{tnsOraConfPath}  = $ORACLE_HOME . '/network/admin/tnsnames.ora';
         if ( not -e $out->{lsnrOraConfPath} ) {
             system(qq{su - $GRID_USER -c "touch '$out->{lsnrOraConfPath}'"});
         }
@@ -568,18 +572,21 @@ sub main {
         $out->{pwdFilePath} = $pwdFilePath;
 
         if ( not defined($pwdFilePath) or $pwdFilePath eq '' ) {
-            $pwdFilePath = $userEnv->{ORACLE_HOME} . "/dbs/orapw$localInsName";
+            $pwdFilePath = $ORACLE_HOME . "/dbs/orapw$localInsName";
         }
 
+        my $curDir = getcwd();
+        chmod( 0777, $curDir );
+        my $localPwdFilePath = "$curDir/$pwdFileName";
         if ( $pwdFilePath =~ /^\+/ ) {
-            system("'$userEnv->{GRID_HOME}/bin/asmcmd' pwcopy $pwdFilePath $pwdFileName");
+            system("'$GRID_HOME/bin/asmcmd' pwcopy '$pwdFilePath' '$localPwdFilePath'");
         }
         else {
-            copy( $pwdFilePath, $pwdFileName );
+            copy( $pwdFilePath, $localPwdFilePath );
         }
 
-        if ( not -e $pwdFileName ) {
-            print("WARN: Copy password from $pwdFilePath failed.\n");
+        if ( not -e $localPwdFilePath ) {
+            print("WARN: Copy password file from $pwdFilePath failed.\n");
         }
 
         $out->{pwdFile} = $pwdFileName;
@@ -648,8 +655,8 @@ sub main {
             $out->{dbTnsConf}     = $dbTnsConf;
         }
 
-        $out->{lsnrOraConfPath} = $userEnv->{ORACLE_HOME} . '/network/admin/listener.ora';
-        $out->{tnsOraConfPath}  = $userEnv->{ORACLE_HOME} . '/network/admin/tnsnames.ora';
+        $out->{lsnrOraConfPath} = $ORACLE_HOME . '/network/admin/listener.ora';
+        $out->{tnsOraConfPath}  = $ORACLE_HOME . '/network/admin/tnsnames.ora';
 
         if ( not -e $out->{lsnrOraConfPath} ) {
             system(qq{su - $ORACLE_USER -c "touch '$out->{lsnrOraConfPath}'"});
@@ -659,7 +666,7 @@ sub main {
         }
 
         my $pwdFileName = "orapw$dbUniqueName.dat";
-        my $pwdFilePath = $userEnv->{ORACLE_HOME} . "/dbs/orapw$localInsName";
+        my $pwdFilePath = $ORACLE_HOME . "/dbs/orapw$localInsName";
         $out->{pwdFilePath} = $pwdFilePath;
         copy( $pwdFilePath, $pwdFileName );
 
