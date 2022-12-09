@@ -177,7 +177,7 @@ sub addClusterDatabase {
                 return $exitCode;
             }
             else {
-                print("WARN: Database:$dbUniqueName already exists(concurrently add database, maybe lead to some error).\n");
+                print("WARN: Database:$dbUniqueName added. (Notice:concurrently add database, maybe lead to some error)\n");
             }
         }
     }
@@ -356,7 +356,7 @@ sub startNoMountByPfile {
                 if ( defined($pwdFilePath) and $pwdFilePath ne '' ) {
 
                     #srvctl modify db -d mydb_standby -pwfile ' +DATA/MYDB_STANDBY/PASSWORD/pwdmydb_standby.356.1122654571'
-                    $exitCode = system(qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl modify db -d $dbUniqueName -pwfile '$pwdFilePath'});
+                    $exitCode = system(qq{su - $osUser -c "'$ORACLE_HOME/bin/srvctl' modify db -d $dbUniqueName -pwfile '$pwdFilePath'"});
                     if ( $exitCode != 0 ) {
                         print("WARN: Setting password file path in asm diskgroup failed.\n");
                     }
@@ -427,7 +427,7 @@ sub main {
     my $ORACLE_USER      = $opts->{ORACLE_USER};
     my $ORACLE_HOME      = $opts->{ORACLE_HOME};
     my $ORACLE_SID       = $opts->{ORACLE_SID};
-    my $isLeaderNode     = $opts->{LEADER_NODE};
+    my $isLeaderNode     = $opts->{IS_LEADER_NODE};
     my $sysPassword      = $opts->{SYS_PASSWORD};
     my $localPwdFilePath = $opts->{PWD_FILEPATH};
     my $spFilePath       = $opts->{SPFILE_PATH};
@@ -462,7 +462,10 @@ sub main {
     }
 
     if ( not defined($isLeaderNode) or $isLeaderNode eq '' ) {
-        $isLeaderNode = 0;
+        $isLeaderNode = 1;
+    }
+    else {
+        $isLeaderNode = int($isLeaderNode);
     }
 
     if ( defined($spFilePath) and $spFilePath ne '' ) {

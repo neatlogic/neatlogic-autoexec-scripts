@@ -65,16 +65,16 @@ function removeUserAndGroups() {
 
     #delete group id bigger than 1000
     groups=$(id -G $GRID_USER)
-    usermod -g10 $GRID_USER
-    for oraGid in $(id -G $GRID_USER); do
+    #usermod -g10 $GRID_USER
+    #delete GRID_USER
+    userdel $GRID_USER
+
+    for oraGid in $groups; do
         if [ $oraGid -gt 1000 ]; then
             groupName=$(getent group $oraGid | cut -d: -f1)
             groupdel $groupName
         fi
     done
-
-    #delete GRID_USER
-    userdel $GRID_USER
 }
 
 function manualUnInstall() {
@@ -169,6 +169,11 @@ function manualUnInstall() {
     rm -rf /opt/ORCLfmap
     rm -rf /var/tmp/.oracle
 
+    INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
+        rm -rf "$INVENTORY_LOCATION"
+    fi
+
     #remove ORACLE_HOME
     if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
         rm -rf "$ORACLE_HOME"
@@ -176,11 +181,6 @@ function manualUnInstall() {
 
     if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE" ]; then
         rm -rf "$ORACLE_BASE"
-    fi
-
-    INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
-    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
-        rm -rf "$INVENTORY_LOCATION"
     fi
 
     if [ "$DEL_USER" == "1" ]; then

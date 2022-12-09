@@ -6,6 +6,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use Cwd;
 use IO::File;
+use File::Copy;
 use Socket;
 use Getopt::Long;
 use SqlplusExec;

@@ -44,10 +44,12 @@ sub createDiskGroup {
     my $sqlplus = SqlplusExec->new( osUser => $gridUser, sysasm => 1 );
 
     my $crtDgDisksMap  = {};
+    my @disksDev       = ();
     my @disksWithQuote = ();
     foreach my $diskPath ( split( /\s*,\s*/, $dgDisks ) ) {
         $diskPath =~ s/^\s*|\s*$//g;
         if ( $diskPath ne '' ) {
+            push( @disksDev,       $diskPath );
             push( @disksWithQuote, "'$diskPath'" );
             $crtDgDisksMap->{$diskPath} = 1;
         }
@@ -84,6 +86,19 @@ sub createDiskGroup {
 
             return $exitCode;
         }
+        else {
+            print("Try to create disk group:$dgName.\n");
+            $exitCode = $sqlplus->do(
+                sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '$compatible', 'compatible.asm' = '$compatible'},
+                verbose => 1
+            );
+
+            if ( $exitCode == 0 ) {
+                my $startDgCmd = qq{su - $gridUser -c '"\$ORACLE_HOME/bin/srvctl" start diskgroup -diskgroup $dgName'};
+                print("Start diskgroup by command: $startDgCmd\n");
+                $exitCode = system($startDgCmd);
+            }
+        }
     }
     else {
         if ( $dgExists == 1 ) {
@@ -97,6 +112,19 @@ sub createDiskGroup {
                 sql     => qq{alter diskgroup $dgName mount;\ndrop diskgroup $dgName;\n},
                 verbose => 1
             );
+
+            if ( $exitCode != 0 ) {
+                my $code = $sqlplus->do(
+                    sql     => qq{alter diskgroup $dgName dismount;},
+                    verbose => 1
+                );
+
+                if ( $code == 0 ) {
+                    foreach my $diskPath (@disksDev) {
+                        cleanDisk($diskPath);
+                    }
+                }
+            }
         }
 
         print("Try to create disk group:$dgName.\n");

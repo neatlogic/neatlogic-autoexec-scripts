@@ -74,7 +74,6 @@ sub main {
             ORACLE_HOME=s
             MY_UNIQUE_NAME=s
             OTHER_SITE_UNIQUE_NAME=s
-            DB_ROLE=s
             LOG_ARCHIVE_DEST=s
         }
     );
@@ -82,12 +81,7 @@ sub main {
     my $ORACLE_USER            = $opts->{ORACLE_USER};
     my $MY_UNIQUE_NAME         = $opts->{MY_UNIQUE_NAME};
     my $OTHER_SITE_UNIQUE_NAME = $opts->{OTHER_SITE_UNIQUE_NAME};
-    my $DB_ROLE                = $opts->{DB_ROLE};
     my $LOG_ARCHIVE_DEST       = $opts->{LOG_ARCHIVE_DEST};
-
-    if ( not defined($DB_ROLE) ) {
-        $DB_ROLE = 'PRIMARY_ROLE';
-    }
 
     my $dbMajorVer = getDBMajorVersion($ORACLE_USER);
     if ( not defined($dbMajorVer) ) {
@@ -110,7 +104,7 @@ sub main {
     if ( $dbMajorVer > 9 ) {
 
         #9i以上log_archive_dest的配置
-        $cmds = $cmds . "alter system set log_archive_dest_$LOG_ARCHIVE_DEST='SERVICE=$OTHER_SITE_UNIQUE_NAME LGWR SYNC NOAFFIRM REOPEN=60 VALID_FOR=(ONLINE_LOGFILES,${DB_ROLE}) DB_UNIQUE_NAME=$OTHER_SITE_UNIQUE_NAME';\n";
+        $cmds = $cmds . "alter system set log_archive_dest_$LOG_ARCHIVE_DEST='SERVICE=$OTHER_SITE_UNIQUE_NAME LGWR SYNC NOAFFIRM REOPEN=60 VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=$OTHER_SITE_UNIQUE_NAME';\n";
     }
     else {
         #Oracle 9i及以下的log_archive_dest配置

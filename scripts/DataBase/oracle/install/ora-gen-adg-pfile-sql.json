@@ -43,28 +43,6 @@
             "validate": ""
         },
         {
-            "opt": "DB_ROLE",
-            "name": "DB角色",
-            "help": "DG同步中, DB的角色",
-            "type": "select",
-            "dataSource": {
-                "dataList": [
-                    {
-                        "text": "PRIMARY_ROLE",
-                        "value": "PRIMARY_ROLE"
-                    },
-                    {
-                        "text": "STANDBY_ROLE",
-                        "value": "STANDBY_ROLE"
-                    }
-                ],
-                "dataType": "static"
-            },
-            "defaultValue": "STANDBY_ROLE",
-            "required": "true",
-            "validate": ""
-        },
-        {
             "opt": "LOG_ARCHIVE_DEST",
             "name": "日志归档目标号",
             "help": "Oracle库的Archive Log归档的目标号",
