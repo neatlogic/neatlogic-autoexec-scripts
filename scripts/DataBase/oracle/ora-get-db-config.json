@@ -5,8 +5,7 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "在某个Oracle节点执行, 获取当前节点和集群相关的节点等信息",
-    "option": [
-        {
+    "option": [{
             "opt": "GRID_USER",
             "name": "GRID_USER",
             "help": "Oracle Grid软件的OS用户",
@@ -32,10 +31,30 @@
             "defaultValue": "",
             "required": "false",
             "validate": ""
+        },
+        {
+            "opt": "ONLY_NODES",
+            "name": "只获取节点信息",
+            "help": "只获取节点信息用于确定执行目标, 不获取其他参数",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "false",
+            "validate": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "crsName",
             "name": "集群名",
             "help": "不带数字序号的集群节点名称",

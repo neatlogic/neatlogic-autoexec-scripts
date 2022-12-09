@@ -93,6 +93,7 @@ sub main {
     if ( defined($crsHome) and $crsHome ne '' ) {
         my $envLine = 'LANG=en_US.UTF-8';
         if ( not defined($dbUniqueName) ) {
+            print("Try to get db unique name...\n");
             $dbUniqueName = `su - '$ORACLE_USER' -c "$envLine srvctl config database"`;
             if ( $? != 0 ) {
                 print("ERROR: Can not determine the db unique name by command:srvctl config database.\n");
@@ -100,15 +101,20 @@ sub main {
                 return $exitCode;
             }
             $dbUniqueName =~ s/^\s*|\s*$//g;
+            print("Get db unique name:$dbUniqueName.\n");
         }
 
         if ( $action eq 'stop' or $action eq 'restart' ) {
+            my $stopCmd;
             if ( defined($stopOption) and $stopOption ne '' and $stopOption ne 'NONE' ) {
-                $exitCode = system(qq{su - '$ORACLE_USER' -c "$envLine srvctl stop database -d $dbUniqueName -stopoption $stopOption"});
+                $stopCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl stop database -d $dbUniqueName -stopoption $stopOption"};
             }
             else {
-                $exitCode = system(qq{su - '$ORACLE_USER' -c "$envLine srvctl stop database -d $dbUniqueName"});
+                $stopCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl stop database -d $dbUniqueName"};
             }
+
+            print("Try to stop database: $stopCmd.\n");
+            $exitCode = system($stopCmd);
 
             if ( $exitCode == 0 ) {
                 print("FINE: Database $dbUniqueName stoped.\n");
@@ -121,12 +127,16 @@ sub main {
         }
 
         if ( $action eq 'start' or $action eq 'restart' ) {
+            my $startCmd;
             if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
-                $exitCode = system(qq{su - '$ORACLE_USER' -c "$envLine srvctl start database -d $dbUniqueName -startoption $startOption"});
+                $startCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl start database -d $dbUniqueName -startoption $startOption"};
             }
             else {
-                $exitCode = system(qq{su - '$ORACLE_USER' -c "$envLine srvctl start database -d $dbUniqueName"});
+                $startCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl start database -d $dbUniqueName"};
             }
+
+            print("Try to start database: $startCmd.\n");
+            $exitCode = system($startCmd);
 
             if ( $exitCode == 0 ) {
                 print("FINE: Database $dbUniqueName started.\n");
@@ -138,7 +148,10 @@ sub main {
         }
         elsif ( $action eq 'modify' ) {
             if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
-                $exitCode = system(qq{su - '$ORACLE_USER' -c "$envLine srvctl modify database -d $dbUniqueName -startoption $startOption"});
+                my $modifyCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl modify database -d $dbUniqueName -startoption $startOption"};
+
+                print("Try to modify database: $modifyCmd.\n");
+                $exitCode = system($modifyCmd);
 
                 if ( $exitCode == 0 ) {
                     print("FINE: Alter Database to $startOption success.\n");
@@ -157,6 +170,8 @@ sub main {
     else {
         my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, oraHome => $ORACLE_HOME, sid => $ORACLE_SID );
         if ( $action eq 'stop' or $action eq 'restart' ) {
+            print("Try to shudown database.\n");
+
             if ( not defined($stopOption) or $stopOption eq 'NONE' ) {
                 $stopOption = '';
             }
@@ -175,6 +190,8 @@ sub main {
         }
 
         if ( $action eq 'start' or $action eq 'restart' ) {
+            print("Try to start database.\n");
+
             if ( not defined($startOption) or $startOption eq 'NONE' ) {
                 $startOption = '';
             }
@@ -193,6 +210,8 @@ sub main {
         }
         elsif ( $action eq 'modify' ) {
             if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
+                print("Try to modify database.\n");
+
                 $exitCode = $sqlplus->do(
                     sql     => "ALTER DATABASE $startOption;",
                     verbose => 1

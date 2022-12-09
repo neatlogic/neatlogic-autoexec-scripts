@@ -22,6 +22,7 @@ sub usage {
 sub getCrsHome {
     my ( $osUser, $ORACLE_HOME ) = @_;
 
+    print("Try to get crs home directory...\n");
     my $envLine = 'LANG=en_US.UTF-8';
 
     my $gridHome = '';
@@ -38,6 +39,7 @@ sub getCrsHome {
 
 sub getDBMajorVersion {
     my ($osUser) = @_;
+    print("Try to get db major version...\n");
     my $majorVersion = `su - '$osUser' -c 'oraversion -majorVersion'`;
     if ( $? == 0 ) {
         $majorVersion =~ s/^\s*|\s*$//g;
@@ -83,6 +85,7 @@ sub getDBParameters {
     my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
 
     my $rows;
+    print("Try to get database parameters...\n");
 
     #SHOW PARAMETER NAME
     $rows = $sqlplus->query(
@@ -105,6 +108,8 @@ sub getDBParameters {
 
 sub getDBInstances {
     my ( $osUser, $dbUniqueName, $localNodeName ) = @_;
+
+    print("Try to get db instances...\n");
 
     my $envLine = 'LANG=en_US.UTF-8';
 
@@ -133,6 +138,8 @@ sub getDBInstances {
 
 sub getRacDBInfo {
     my ( $osUser, $dbUniqueName ) = @_;
+
+    print("Try to get rac db info...\n");
     my $racInfo = {};
     my $envLine = 'LANG=en_US.UTF-8';
 
@@ -200,6 +207,9 @@ sub getRacDBInfo {
 
 sub getCrsInfo {
     my ($osUser) = @_;
+
+    print("Try to get cluster nodes info...\n");
+
     my $envLine = 'LANG=en_US.UTF-8';
 
     my $crsInfo = {};
@@ -237,6 +247,8 @@ sub getCrsInfo {
 
 sub getUserEnv {
     my ( $GRID_USER, $ORACLE_USER ) = @_;
+
+    print("Try to get user environment...\n");
 
     my $env        = {};
     my $gridEnvTxt = `su - '$GRID_USER' -c "env | grep ORACLE_"`;
@@ -280,11 +292,16 @@ sub getUserEnv {
         }
     }
 
+    print("Get user environment complete.\n");
+
     return $env;
 }
 
 sub getScanInfo {
     my ($osUser) = @_;
+
+    print("Try to get oracle cluster scan ip...\n");
+
     my $envLine = 'LANG=en_US.UTF-8';
 
     # [oracle@myrac1 ~]$ srvctl config scan
@@ -307,6 +324,8 @@ sub getScanInfo {
 
 sub getLsnrAddrs {
     my ($osUser) = @_;
+
+    print("Try to get listener info...\n");
     my $envLine = 'LANG=en_US.UTF-8';
 
     # [oracle@myrac1 ~]$ lsnrctl status|grep DESCRIPTION
@@ -344,6 +363,8 @@ sub getLsnrAddrs {
 
 sub getNodesIpInfo {
     my ( $localNodeName, $nodeNames ) = @_;
+
+    print("Try to get cluster nodes ip...\n");
 
     my $nodesIpInfo = {};
 
@@ -391,6 +412,8 @@ sub getNodesIpInfo {
     $otherNodeNames =~ s/^\s*|\s*$//g;
     $nodesIpInfo->{otherNodeNames} = $otherNodeNames;
 
+    print("Get cluster nodes ip complete.\n");
+
     return $nodesIpInfo;
 }
 
@@ -403,6 +426,7 @@ sub main {
             ORACLE_USER=s
             DB_NAME=s
             DB_UNIQUE_NAME=s
+            ONLY_NODES=s
         }
     );
 
@@ -411,6 +435,7 @@ sub main {
     my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
     my $ORACLE_USER  = $opts->{ORACLE_USER};
     my $GRID_USER    = $opts->{GRID_USER};
+    my $onlyNodes    = $opts->{ONLY_NODES};
 
     if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
         $hasOptErr = 1;
@@ -422,6 +447,13 @@ sub main {
     }
     if ( $hasOptErr == 1 ) {
         usage();
+    }
+
+    if ( not defined($onlyNodes) or $onlyNodes eq '' ) {
+        $onlyNodes = 0;
+    }
+    else {
+        $onlyNodes = int($onlyNodes);
     }
 
     my $hasError = 0;
@@ -447,17 +479,7 @@ sub main {
     if ( ( defined($GRID_USER) and $GRID_USER ne $ORACLE_USER ) or ( defined($gridHome) and $gridHome ne '' ) ) {
         my $racInfo = getRacDBInfo( $GRID_USER, $dbUniqueName );
         $dbName = $racInfo->{DB_NAME};
-
         $out->{dbUniqueName} = $dbUniqueName;
-
-        my $dbInfo = getDBParameters($ORACLE_USER);
-        $out->{dbParameters} = $dbInfo;
-        $out->{spfilePath}   = $dbInfo->{spfile};
-
-        if ( not defined($dbName) or $dbName eq '' ) {
-            $dbName = $dbInfo->{db_name};
-        }
-        $out->{dbName} = $dbName;
 
         my $crsInfo       = getCrsInfo($GRID_USER);
         my $localNodeName = $crsInfo->{LOCAL_NODE_NAME};
@@ -476,208 +498,224 @@ sub main {
         $out->{operNodeInfo}       = $nodesIpInfo->{operNodeInfo};
         $out->{otherNodeNames}     = $nodesIpInfo->{otherNodeNames};
 
-        my $gridNodeIpInfo   = $nodesIpInfo->{gridNodeIpInfo};
-        my $nodesVipMap      = $crsInfo->{NODES_VIP};
-        my $dbInstancesIpTxt = '';
-        my ( $localInsName, $dbInstancesIpInfo ) = getDBInstances( $GRID_USER, $dbUniqueName, $localNodeName );
-        foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
-            my $insInfo  = $dbInstancesIpInfo->{$insName};
-            my $nodeName = $insInfo->{hostName};
-            $insInfo->{ip}    = $gridNodeIpInfo->{$nodeName};
-            $insInfo->{vip}   = $nodesVipMap->{$nodeName};
-            $dbInstancesIpTxt = $dbInstancesIpTxt . "\n" . "$insName $nodeName" . $insInfo->{hostname} . ' ' . $insInfo->{ip} . ' ' . $insInfo->{vip};
-        }
-        $out->{dbInstancesIpInfo} = $dbInstancesIpInfo;
-        $out->{dbInstancesIpTxt}  = $dbInstancesIpTxt;
+        if ( $onlyNodes == 0 ) {
+            my $dbInfo = getDBParameters($ORACLE_USER);
+            $out->{dbParameters} = $dbInfo;
+            $out->{spfilePath}   = $dbInfo->{spfile};
 
-        if ( not defined($localInsName) or $localInsName eq '' ) {
-            my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
-            $oraSid =~ s/^\s*|\s*$//g;
-            $localInsName = $oraSid;
-        }
-        $out->{instanceName} = $localInsName;
+            if ( not defined($dbName) or $dbName eq '' ) {
+                $dbName = $dbInfo->{db_name};
+            }
+            $out->{dbName} = $dbName;
 
-        my $lsnAddrs = getLsnrAddrs($GRID_USER);
-        my $port     = 1521;
-        if ( scalar(@$lsnAddrs) > 0 ) {
-            $port = $$lsnAddrs[0]->{port};
-
-            # tnstestdbdg =
-            # (DESCRIPTION =
-            #     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.43)(PORT = 1522))
-            #     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.44)(PORT = 1522))
-            #     (CONNECT_DATA =
-            #     (SERVER = DEDICATED)
-            #     (SERVICE_NAME = testdbdg)
-            #     )
-            # )
-            my $uniqDbTnsConf = "$dbUniqueName = \n";
-            $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
-
-            my $dbTnsConf = "$dbName = \n";
-            $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
+            my $gridNodeIpInfo   = $nodesIpInfo->{gridNodeIpInfo};
+            my $nodesVipMap      = $crsInfo->{NODES_VIP};
+            my $dbInstancesIpTxt = '';
+            my ( $localInsName, $dbInstancesIpInfo ) = getDBInstances( $GRID_USER, $dbUniqueName, $localNodeName );
             foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
                 my $insInfo  = $dbInstancesIpInfo->{$insName};
                 my $nodeName = $insInfo->{hostName};
-                my $vip      = $insInfo->{vip};
-                my $ip       = $insInfo->{ip};
-                if ( defined($vip) ) {
-                    $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $vip)(PORT = $port))\n";
-                    $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $vip)(PORT = $port))\n";
-                }
-                elsif ( defined($ip) ) {
-                    $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-                    $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-                }
+                $insInfo->{ip}    = $gridNodeIpInfo->{$nodeName};
+                $insInfo->{vip}   = $nodesVipMap->{$nodeName};
+                $dbInstancesIpTxt = $dbInstancesIpTxt . "\n" . "$insName $nodeName" . $insInfo->{hostname} . ' ' . $insInfo->{ip} . ' ' . $insInfo->{vip};
             }
-            if ( $majorVersion >= 10 ) {
+            $out->{dbInstancesIpInfo} = $dbInstancesIpInfo;
+            $out->{dbInstancesIpTxt}  = $dbInstancesIpTxt;
 
-                #Oracle版本大于等于10，增加了UR=A的设定，让tns可以再实例监听处于BLOCKED状态仍然可以进行管理连接
-                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+            if ( not defined($localInsName) or $localInsName eq '' ) {
+                my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
+                $oraSid =~ s/^\s*|\s*$//g;
+                $localInsName = $oraSid;
+            }
+            $out->{instanceName} = $localInsName;
+
+            my $lsnAddrs = getLsnrAddrs($GRID_USER);
+            my $port     = 1521;
+            if ( scalar(@$lsnAddrs) > 0 ) {
+                $port = $$lsnAddrs[0]->{port};
+
+                # tnstestdbdg =
+                # (DESCRIPTION =
+                #     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.43)(PORT = 1522))
+                #     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.44)(PORT = 1522))
+                #     (CONNECT_DATA =
+                #     (SERVER = DEDICATED)
+                #     (SERVICE_NAME = testdbdg)
+                #     )
+                # )
+                my $uniqDbTnsConf = "$dbUniqueName = \n";
+                $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
+
+                my $dbTnsConf = "$dbName = \n";
+                $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
+                foreach my $insName ( keys(%$dbInstancesIpInfo) ) {
+                    my $insInfo  = $dbInstancesIpInfo->{$insName};
+                    my $nodeName = $insInfo->{hostName};
+                    my $vip      = $insInfo->{vip};
+                    my $ip       = $insInfo->{ip};
+                    if ( defined($vip) ) {
+                        $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $vip)(PORT = $port))\n";
+                        $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $vip)(PORT = $port))\n";
+                    }
+                    elsif ( defined($ip) ) {
+                        $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                        $dbTnsConf     = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                    }
+                }
+                if ( $majorVersion >= 10 ) {
+
+                    #Oracle版本大于等于10，增加了UR=A的设定，让tns可以再实例监听处于BLOCKED状态仍然可以进行管理连接
+                    $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+                }
+                else {
+                    $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+                }
+
+                $dbTnsConf            = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+                $out->{uniqDbTnsConf} = $uniqDbTnsConf;
+                $out->{dbTnsConf}     = $dbTnsConf;
+
+                my $racScanTnsConf = "$dbName = \n";
+                $racScanTnsConf = $racScanTnsConf . "  (DESCRIPTION =\n";
+                my $scanVips = getScanInfo($ORACLE_USER);
+                foreach my $scanVip (@$scanVips) {
+                    $racScanTnsConf = $racScanTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $scanVip)(PORT = $port))\n";
+                }
+                $racScanTnsConf = $racScanTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+                $out->{racScanTnsConf} = $racScanTnsConf;
+
+                my $rmanDbTnsConf = "${dbUniqueName}_rman = \n";
+                $rmanDbTnsConf        = $rmanDbTnsConf . "  (DESCRIPTION =\n";
+                $rmanDbTnsConf        = $rmanDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $localIp)(PORT = $port))\n";
+                $rmanDbTnsConf        = $rmanDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SID = $localInsName))\n)\n";
+                $out->{rmanDbTnsConf} = $rmanDbTnsConf;
+            }
+
+            $out->{lsnrOraConfPath} = $GRID_HOME . '/network/admin/listener.ora';
+            $out->{tnsOraConfPath}  = $ORACLE_HOME . '/network/admin/tnsnames.ora';
+            if ( not -e $out->{lsnrOraConfPath} ) {
+                system(qq{su - $GRID_USER -c "touch '$out->{lsnrOraConfPath}'"});
+            }
+            if ( not -e $out->{tnsOraConfPath} ) {
+                system(qq{su - $ORACLE_USER -c "touch '$out->{tnsOraConfPath}'"});
+            }
+
+            my $pwdFileName = "orapw$dbUniqueName.dat";
+            my $pwdFilePath = $racInfo->{PASSWORD_FILE};
+            $out->{pwdFilePath} = $pwdFilePath;
+
+            if ( not defined($pwdFilePath) or $pwdFilePath eq '' ) {
+                $pwdFilePath = $ORACLE_HOME . "/dbs/orapw$localInsName";
+            }
+
+            my $curDir = getcwd();
+            chmod( 0777, $curDir );
+            my $localPwdFilePath = "$curDir/$pwdFileName";
+            if ( $pwdFilePath =~ /^\+/ ) {
+                system("'$GRID_HOME/bin/asmcmd' pwcopy '$pwdFilePath' '$localPwdFilePath'");
             }
             else {
-                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+                copy( $pwdFilePath, $localPwdFilePath );
             }
 
-            $dbTnsConf            = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
-            $out->{uniqDbTnsConf} = $uniqDbTnsConf;
-            $out->{dbTnsConf}     = $dbTnsConf;
-
-            my $racScanTnsConf = "$dbName = \n";
-            $racScanTnsConf = $racScanTnsConf . "  (DESCRIPTION =\n";
-            my $scanVips = getScanInfo($ORACLE_USER);
-            foreach my $scanVip (@$scanVips) {
-                $racScanTnsConf = $racScanTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $scanVip)(PORT = $port))\n";
+            if ( not -e $localPwdFilePath ) {
+                print("WARN: Copy password file from $pwdFilePath failed.\n");
             }
-            $racScanTnsConf = $racScanTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
-            $out->{racScanTnsConf} = $racScanTnsConf;
 
-            my $rmanDbTnsConf = "${dbUniqueName}_rman = \n";
-            $rmanDbTnsConf        = $rmanDbTnsConf . "  (DESCRIPTION =\n";
-            $rmanDbTnsConf        = $rmanDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $localIp)(PORT = $port))\n";
-            $rmanDbTnsConf        = $rmanDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SID = $localInsName))\n)\n";
-            $out->{rmanDbTnsConf} = $rmanDbTnsConf;
+            $out->{pwdFile} = $pwdFileName;
         }
-
-        $out->{lsnrOraConfPath} = $GRID_HOME . '/network/admin/listener.ora';
-        $out->{tnsOraConfPath}  = $ORACLE_HOME . '/network/admin/tnsnames.ora';
-        if ( not -e $out->{lsnrOraConfPath} ) {
-            system(qq{su - $GRID_USER -c "touch '$out->{lsnrOraConfPath}'"});
-        }
-        if ( not -e $out->{tnsOraConfPath} ) {
-            system(qq{su - $ORACLE_USER -c "touch '$out->{tnsOraConfPath}'"});
-        }
-
-        my $pwdFileName = "orapw$dbUniqueName.dat";
-        my $pwdFilePath = $racInfo->{PASSWORD_FILE};
-        $out->{pwdFilePath} = $pwdFilePath;
-
-        if ( not defined($pwdFilePath) or $pwdFilePath eq '' ) {
-            $pwdFilePath = $ORACLE_HOME . "/dbs/orapw$localInsName";
-        }
-
-        my $curDir = getcwd();
-        chmod( 0777, $curDir );
-        my $localPwdFilePath = "$curDir/$pwdFileName";
-        if ( $pwdFilePath =~ /^\+/ ) {
-            system("'$GRID_HOME/bin/asmcmd' pwcopy '$pwdFilePath' '$localPwdFilePath'");
-        }
-        else {
-            copy( $pwdFilePath, $localPwdFilePath );
-        }
-
-        if ( not -e $localPwdFilePath ) {
-            print("WARN: Copy password file from $pwdFilePath failed.\n");
-        }
-
-        $out->{pwdFile} = $pwdFileName;
     }
     else {
-        my $dbInfo = getDBParameters($ORACLE_USER);
-
-        if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
-            if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
-                $dbUniqueName = $dbInfo->{db_unique_name};
-            }
-        }
-
-        if ( not defined($dbName) or $dbName eq '' ) {
-            $dbName = $dbInfo->{db_name};
-        }
-
-        my $localInsName = $dbInfo->{instance_name};
-        if ( not defined($localInsName) or $localInsName eq '' ) {
-            my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
-            $oraSid =~ s/^\s*|\s*$//g;
-            $localInsName = $oraSid;
-        }
-
         my $ip   = $ENV{MGMT_IP};
         my $port = 1521;
 
-        $out->{dbParameters}       = $dbInfo;
-        $out->{spfilePath}         = $dbInfo->{spfile};
         $out->{allGridNodesInfo}   = [ { ip => $ip } ];
         $out->{otherGridNodesInfo} = [];
         $out->{thisNodesInfo}      = [ { ip => $ip } ];
         $out->{operNodeInfo}       = [ { ip => $ip } ];
         $out->{otherNodeNames}     = '';
 
-        my $lsnAddrs = getLsnrAddrs($ORACLE_USER);
-        if ( scalar(@$lsnAddrs) > 0 ) {
-            my $lsnrInfo = $$lsnAddrs[0];
-            $ip   = $lsnrInfo->{host};
-            $port = $lsnrInfo->{port};
+        if ( $onlyNodes == 0 ) {
+            my $dbInfo = getDBParameters($ORACLE_USER);
 
-            my $uniqDbTnsConf = "$dbUniqueName = \n";
-            $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
-            $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-            if ( $majorVersion >= 10 ) {
-
-                #Oracle版本大于等于10，增加了UR=A的设定，让tns可以再实例监听处于BLOCKED状态仍然可以进行管理连接
-                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
-            }
-            else {
-                $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+            if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
+                if ( not defined($dbUniqueName) or $dbUniqueName eq '' ) {
+                    $dbUniqueName = $dbInfo->{db_unique_name};
+                }
             }
 
-            my $dbTnsConf = "$dbName = \n";
-            $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
-            $dbTnsConf = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-            $dbTnsConf = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+            if ( not defined($dbName) or $dbName eq '' ) {
+                $dbName = $dbInfo->{db_name};
+            }
 
-            my $rmanDbTnsConf = "${dbUniqueName}_rman = \n";
-            $rmanDbTnsConf        = $rmanDbTnsConf . "  (DESCRIPTION =\n";
-            $rmanDbTnsConf        = $rmanDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
-            $rmanDbTnsConf        = $rmanDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SID = $localInsName))\n)\n";
-            $out->{rmanDbTnsConf} = $rmanDbTnsConf;
+            my $localInsName = $dbInfo->{instance_name};
+            if ( not defined($localInsName) or $localInsName eq '' ) {
+                my $oraSid = `su - '$ORACLE_USER' -c "echo \$ORACLE_SID"`;
+                $oraSid =~ s/^\s*|\s*$//g;
+                $localInsName = $oraSid;
+            }
 
-            $out->{uniqDbTnsConf} = $uniqDbTnsConf;
-            $out->{dbTnsConf}     = $dbTnsConf;
+            $out->{dbParameters} = $dbInfo;
+            $out->{spfilePath}   = $dbInfo->{spfile};
+
+            my $lsnAddrs = getLsnrAddrs($ORACLE_USER);
+            if ( scalar(@$lsnAddrs) > 0 ) {
+                my $lsnrInfo = $$lsnAddrs[0];
+                $ip   = $lsnrInfo->{host};
+                $port = $lsnrInfo->{port};
+
+                my $uniqDbTnsConf = "$dbUniqueName = \n";
+                $uniqDbTnsConf = $uniqDbTnsConf . "  (DESCRIPTION =\n";
+                $uniqDbTnsConf = $uniqDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                if ( $majorVersion >= 10 ) {
+
+                    #Oracle版本大于等于10，增加了UR=A的设定，让tns可以再实例监听处于BLOCKED状态仍然可以进行管理连接
+                    $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName) (UR=A))\n)\n";
+                }
+                else {
+                    $uniqDbTnsConf = $uniqDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbUniqueName))\n)\n";
+                }
+
+                my $dbTnsConf = "$dbName = \n";
+                $dbTnsConf = $dbTnsConf . "  (DESCRIPTION =\n";
+                $dbTnsConf = $dbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                $dbTnsConf = $dbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = $dbName))\n)\n";
+
+                my $rmanDbTnsConf = "${dbUniqueName}_rman = \n";
+                $rmanDbTnsConf        = $rmanDbTnsConf . "  (DESCRIPTION =\n";
+                $rmanDbTnsConf        = $rmanDbTnsConf . "    (ADDRESS = (PROTOCOL = TCP)(HOST = $ip)(PORT = $port))\n";
+                $rmanDbTnsConf        = $rmanDbTnsConf . "  (CONNECT_DATA = (SERVER = DEDICATED) (SID = $localInsName))\n)\n";
+                $out->{rmanDbTnsConf} = $rmanDbTnsConf;
+
+                $out->{uniqDbTnsConf} = $uniqDbTnsConf;
+                $out->{dbTnsConf}     = $dbTnsConf;
+            }
+
+            $out->{lsnrOraConfPath} = $ORACLE_HOME . '/network/admin/listener.ora';
+            $out->{tnsOraConfPath}  = $ORACLE_HOME . '/network/admin/tnsnames.ora';
+
+            if ( not -e $out->{lsnrOraConfPath} ) {
+                system(qq{su - $ORACLE_USER -c "touch '$out->{lsnrOraConfPath}'"});
+            }
+            if ( not -e $out->{tnsOraConfPath} ) {
+                system(qq{su - $ORACLE_USER -c "touch '$out->{tnsOraConfPath}'"});
+            }
+
+            my $pwdFileName = "orapw$dbUniqueName.dat";
+            my $pwdFilePath = $ORACLE_HOME . "/dbs/orapw$localInsName";
+            $out->{pwdFilePath} = $pwdFilePath;
+            copy( $pwdFilePath, $pwdFileName );
+
+            if ( not -e $pwdFileName ) {
+                print("WARN: Copy password from $pwdFilePath failed.\n");
+            }
+            $out->{pwdFile} = $pwdFileName;
         }
-
-        $out->{lsnrOraConfPath} = $ORACLE_HOME . '/network/admin/listener.ora';
-        $out->{tnsOraConfPath}  = $ORACLE_HOME . '/network/admin/tnsnames.ora';
-
-        if ( not -e $out->{lsnrOraConfPath} ) {
-            system(qq{su - $ORACLE_USER -c "touch '$out->{lsnrOraConfPath}'"});
-        }
-        if ( not -e $out->{tnsOraConfPath} ) {
-            system(qq{su - $ORACLE_USER -c "touch '$out->{tnsOraConfPath}'"});
-        }
-
-        my $pwdFileName = "orapw$dbUniqueName.dat";
-        my $pwdFilePath = $ORACLE_HOME . "/dbs/orapw$localInsName";
-        $out->{pwdFilePath} = $pwdFilePath;
-        copy( $pwdFilePath, $pwdFileName );
-
-        if ( not -e $pwdFileName ) {
-            print("WARN: Copy password from $pwdFilePath failed.\n");
-        }
-        $out->{pwdFile} = $pwdFileName;
+    }
+    if ( $onlyNodes == 0 ) {
+        $out->{hostsConfTxt} = AutoExecUtils::getFileContent('/etc/hosts');
     }
 
-    $out->{hostsConfTxt} = AutoExecUtils::getFileContent('/etc/hosts');
     AutoExecUtils::saveOutput($out);
 
     return 0;

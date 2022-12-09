@@ -23,6 +23,7 @@ my $READ_TMOUT = 86400;
 my $TERM_CHARSET;
 
 sub setEnv {
+    $| = 1;
     umask(022);
 
     #hide password in command line
