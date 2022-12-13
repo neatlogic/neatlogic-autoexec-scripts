@@ -47,9 +47,9 @@ sub main {
     my $Config = Config::Tiny->new;
     $Config = Config::Tiny->read( '/etc/my.cnf', 'utf8' );
 
-    $Config->{mysqld}->{server_id} = "$serverid";
-    $Config->{mysqld}->{log-slave-updates} = '1';
-    $Config->{mysqld}->{relay_log} = 'relay-bin-log';
+    $Config->{mysqld}->{'server_id'} = "$serverid";
+    $Config->{mysqld}->{'log-slave-updates'} = '1';
+    $Config->{mysqld}->{'relay_log'} = 'relay-bin-log';
 
     $Config->write( '/etc/my.cnf', 'utf8' );
 
