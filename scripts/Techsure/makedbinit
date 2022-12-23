@@ -126,15 +126,16 @@ class mysqlLocal:
     #需要清理的数据表
     def getCleanTable(self , database) :
         filepath = "db_clean/{}/{}.sql".format(database,database)
-        content = self.readFile(filepath)
         tableMap = {}
-        for line in content:
-            if line is None or line.strip() == '' :
-                continue 
-            info = line.split()
-            table_name = info[2].replace('`','').replace(';','').replace('\n','')
-            table_name = table_name[len(database)+1:]
-            tableMap[table_name]=1
+        if os.path.exists(filepath):
+            content = self.readFile(filepath)
+            for line in content:
+                if line is None or line.strip() == '' :
+                    continue 
+                info = line.split()
+                table_name = info[2].replace('`','').replace(';','').replace('\n','')
+                table_name = table_name[len(database)+1:]
+                tableMap[table_name]=1
         return tableMap
 
     #清理定义的表数据
@@ -195,8 +196,16 @@ class mysqlLocal:
         for databse in os.listdir(path):
             databasepath = os.path.join(path, databse)
             use = ''
+            src = None 
+            dst = None
             if databse == 'codedriver_demo' :
                 use = "use codedriver_{} ;".format(self.tenant_name)
+                src = os.path.join(path, 'codedriver_demo')
+                dst = "db_base/codedriver_{}/".format(self.tenant_name)
+            elif databse == 'codedriver_demo_data':
+                use = "use codedriver_{}_data ;".format(self.tenant_name)
+                src = os.path.join(path, 'codedriver_demo_data')
+                dst = "db_base/codedriver_{}_data/".format(self.tenant_name)
             else :
                 use = "use codedriver ;"
 
@@ -214,11 +223,10 @@ class mysqlLocal:
 
                 self.writeFile(filepath ,newContent)
         
-        src = os.path.join(path, 'codedriver_demo')
-        dst = "db_base/codedriver_{}/".format(self.tenant_name)
-        os.rename(src, dst)
-        if os.path.exists(src):
-            shutil.rmtree(src)
+            if src is not None and  dst is not None :
+                os.rename(src, dst)
+                if os.path.exists(src):
+                    shutil.rmtree(src)
         print("INFO:: Change tenant codedriver_demo to codedriver_{} success.".format(self.tenant_name))
 
     #初始化租户data数据
@@ -295,6 +303,8 @@ if __name__ == "__main__":
         print("ERROR:: Must defind option --tenant_name")
         exit(1)
 
+    os.chdir('/workspace/databases/')
+    
     if os.path.exists('db_base'):
         shutil.rmtree('db_base')
     
@@ -302,7 +312,7 @@ if __name__ == "__main__":
         shutil.rmtree('db_init')
     
     local = mysqlLocal(techsure_home, ip , port , user , password, tenant_name, license , modules)
-    dbname_list = [ "codedriver" , "codedriver_demo" ]
+    dbname_list = [ "codedriver" , "codedriver_demo" ,"codedriver_demo_data" ]
     if type is None or type == '' or type == 'patch' :
         mysql = mysqlManager(ip ,port ,user , password)
         ( db , cursor ) = mysql.getConnect()
@@ -315,7 +325,7 @@ if __name__ == "__main__":
             cleanTableMap = local.getCleanTable(db_name)
             tables = mysql.getDBtables(cursor , db_name)
             for table in tables :
-                if table in cleanTableMap :
+                if table in cleanTableMap  or db_name == 'codedriver_demo_data':
                     local.dumpTable(db_name, table , 'nodata')
                 else:
                     local.dumpTable(db_name, table , 'all')
