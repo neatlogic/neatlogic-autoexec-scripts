@@ -1,0 +1,135 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+
+use strict;
+use Expect;
+use Getopt::Long;
+use JSON;
+
+use AutoExecUtils;
+Getopt::Long::Configure("pass_through");
+
+sub usage {
+    my $pname = $FindBin::Script;
+    print("$pname --tenant_name <tenant name> --customer_name <customer name> --db_info < db info ,defualt:127.0.0.1:3306> --license_date <license date> --jar_path <license jar path>\n");
+    exit(1);
+}
+
+sub main {
+    $| = 1;    #不对输出进行buffer，便于实时看到输出日志
+    AutoExecUtils::setEnv();
+
+    my ( $ishelp, $customer_name, $tenant_name , $db_info, $license_date , $jarpath);
+
+    GetOptions(
+        'help'           => \$ishelp,
+        'customer_name=s'         => \$customer_name,
+        'tenant_name=s'       => \$tenant_name,
+        'db_info=s'       => \$db_info,
+        'license_date=s'       => \$license_date,
+        'jarpath=s'         =>\$jarpath
+    );
+
+    my $hasOptErr = 0;
+    if (not defined($customer_name) or  $customer_name eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Option --customer_name not defined.\n");
+    }
+
+    if (not defined($tenant_name) or  $tenant_name eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Option --tenant_name not defined.\n");
+    }
+
+    if (not defined($license_date) or  $license_date eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Option --license_date not defined.\n");
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    if ( not defined($jarpath) or $jarpath eq '' ){
+        $jarpath="/tmp/codedriver-license-1.0.0.jar"
+    }
+
+    if (not defined($db_info) or  $db_info eq '' ) {
+        $db_info="127.0.0.1:3306"
+    }
+
+    my $license='';
+    my $cmd = "java -jar $jarpath";
+    my $spawn = Expect->new();
+    $spawn->log_stdout(1);
+    $spawn->max_accum(512);
+    my $cmdOut = '';
+    $spawn->log_file(
+        sub {
+            my $content = shift;
+            $cmdOut = $cmdOut . $content;
+        }
+    );
+    my $timeout = int(60);
+    $spawn->spawn($cmd);
+    
+    $spawn->expect(
+        $timeout,
+        [
+            qr/请输入客户名\s*/ => sub {
+                $spawn->send("$customer_name\n");
+                $spawn->exp_continue;
+            }
+        ],
+        [
+            qr/请输入租户名\s*/ => sub {
+                $spawn->send("$tenant_name\n");
+                $spawn->exp_continue;
+            }
+        ],
+        [
+            qr/请输入租户mysql db host:port\s*/ => sub {
+                $spawn->send("$db_info\n");
+                $spawn->exp_continue;
+            }
+        ],
+        [
+            qr/请输入使用截止日期\s*/ => sub {
+                $spawn->send("$license_date\n");
+                $spawn->exp_continue;
+            }
+        ],
+        [
+            qr/截止日期后仍可以使用天数\s*/ => sub {
+                $spawn->send("\n");
+                $spawn->exp_continue;
+            }
+        ],        
+        [
+            qr/即将到截止日期前提醒天数\s*/ => sub {
+                $spawn->send("\n");
+                $spawn->exp_continue;
+            }
+        ],
+        [
+            qr/请输入未过期时，模块组权限\s*/ => sub {
+                $spawn->send("\n");
+                $spawn->exp_continue;
+            }
+        ]
+    );
+    
+    my $tmpstr = "License密文：";
+    $license = substr( $cmdOut, rindex( $cmdOut, $tmpstr ) + length($tmpstr) + 1 );
+    $license =~ s/^\s*\n//mg;
+    print("$license");
+
+    my $out = {};
+    $out->{license}     = $license;
+    AutoExecUtils::saveOutput($out);
+
+    return 0;
+}
+
+exit main();

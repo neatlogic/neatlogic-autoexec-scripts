@@ -1,0 +1,58 @@
+{
+    "opDesc": "生成客户的license",
+    "opType": "runner",
+    "typeName": "BASIC",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "enabled": 0,
+    "description": "生成客户的license",
+    "option": [
+        {
+            "opt": "jarpath",
+            "name": "license Jar包路径",
+            "help": "license Jar包路径",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": "/workspace/license/codedriver-license-1.0.0.jar"
+        },
+        {
+            "opt": "customer_name",
+            "name": "客户名称",
+            "help": "客户名称，如:深圳市赞悦科技有限公司",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "tenant_name",
+            "name": "租户名称",
+            "help": "租户名称，如：techsure",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "db_info",
+            "name": "DB连接信息",
+            "help": "DB连接信息，如：127.0.0.1:3306",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": "127.0.0.1:3306"
+        },
+        {
+            "opt": "license_date",
+            "name": "license到期日期",
+            "help": "license到期日期，如：2030-12-30",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        }
+    ],
+    "output": []
+}
