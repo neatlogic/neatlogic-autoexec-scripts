@@ -54,5 +54,14 @@
             "defaultValue": ""
         }
     ],
-    "output": []
+    "output": [
+        {
+            "opt": "license",
+            "name": "license",
+            "help": "license密文",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
 }
