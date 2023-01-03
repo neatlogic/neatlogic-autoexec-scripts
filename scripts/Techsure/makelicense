@@ -12,7 +12,7 @@ Getopt::Long::Configure("pass_through");
 
 sub usage {
     my $pname = $FindBin::Script;
-    print("$pname --tenant_name <tenant name> --customer_name <customer name> --db_info < db info ,defualt:127.0.0.1:3306> --license_date <license date> --jar_path <license jar path>\n");
+    print("$pname --tenant_name <tenant name> --customer_name <customer name> --db_info < db info ,default:127.0.0.1:3306> --license_date <license date> --jar_path <license jar path>\n");
     exit(1);
 }
 
@@ -52,7 +52,7 @@ sub main {
     }
 
     if ( not defined($jarpath) or $jarpath eq '' ){
-        $jarpath="/tmp/codedriver-license-1.0.0.jar"
+        $jarpath="/workspace/license/codedriver-license-1.0.0.jar"
     }
 
     if (not defined($db_info) or  $db_info eq '' ) {
@@ -123,7 +123,7 @@ sub main {
     my $tmpstr = "License密文：";
     $license = substr( $cmdOut, rindex( $cmdOut, $tmpstr ) + length($tmpstr) + 1 );
     $license =~ s/^\s*\n//mg;
-    print("$license");
+    #print("$license");
 
     my $out = {};
     $out->{license}     = $license;
