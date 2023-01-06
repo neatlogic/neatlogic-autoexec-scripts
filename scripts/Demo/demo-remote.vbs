@@ -40,21 +40,16 @@ Wscript.Echo(tjson)
 Wscript.Echo("Temp directory:" & tempPath)
 Dim errCode
 
+Set objFSO=CreateObject("Scripting.FileSystemObject")
 'Write output.json file
-Set outStream = CreateObject("ADODB.Stream")
-outStream.Open
-outStream.Type     = 2 'text
-outStream.Position = 0
-outStream.Charset  = "utf-8"
-
-outStream.WriteText "{\n"
-outStream.WriteText """outtext"":""" & tempPath & """\n"
-outStream.WriteText "}\n"
-
-outStream.SaveToFile "output.json", 2
-outStream.Close
-outStream = nothing
-
+outFile="output.json"
+Set objFile = objFSO.CreateTextFile(outFile,True)
+objFile.Write "test string" & vbCrLf
+objFile.Write "{" & vbCrLf
+objFile.Write """outtext"":""" & tempPath & """" & vbCrLf
+objFile.Write "}" & vbCrLf
+objFile.Close
+objFile = nothing
 
 'Do some job and return error code
 errCode = wshShell.Run("dir c:\", , True)
