@@ -30,3 +30,9 @@ for ( $i = 0; $i -lt $args.count; $i++ )
 $outputData = "{`"outtext`":`"Test value`"}"
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 [System.IO.File]::WriteAllLines(".\output.json", $outputData, $Utf8NoBomEncoding)
+
+dir c:\
+
+$output = dir c:\ | Out-String
+
+write-host($output)
