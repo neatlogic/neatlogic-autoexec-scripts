@@ -15,6 +15,7 @@ sub new {
         port     => $args{port},
         username => $args{username},
         password => $args{password},
+        sslmode  => $args{sslmode},
         dbname   => $args{dbname},
         osUser   => $args{osUser},
         psqlHome => $args{psqlHome}
@@ -54,21 +55,25 @@ sub new {
         }
     }
 
-    if ( defined( $args{username} ) ) {
+    if ( defined( $args{username} ) and $args{username} ne '' ) {
         $psqlCmd = "$psqlCmd -U '$args{username}'";
-    }
-    else {
-        $psqlCmd = "$psqlCmd -U postgres";
     }
 
     if ( defined( $args{password} ) ) {
-
-        #探测到需要用密码才设置密码
-        $psqlCmd = "$psqlCmd -p'$args{password}'";
+        $ENV{PGPASSWORD} = $args{password};
     }
 
+    my $paramsLine = '';
     if ( defined( $args{dbname} ) ) {
-        $psqlCmd = "$psqlCmd -d'$args{dbname}'";
+        $paramsLine = "$paramsLine dbname=$args{dbname}";
+    }
+
+    if ( defined( $args{sslmode} ) ) {
+        $paramsLine = "$paramsLine sslmode=$args{sslmode}";
+    }
+
+    if ( $paramsLine ne '' ) {
+        $psqlCmd = qq{$psqlCmd '$paramsLine'};
     }
 
     if ( $isRoot and defined( $args{osUser} ) and $osType ne 'Windows' ) {

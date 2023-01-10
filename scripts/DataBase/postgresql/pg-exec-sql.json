@@ -1,0 +1,37 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "连接到远程Oracle主机本地执行SQL",
+    "option": [{
+            "opt": "OS_USER",
+            "name": "OS用户",
+            "help": "Postgres运行OS用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_NAME",
+            "name": "DB名",
+            "help": "数据库名, 留空代表使用用户postgres",
+            "type": "text",
+            "defaultValue": "postgres",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SQL",
+            "name": "SQL内容",
+            "help": "SQL脚本，支持一或多条SQL语句",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}
