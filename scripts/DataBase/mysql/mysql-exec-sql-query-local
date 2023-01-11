@@ -6,14 +6,14 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
-use PostgresqlExec;
+use MysqlExec;
 use JSON;
 use AutoExecUtils;
 
 sub usage {
     my $pname = $FindBin::Script;
 
-    print("$pname --OS_USER <OS_USER> --DB_NAME <DB_NAME> --SQL <SQL Text>\n");
+    print("$pname --OS_USER <OS_USER> --DB_NAME <DB_NAME>\n");
     exit(1);
 }
 
@@ -21,10 +21,8 @@ sub main {
     my $opts = {};
     GetOptions(
         $opts, qw{
-            OS_USER=s
-            SOCK_DIR=s
-            PORT=s
-            DB_NAME=s
+            node=s
+            dbversion=s
             SQL=s
             emptyisgood=s
             filter=s
@@ -37,10 +35,8 @@ sub main {
 
     my $hasOptErr = 0;
 
-    my $OS_USER       = $opts->{OS_USER};
-    my $SOCK_DIR      = $opts->{SOCK_DIR};
-    my $PORT          = $opts->{PORT};
-    my $DB_NAME       = $opts->{DB_NAME};
+    my $node          = $opts->{node};
+    my $dbVersion     = $opts->{dbversion};
     my $sqlTxt        = $opts->{SQL};
     my $emptyIsGood   = $opts->{emptyisgood};
     my $filter        = $opts->{filter};
@@ -49,16 +45,42 @@ sub main {
     my $retryCount    = $opts->{retrycount};
     my $retryInterval = $opts->{retryinterval};
 
-    if ( not defined($OS_USER) or $OS_USER eq '' ) {
-        $hasOptErr = 1;
-        print("ERROR: Must defined OS_USER by option --OS_USER.\n");
+    my $nodeObj;
+    if ( defined($node) and $node ne '' ) {
+        $nodeObj = from_json($node);
     }
+    else {
+        my $nodeJson = $ENV{AUTOEXEC_NODE};
+        if ( defined($nodeJson) and $nodeJson ne '' ) {
+            $nodeObj = from_json($nodeJson);
+        }
+    }
+    if ( not defined($nodeObj) ) {
+        print("ERROR: Must defined remote node by option --node or environment AUTOEXEC_NODE\n");
+        $hasOptErr = 1;
+    }
+
+    if ( not defined($sqlTxt) ) {
+        print("ERROR: Must defined sql text by option --sql.\n");
+        $hasOptErr = 1;
+    }
+
     if ( $hasOptErr == 1 ) {
         usage();
     }
 
-    if ( not defined($DB_NAME) or $DB_NAME eq '' ) {
-        $DB_NAME = 'postgres';
+    my $HOST      = $nodeObj->{host};
+    my $PORT      = $nodeObj->{protocolPort};
+    my $USER_NAME = $nodeObj->{username};
+    my $PASSWORD  = $nodeObj->{password};
+    my $DB_NAME   = $nodeObj->{nodeName};
+
+    my $autoexecHome = $ENV{AUTOEXEC_HOME};
+    my $toolsDir     = "$autoexecHome/tools";
+
+    my $pgHome = "$toolsDir/mysql-client";
+    if ( defined($dbVersion) and -e "$pgHome-$dbVersion" ) {
+        $pgHome = "$pgHome-$dbVersion";
     }
 
     my $hasError = 0;
@@ -92,11 +114,11 @@ sub main {
     }
 
     my ( $exitCode, $rows );
-    my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $SOCK_DIR, port => $PORT, dbname => $DB_NAME );
+    my $mysql = MysqlExec->new( mysqlHome => $pgHome, host => $HOST, port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
 
     my $tryCount = 0;
     while ( $tryCount <= $retryCount ) {
-        ( $exitCode, $rows ) = $psql->query(
+        ( $exitCode, $rows ) = $mysql->query(
             sql     => $sqlTxt,
             verbose => 1
         );

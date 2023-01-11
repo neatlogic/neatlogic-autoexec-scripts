@@ -4,7 +4,7 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "连接到远程Postgresql主机本地执行SQL",
+    "description": "连接到远程Mysql主机本地执行SQL",
     "option": [
         {
             "opt": "OS_USER",
@@ -16,21 +16,30 @@
             "validate": ""
         },
         {
-            "opt": "SOCK_DIR",
-            "name": "Socket目录",
-            "help": "用于连接Postgersql的Unix Domain Socket目录",
+            "opt": "PORT",
+            "name": "端口",
+            "help": "Mysql监听的TCP端口",
             "type": "text",
-            "defaultValue": "/var/run/postgresql",
+            "defaultValue": "5432",
             "required": "true",
             "validate": ""
         },
         {
-            "opt": "PORT",
-            "name": "端口",
-            "help": "Postgesql监听的TCP端口",
+            "opt": "USER_NAME",
+            "name": "DB用户",
+            "help": "数据库用户名, 留空代表使用用户root",
             "type": "text",
-            "defaultValue": "5432",
-            "required": "true",
+            "defaultValue": "root",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "PASSWORD",
+            "name": "DB用户密码",
+            "help": "数据库用户密码, 留空代表不需要密码",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
             "validate": ""
         },
         {

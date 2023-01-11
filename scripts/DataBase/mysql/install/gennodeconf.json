@@ -22,7 +22,7 @@
             "name": "节点mycnf配置",
             "help": "各节点mycnf配置信息",
             "type": "text",
-            "defaultValue": {},
+            "defaultValue": "{}",
             "required": "true"
         }
     ]

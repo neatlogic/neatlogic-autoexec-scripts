@@ -6,7 +6,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
-use PostgresqlExec;
+use MysqlExec;
 use AutoExecUtils;
 
 sub usage {
@@ -21,8 +21,9 @@ sub main {
     GetOptions(
         $opts, qw{
             OS_USER=s
-            SOCK_DIR=s
             PORT=s
+            USER_NAME=s
+            PASSWORD=s
             DB_NAME=s
             SQL=s
         }
@@ -46,11 +47,12 @@ sub main {
         $hasOptErr = 1;
     }
 
-    my $OS_USER  = $opts->{OS_USER};
-    my $SOCK_DIR = $opts->{SOCK_DIR};
-    my $PORT     = $opts->{PORT};
-    my $DB_NAME  = $opts->{DB_NAME};
-    my $sqlTxt   = $opts->{SQL};
+    my $OS_USER   = $opts->{OS_USER};
+    my $PORT      = $opts->{PORT};
+    my $USER_NAME = $opts->{USER_NAME};
+    my $PASSWORD  = $opts->{PASSWORD};
+    my $DB_NAME   = $opts->{DB_NAME};
+    my $sqlTxt    = $opts->{SQL};
 
     if ( not defined($OS_USER) or $OS_USER eq '' ) {
         $hasOptErr = 1;
@@ -60,8 +62,12 @@ sub main {
         usage();
     }
 
+    if ( not defined($USER_NAME) or $USER_NAME eq '' ) {
+        $USER_NAME = 'root';
+    }
+
     if ( not defined($DB_NAME) or $DB_NAME eq '' ) {
-        $DB_NAME = 'postgres';
+        $DB_NAME = 'mysql';
     }
 
     my $hasError = 0;
@@ -70,9 +76,9 @@ sub main {
     $sqlTxt =~ s/\\n/\n/sg;
     $sqlTxt = $sqlTxt . "\n";
 
-    my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $SOCK_DIR, port => $PORT, dbname => $DB_NAME );
+    my $mysql = MysqlExec->new( osUser => $OS_USER, host => '127.0.0.1', port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
 
-    my $exitCode = $psql->do(
+    my $exitCode = $mysql->do(
         sql     => $sqlTxt,
         verbose => 1
     );

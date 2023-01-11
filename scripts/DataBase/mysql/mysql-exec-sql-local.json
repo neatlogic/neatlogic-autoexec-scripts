@@ -4,7 +4,7 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "在Runner上连接到远程Postgresql库执行SQL",
+    "description": "在Runner上连接到远程Mysql库执行SQL",
     "option": [
         {
             "opt": "dbversion",
@@ -21,28 +21,6 @@
                 "dataType": "static"
             },
             "defaultValue": "",
-            "required": "false",
-            "validate": ""
-        },
-        {
-            "opt": "sslmode",
-            "name": "SSL模式",
-            "help": "PG数据库SSL模式",
-            "type": "select",
-            "dataSource": {
-                "dataList": [
-                    {
-                        "text": "Disable",
-                        "value": "Disable"
-                    },
-                    {
-                        "text": "Require",
-                        "value": "Require"
-                    }
-                ],
-                "dataType": "static"
-            },
-            "defaultValue": "Disable",
             "required": "false",
             "validate": ""
         },

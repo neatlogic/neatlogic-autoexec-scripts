@@ -6,7 +6,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
-use PostgresqlExec;
+use MysqlExec;
 use JSON;
 use AutoExecUtils;
 
@@ -22,8 +22,9 @@ sub main {
     GetOptions(
         $opts, qw{
             OS_USER=s
-            SOCK_DIR=s
             PORT=s
+            USER_NAME=s
+            PASSWORD=s
             DB_NAME=s
             SQL=s
             emptyisgood=s
@@ -38,9 +39,10 @@ sub main {
     my $hasOptErr = 0;
 
     my $OS_USER       = $opts->{OS_USER};
-    my $SOCK_DIR      = $opts->{SOCK_DIR};
     my $PORT          = $opts->{PORT};
     my $DB_NAME       = $opts->{DB_NAME};
+    my $USER_NAME     = $opts->{USER_NAME};
+    my $PASSWORD      = $opts->{PASSWORD};
     my $sqlTxt        = $opts->{SQL};
     my $emptyIsGood   = $opts->{emptyisgood};
     my $filter        = $opts->{filter};
@@ -57,8 +59,12 @@ sub main {
         usage();
     }
 
+    if ( not defined($USER_NAME) or $USER_NAME eq '' ) {
+        $USER_NAME = 'root';
+    }
+
     if ( not defined($DB_NAME) or $DB_NAME eq '' ) {
-        $DB_NAME = 'postgres';
+        $DB_NAME = 'mysql';
     }
 
     my $hasError = 0;
@@ -92,11 +98,11 @@ sub main {
     }
 
     my ( $exitCode, $rows );
-    my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $SOCK_DIR, port => $PORT, dbname => $DB_NAME );
+    my $mysql = MysqlExec->new( osUser => $OS_USER, host => '127.0.0.1', port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
 
     my $tryCount = 0;
     while ( $tryCount <= $retryCount ) {
-        ( $exitCode, $rows ) = $psql->query(
+        ( $exitCode, $rows ) = $mysql->query(
             sql     => $sqlTxt,
             verbose => 1
         );

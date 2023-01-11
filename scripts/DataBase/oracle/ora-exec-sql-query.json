@@ -4,7 +4,7 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "连接Oracle主机执行SQL并检查数据",
+    "description": "连接Oracle主机执行SQL并检查和输出数据",
     "option": [
         {
             "opt": "ORACLE_USER",
