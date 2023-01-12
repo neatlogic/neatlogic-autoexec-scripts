@@ -1,0 +1,294 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use POSIX;
+use Cwd;
+use Socket;
+use Getopt::Long;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --OS_USER <OS_USER> --PORT <LISTEN PORT>\n");
+    exit(1);
+}
+
+sub __read_config {
+    my ( $path, $what ) = @_;
+
+    if ( not defined($what) ) {
+        $what = 'file';
+    }
+
+    my $content = "";
+    my $opts    = {};    #{ err_mode => "quiet" };
+
+    # store the names to skip when reading directories
+    my %skip;
+    my @skip_names = qw(. ..);
+    @skip{@skip_names} = (1) x @skip_names;
+
+    if ( $what eq "file" ) {
+        my $base_dir = dirname($path);
+        $content = read_file( $opts, $path );
+
+        # handle single param (without value)
+        $content =~ s{^\s*(\w+(?:-\w+)*)\s*$}{$1 = yes}xgm;
+
+        # handle includes
+        $content =~ s{^\s*!include(dir)?\s+(.+)\s*$}
+                     { __read_config($1 || "file", rel2abs($2, $base_dir)) }xgme;
+    }
+    elsif ( $what eq "dir" ) {
+        opendir( my $dirh, $path ) or return "";
+
+        while ( my $file = readdir($dirh) ) {
+
+            # skip invisible files and directories we shouldn't
+            # recurse into, like ../ or CVS/
+            next if $skip{$file} or index( $file, "." ) == 0;
+
+            my $filepath = catfile( $path, $file );
+
+            if ( -f $filepath ) {
+                $content .= __read_config( file => $filepath );
+            }
+            elsif ( -d _ ) {
+                $content .= __read_config( dir => $filepath );
+            }
+        }
+
+        closedir($dirh);
+    }
+
+    return $content;
+}
+
+sub parseINI {
+    my ($content) = @_;
+    my $ini = {};
+    my $current;
+    my $section = {};
+
+    foreach my $line ( split( /\n/, $content ) ) {
+        $line =~ s/[;#].*$//;
+        $line =~ s/^\s*|\s*$//;
+
+        next unless length($line);
+
+        if ( $line =~ /^\s*\[(.*)\]\s*$/ and $current = $1 ) {
+            my $newSection = {};
+            $ini->{$current} = $newSection;
+            $section = $newSection;
+            next;
+        }
+
+        if ( $line !~ /=/ ) {
+            $line = join( '=', $line, 1 );
+        }
+
+        my ( $n, $v ) = split( /\s*=\s*/, $line, 2 );
+        $section->{$n} = $v;
+    }
+
+    return $ini;
+}
+
+sub getExecutablePath {
+    my ($pid)  = @_;
+    my @uname  = uname();
+    my $ostype = $uname[0];
+    $ostype =~ s/\s.*$//;
+
+    my $executablePath;
+    if ( $ostype eq 'Windows' ) {
+        my $procTxt = `wmic process where "ProcessID=$pid" get ExecutablePath}`;
+        my @lines   = split( /\n/, $procTxt );
+        if ( scalar(@lines) >= 2 ) {
+            $executablePath = $lines[1];
+            $executablePath =~ s/^\s*|\s*$//g;
+        }
+    }
+    else {
+        if ( -e "/proc/$pid/exe" ) {
+            $executablePath = readlink("/proc/$pid/exe");
+        }
+    }
+
+    return $executablePath;
+}
+
+sub parseCommandOpts {
+    my ( $pid, $command ) = @_;
+
+    my $opts       = {};
+    my @items      = split( /[\s"]+--/, $command );
+    my $mysqldPath = $items[0];
+    $mysqldPath =~ s/^\s*|\s*$//g;
+    $mysqldPath =~ s/^"|"$//g;
+
+    #$mysqldPath =~ s/\\/\//g;
+
+    if ( not -e $mysqldPath and not -e "$mysqldPath.exe" ) {
+        $mysqldPath = getExecutablePath($pid);
+    }
+
+    $mysqldPath =~ s/\\/\//g;
+    $opts->{mysqldPath} = $mysqldPath;
+    if ( $mysqldPath =~ /^(.*?)[\/\\]bin[\/\\]mysqld/ or $mysqldPath =~ /^(.*?)[\/\\]sbin[\/\\]mysqld/ ) {
+        $opts->{mysqlHome} = $1;
+    }
+
+    for ( my $i = 1 ; $i < scalar(@items) ; $i++ ) {
+        my $item = $items[$i];
+        my ( $key, $val ) = split( '=', $item );
+        $opts->{$key} = $val;
+    }
+
+    if ( not defined( $opts->{mysqlHome} ) ) {
+        $opts->{mysqlHome} = $opts->{basedir};
+    }
+    if ( not defined( $opts->{'defaults-file'} ) ) {
+        $opts->{configFile} = '/etc/my.cnf';
+    }
+
+    return $opts;
+}
+
+sub getMysqldConf {
+    my ( $port, $osUser ) = @_;
+
+    my $mysqldConf = {};
+    $mysqldConf->{isRunning} = 0;
+    my $pid;
+    my $listenLine = `netstat -nlp |grep :${port}[[:space:]]`;
+    $listenLine =~ s/^\s*|\s*$//g;
+    if ( $listenLine eq '' ) {
+        print("WARN: Mysql not listen on port $port.\n");
+    }
+    else {
+        if ( $listenLine =~ /(\d+)\/mysqld/ ) {
+            $pid = $1;
+            $mysqldConf->{isRunning} = 1;
+        }
+    }
+
+    if ( defined($pid) ) {
+        my $procInfoLine = `ps -p $pid -o user,comm `;
+        $procInfoLine =~ s/^\s*|\s*$//g;
+        my $command = $procInfoLine;
+        if ( defined($osUser) and $osUser ne '' and $command !~ s/^$osUser\s+// ) {
+            print("ERROR: Mysql listen on port:$port not running on os user:$osUser.\n");
+        }
+        else {
+            my $cmdOpts = parseCommandOpts( $pid, $command );
+
+            my $confFile = $cmdOpts->{configFile};
+            my $content  = __read_config($confFile);
+            my $ini      = parseINI($content);
+
+            $mysqldConf = $ini->{mysqld};
+            while ( my ( $k, $v ) = each(%$cmdOpts) ) {
+                $mysqldConf->{$k} = $v;
+            }
+        }
+    }
+
+    return $mysqldConf;
+}
+
+sub getDataDirConf {
+    my ($dataDir) = @_;
+
+    my $dataDirInfo = {};
+
+    my $mountsMap  = {};
+    my $dfTxt      = `df -h`;
+    my @mountLines = split( /\n/, $dfTxt );
+    my $linesCount = scalar(@mountLines);
+    for ( my $i = 1 ; $i < $linesCount ; $i++ ) {
+        my $line = $mountLines[$i];
+        $line =~ s/^\s*|\s*$//g;
+        my @info       = split( /\s+/, $line, 6 );
+        my $fileSystem = $info[0];
+        my $mountPoint = $info[5];
+        $mountsMap->{$mountPoint} = $fileSystem;
+    }
+
+    my $matchedFileSys;
+    my $matchLen = 0;
+
+    while ( my ( $mountPoint, $fileSys ) = each(%$mountsMap) ) {
+        if ( $dataDir =~ /^$mountPoint/ ) {
+            my $mountPointLen = len($mountPoint);
+            if ( $mountPointLen > $matchLen ) {
+                $matchLen       = $mountPointLen;
+                $matchedFileSys = $fileSys;
+            }
+        }
+    }
+
+    my $lvPath;
+    my $lvName;
+    my $vgName;
+    my $lvTxt = `lvdisplay '$matchedFileSys'`;
+    if ( $? == 0 ) {
+        foreach my $line ( split( /\n/, $lvTxt ) ) {
+            if ( $line =~ /^\s*LV Path\s+(.*?)$/ ) {
+                $lvPath = $1;
+            }
+            elsif ( $line =~ /^\s*LV Name\s+(.*?)$/ ) {
+                $lvName = $1;
+            }
+            elsif ( $line =~ /^\s*VG Name\s+(.*?)$/ ) {
+                $vgName = $1;
+            }
+        }
+
+        $dataDirInfo->{lvName} = $lvName;
+        $dataDirInfo->{vgName} = $vgName;
+        $dataDirInfo->{lvPath} = $lvPath;
+    }
+    else {
+        print("INFO: Directory:$dataDir is not on a lvm volume.\n");
+    }
+
+    return $dataDirInfo;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            OS_USER=s
+            PORT=s
+        }
+    );
+
+    my $hasOptErr = 0;
+
+    my $osUser = $opts->{OS_USER};
+    my $port   = $opts->{PORT};
+
+    if ( not defined($port) or $port eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined mysql listen port by option --port.\n");
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $mysqldConf  = getMysqldConf( $port, $osUser );
+    my $dataDir     = $mysqldConf->{datadir};
+    my $dataDirInfo = getDataDirConf($dataDir);
+    while ( my ( $k, $v ) = each(%$dataDirInfo) ) {
+        $mysqldConf->{$k} = $v;
+    }
+
+    AutoExecUtils::saveOutput($mysqldConf);
+}
