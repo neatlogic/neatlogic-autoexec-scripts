@@ -6,8 +6,9 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
-use PostgresqlExec;
 use JSON;
+
+use PostgresqlExec;
 use AutoExecUtils;
 
 sub usage {
