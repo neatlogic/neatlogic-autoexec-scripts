@@ -1,26 +1,48 @@
 {
-    "opType": "target",
+    "opType": "runner_target",
     "typeName": "INSTALL",
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "连接Oracle主机执行SQL并检查和输出数据",
+    "description": "在Runner上连接到远程Postgresql库执行SQL并输出和检查数据",
     "option": [
         {
-            "opt": "ORACLE_USER",
-            "name": "ORACLE_USER",
-            "help": "GRID安装用户",
-            "type": "text",
-            "defaultValue": "oracle",
-            "required": "true",
+            "opt": "dbversion",
+            "name": "PG版本",
+            "help": "PG数据库的主版本号",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "默认",
+                        "value": ""
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "",
+            "required": "false",
             "validate": ""
         },
         {
-            "opt": "ORACLE_SID",
-            "name": "ORACLE_SID",
-            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
-            "type": "text",
-            "defaultValue": "",
+            "opt": "sslmode",
+            "name": "SSL模式",
+            "help": "PG数据库SSL模式",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "Disable",
+                        "value": "Disable"
+                    },
+                    {
+                        "text": "Require",
+                        "value": "Require"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "Disable",
             "required": "false",
             "validate": ""
         },

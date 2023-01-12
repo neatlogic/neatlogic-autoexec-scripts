@@ -1,0 +1,188 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use MysqlExec;
+use JSON;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --OS_USER <OS_USER> --DB_NAME <DB_NAME>\n");
+    exit(1);
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            node=s
+            dbversion=s
+            SQL=s
+            emptyisgood=s
+            filter=s
+            chkdsl=s
+            message=s
+            retrycount=i
+            retryinterval=i
+        }
+    );
+
+    my $hasOptErr = 0;
+
+    my $node          = $opts->{node};
+    my $dbVersion     = $opts->{dbversion};
+    my $sqlTxt        = $opts->{SQL};
+    my $emptyIsGood   = $opts->{emptyisgood};
+    my $filter        = $opts->{filter};
+    my $chkDsl        = $opts->{chkdsl};
+    my $message       = $opts->{message};
+    my $retryCount    = $opts->{retrycount};
+    my $retryInterval = $opts->{retryinterval};
+
+    my $nodeObj;
+    if ( defined($node) and $node ne '' ) {
+        $nodeObj = from_json($node);
+    }
+    else {
+        my $nodeJson = $ENV{AUTOEXEC_NODE};
+        if ( defined($nodeJson) and $nodeJson ne '' ) {
+            $nodeObj = from_json($nodeJson);
+        }
+    }
+    if ( not defined($nodeObj) ) {
+        print("ERROR: Must defined remote node by option --node or environment AUTOEXEC_NODE\n");
+        $hasOptErr = 1;
+    }
+
+    if ( not defined($sqlTxt) ) {
+        print("ERROR: Must defined sql text by option --sql.\n");
+        $hasOptErr = 1;
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $HOST      = $nodeObj->{host};
+    my $PORT      = $nodeObj->{protocolPort};
+    my $USER_NAME = $nodeObj->{username};
+    my $PASSWORD  = $nodeObj->{password};
+    my $DB_NAME   = $nodeObj->{nodeName};
+
+    my $autoexecHome = $ENV{AUTOEXEC_HOME};
+    my $toolsDir     = "$autoexecHome/tools";
+
+    my $pgHome = "$toolsDir/mysql-client";
+    if ( defined($dbVersion) and -e "$pgHome-$dbVersion" ) {
+        $pgHome = "$pgHome-$dbVersion";
+    }
+
+    my $hasError = 0;
+
+    $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/sg;
+
+    if ( $chkDsl eq '' ) {
+        undef($chkDsl);
+    }
+    if ( $filter eq '' ) {
+        undef($filter);
+    }
+
+    if ( defined($filter) ) {
+        $filter =~ s/\\n/\n/g;
+    }
+    if ( defined($chkDsl) ) {
+        $chkDsl =~ s/\\n/\n/g;
+    }
+
+    if ( not defined($emptyIsGood) ) {
+        $emptyIsGood = 1;
+    }
+
+    if ( not defined($retryCount) ) {
+        $retryCount = 0;
+    }
+    if ( not defined($retryInterval) ) {
+        $retryInterval = 5;
+    }
+
+    my ( $exitCode, $rows );
+    my $mysql = MysqlExec->new( mysqlHome => $pgHome, host => $HOST, port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
+
+    my $tryCount = 0;
+    while ( $tryCount <= $retryCount ) {
+        ( $exitCode, $rows ) = $mysql->query(
+            sql     => $sqlTxt,
+            verbose => 1
+        );
+        $tryCount = $tryCount + 1;
+
+        if ( $exitCode != 0 ) {
+            $hasError = 1;
+            if ( $tryCount >= $retryCount ) {
+                print("ERROR: Errors occur while executing sql.\n");
+            }
+        }
+
+        if ( $hasError == 0 ) {
+            print("INFO: Execute sql scripts success.\n");
+
+            if ( not defined($rows) ) {
+                if ( $emptyIsGood != 1 ) {
+                    $hasError = 2;
+                    if ( $tryCount >= $retryCount ) {
+                        print("ERROR: Query result is empty.\n");
+                    }
+                }
+            }
+            elsif ( defined($chkDsl) ) {
+                if ( defined($filter) ) {
+                    print("INFO: Dsl check filter:$filter.\n");
+                }
+
+                print("INFO: Dsl:$chkDsl.\n");
+
+                my $errorCode = AutoExecUtils::JsonToTableCheck( $rows, undef, $filter, $chkDsl );
+
+                if ( $errorCode == 0 ) {
+                    if ( defined($message) ) {
+                        print("FINE: Check passed:$message\n");
+                    }
+                    print("FINE: Query result full fill the dsl.\n");
+                }
+                else {
+                    $hasError = 3;
+                    if ( $tryCount >= $retryCount ) {
+                        if ( defined($message) ) {
+                            print("ERROR: Check failed:$message\n");
+                        }
+                        print("ERROR: Query result not full fill the dsl.\n");
+                    }
+                }
+            }
+        }
+
+        if ( $hasError == 0 ) {
+            last;
+        }
+        else {
+            print("WARN: Check failed, wait $retryInterval seconds and retry again...\n");
+            sleep($retryInterval);
+            print("INFO: Do another try...\n");
+        }
+    }
+
+    my $out = { queryResult => $rows };
+    AutoExecUtils::saveOutput($out);
+
+    return $hasError;
+}
+
+exit( main() );

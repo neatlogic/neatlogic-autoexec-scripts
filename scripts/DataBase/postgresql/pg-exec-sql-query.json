@@ -4,23 +4,41 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "连接Oracle主机执行SQL并检查和输出数据",
+    "description": "连接Postgresql主机执行SQL并检查和输出数据",
     "option": [
         {
-            "opt": "ORACLE_USER",
-            "name": "ORACLE_USER",
-            "help": "GRID安装用户",
+            "opt": "OS_USER",
+            "name": "OS用户",
+            "help": "Postgres运行OS用户",
             "type": "text",
             "defaultValue": "oracle",
             "required": "true",
             "validate": ""
         },
         {
-            "opt": "ORACLE_SID",
-            "name": "ORACLE_SID",
-            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "opt": "SOCK_DIR",
+            "name": "Socket目录",
+            "help": "用于连接Postgersql的Unix Domain Socket目录",
             "type": "text",
-            "defaultValue": "",
+            "defaultValue": "/var/run/postgresql",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "PORT",
+            "name": "端口",
+            "help": "Postgesql监听的TCP端口",
+            "type": "text",
+            "defaultValue": "5432",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_NAME",
+            "name": "DB名",
+            "help": "数据库名, 留空代表使用用户postgres",
+            "type": "text",
+            "defaultValue": "postgres",
             "required": "false",
             "validate": ""
         },

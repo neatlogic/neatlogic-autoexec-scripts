@@ -1,0 +1,97 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use MysqlExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --OS_USER <OS_USER> --DB_NAME <DB_NAME>\n");
+    exit(1);
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            OS_USER=s
+            PORT=s
+            USER_NAME=s
+            PASSWORD=s
+            DB_NAME=s
+            SQL=s
+        }
+    );
+
+    my $hasOptErr = 0;
+
+    my $node = $opts->{node};
+    my $nodeObj;
+    if ( defined($node) and $node ne '' ) {
+        $nodeObj = from_json($node);
+    }
+    else {
+        my $nodeJson = $ENV{AUTOEXEC_NODE};
+        if ( defined($nodeJson) and $nodeJson ne '' ) {
+            $nodeObj = from_json($nodeJson);
+        }
+    }
+    if ( not defined($nodeObj) ) {
+        print("ERROR: Must defined remote node by option --node or environment AUTOEXEC_NODE\n");
+        $hasOptErr = 1;
+    }
+
+    my $OS_USER   = $opts->{OS_USER};
+    my $PORT      = $opts->{PORT};
+    my $USER_NAME = $opts->{USER_NAME};
+    my $PASSWORD  = $opts->{PASSWORD};
+    my $DB_NAME   = $opts->{DB_NAME};
+    my $sqlTxt    = $opts->{SQL};
+
+    if ( not defined($OS_USER) or $OS_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined OS_USER by option --OS_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    if ( not defined($USER_NAME) or $USER_NAME eq '' ) {
+        $USER_NAME = 'root';
+    }
+
+    if ( not defined($DB_NAME) or $DB_NAME eq '' ) {
+        $DB_NAME = 'mysql';
+    }
+
+    my $hasError = 0;
+
+    $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/sg;
+    $sqlTxt = $sqlTxt . "\n";
+
+    my $mysql = MysqlExec->new( osUser => $OS_USER, host => '127.0.0.1', port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
+
+    my $exitCode = $mysql->do(
+        sql     => $sqlTxt,
+        verbose => 1
+    );
+
+    if ( $exitCode != 0 ) {
+        $hasError = 1;
+        print("ERROR: Errors occur while executing sql.\n");
+    }
+
+    if ( $hasError == 0 ) {
+        print("FINE: Execute sql scripts success.\n");
+    }
+    return $hasError;
+}
+
+exit( main() );

@@ -64,11 +64,11 @@ sub main {
     $exitCode = $mysqlexec->do(sql => "CHANGE MASTER TO MASTER_HOST='$ip',MASTER_USER='root',MASTER_PASSWORD='$rootpwd',MASTER_LOG_FILE='$binLogFile',MASTER_LOG_POS=$binLogOffset");
     $exitCode = $mysqlexec->do(sql => "start slave");
     $exitCode = $mysqlexec->do(sql => "show slave status\\G");
-    
+
     $errorState=`mysql -uroot -p'$rootpwd' 2>/dev/null <<EOF | grep -i Last_IO_Errno: | awk '{print \$2}'
 	show slave status\\G;
 EOF`;
-    
+
     $errorState =~ s/[\r\n]+//g;
     if ($errorState ne "0" ){
         $exitCode = -1;

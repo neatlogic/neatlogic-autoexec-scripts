@@ -1,0 +1,56 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "连接到远程Postgresql主机本地执行SQL",
+    "option": [
+        {
+            "opt": "OS_USER",
+            "name": "OS用户",
+            "help": "Postgres运行OS用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SOCK_DIR",
+            "name": "Socket目录",
+            "help": "用于连接Postgersql的Unix Domain Socket目录",
+            "type": "text",
+            "defaultValue": "/var/run/postgresql",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "PORT",
+            "name": "端口",
+            "help": "Postgesql监听的TCP端口",
+            "type": "text",
+            "defaultValue": "5432",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_NAME",
+            "name": "DB名",
+            "help": "数据库名, 留空代表使用用户postgres",
+            "type": "text",
+            "defaultValue": "postgres",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SQL",
+            "name": "SQL内容",
+            "help": "SQL脚本，支持一或多条SQL语句",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

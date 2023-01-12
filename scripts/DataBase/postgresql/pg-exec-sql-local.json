@@ -1,0 +1,60 @@
+{
+    "opType": "runner_target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "在Runner上连接到远程Postgresql库执行SQL",
+    "option": [
+        {
+            "opt": "dbversion",
+            "name": "PG版本",
+            "help": "PG数据库的主版本号",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "默认",
+                        "value": ""
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "sslmode",
+            "name": "SSL模式",
+            "help": "PG数据库SSL模式",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "Disable",
+                        "value": "Disable"
+                    },
+                    {
+                        "text": "Require",
+                        "value": "Require"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "Disable",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SQL",
+            "name": "SQL内容",
+            "help": "SQL脚本，支持一或多条SQL语句",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

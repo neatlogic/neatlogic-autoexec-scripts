@@ -4,23 +4,50 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "description": "连接Oracle主机执行SQL并检查和输出数据",
+    "description": "连接Mysql主机执行SQL并检查和输出数据",
     "option": [
         {
-            "opt": "ORACLE_USER",
-            "name": "ORACLE_USER",
-            "help": "GRID安装用户",
+            "opt": "OS_USER",
+            "name": "OS用户",
+            "help": "Postgres运行OS用户",
             "type": "text",
             "defaultValue": "oracle",
             "required": "true",
             "validate": ""
         },
         {
-            "opt": "ORACLE_SID",
-            "name": "ORACLE_SID",
-            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "opt": "PORT",
+            "name": "端口",
+            "help": "Mysql监听的TCP端口",
+            "type": "text",
+            "defaultValue": "5432",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "USER_NAME",
+            "name": "DB用户",
+            "help": "数据库用户名, 留空代表使用用户root",
+            "type": "text",
+            "defaultValue": "root",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "PASSWORD",
+            "name": "DB用户密码",
+            "help": "数据库用户密码, 留空代表不需要密码",
             "type": "text",
             "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "DB_NAME",
+            "name": "DB名",
+            "help": "数据库名, 留空代表使用用户postgres",
+            "type": "text",
+            "defaultValue": "postgres",
             "required": "false",
             "validate": ""
         },
