@@ -8,6 +8,7 @@ use IO::File;
 use Getopt::Long;
 use MysqlExec;
 use AutoExecUtils;
+use JSON;
 
 sub usage {
     my $pname = $FindBin::Script;
