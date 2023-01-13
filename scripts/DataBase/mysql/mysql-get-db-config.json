@@ -33,6 +33,14 @@
             "required": "false"
         },
         {
+            "opt": "configFile",
+            "name": "my.cnf文件路径",
+            "help": "my.cnf文件的路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "server_id",
             "name": "server_id",
             "help": "Mysql主从复制标记不同实例的Server Id",
@@ -81,9 +89,25 @@
             "required": "false"
         },
         {
+            "opt": "log_slave_updates",
+            "name": "log-slave-updates",
+            "help": "是否把同步事务写入bin-log",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "relay_log",
             "name": "中继日志配置",
             "help": "Mysql中继日志存放路径或文件名",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "log_bin",
+            "name": "log-bin",
+            "help": "Mysql二进制日志文件名",
             "type": "text",
             "defaultValue": null,
             "required": "false"

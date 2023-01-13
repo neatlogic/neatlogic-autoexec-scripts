@@ -195,6 +195,9 @@ sub getMysqldConf {
 
             $mysqldConf = $ini->{mysqld};
             while ( my ( $k, $v ) = each(%$cmdOpts) ) {
+
+                #为了变量名命名规范，把减号统一换成下划线
+                $k =~ s/-/_/g;
                 $mysqldConf->{$k} = $v;
             }
         }
@@ -290,6 +293,9 @@ sub main {
     my $dataDir     = $mysqldConf->{datadir};
     my $dataDirInfo = getDataDirConf($dataDir);
     while ( my ( $k, $v ) = each(%$dataDirInfo) ) {
+
+        #为了变量名命名规范，把减号统一换成下划线
+        $k =~ s/-/_/g;
         $mysqldConf->{$k} = $v;
     }
 
