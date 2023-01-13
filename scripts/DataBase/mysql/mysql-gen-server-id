@@ -1,6 +1,7 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
+import sys
 import os
 import argparse
 import json
@@ -36,6 +37,8 @@ if __name__ == "__main__":
     if hasOptError == 1:
         usage()
 
+    exitCode = 0
+
     slaveInfo = json.loads(args.slaveinfo)
     myServerId = args.myserverid
 
@@ -48,15 +51,12 @@ if __name__ == "__main__":
         if serverId is not None:
             existsServerIds[serverId] = 1
 
-    serverId = ''
+    myNode = AutoExecUtils.getMyNode()
+    myIp = myNode.get('host')
 
-    if myServerId in existsServerIds:
+    if myServerId and myServerId not in existsServerIds:
         serverId = myServerId
-
     else:
-        myNode = AutoExecUtils.getMyNode()
-        myIp = myNode.get('host')
-
         allNodes = []
         allNodes.append(masterNodes)
         allNodes.append(slaveNodes)
@@ -67,8 +67,17 @@ if __name__ == "__main__":
                 serverId += 1
             if node.get('ip') == myIp:
                 break
+
     out = {}
+
+    if serverId is not None:
+        print("INFO: Generate server_id:%s." % (serverId))
+    else:
+        exitCode = 1
+        print("ERROR: Can not generate server_id.")
 
     out['server_id'] = serverId
 
     AutoExecUtils.saveOutput(out)
+
+    sys.exit(exitCode)

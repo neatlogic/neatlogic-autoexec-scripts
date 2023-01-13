@@ -5,7 +5,8 @@
     "interpreter": "python",
     "defaultProfile": null,
     "description": "生成Mysql节点配置需要的server_id",
-    "option": [{
+    "option": [
+        {
             "opt": "masternode",
             "name": "Master节点",
             "help": "主从同步中Master节点信息",
@@ -42,12 +43,14 @@
             "validate": ""
         }
     ],
-    "output": [{
-        "opt": "server_id",
-        "name": "我的server_id",
-        "help": "当前节点的server_id",
-        "type": "text",
-        "defaultValue": "",
-        "required": "true"
-    }]
+    "output": [
+        {
+            "opt": "server_id",
+            "name": "我的server_id",
+            "help": "当前节点的server_id",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true"
+        }
+    ]
 }
