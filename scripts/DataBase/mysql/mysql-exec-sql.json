@@ -5,13 +5,12 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "连接到远程Mysql主机本地执行SQL",
-    "option": [
-        {
+    "option": [{
             "opt": "OS_USER",
             "name": "OS用户",
             "help": "Postgres运行OS用户",
             "type": "text",
-            "defaultValue": "oracle",
+            "defaultValue": "mysql",
             "required": "true",
             "validate": ""
         },
@@ -20,7 +19,7 @@
             "name": "端口",
             "help": "Mysql监听的TCP端口",
             "type": "text",
-            "defaultValue": "5432",
+            "defaultValue": "3306",
             "required": "true",
             "validate": ""
         },
@@ -45,9 +44,9 @@
         {
             "opt": "DB_NAME",
             "name": "DB名",
-            "help": "数据库名, 留空代表使用用户postgres",
+            "help": "数据库名, 可以为空",
             "type": "text",
-            "defaultValue": "postgres",
+            "defaultValue": "",
             "required": "false",
             "validate": ""
         },

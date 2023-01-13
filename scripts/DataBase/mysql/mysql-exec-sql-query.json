@@ -5,13 +5,12 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "连接Mysql主机执行SQL并检查和输出数据",
-    "option": [
-        {
+    "option": [{
             "opt": "OS_USER",
             "name": "OS用户",
             "help": "Postgres运行OS用户",
             "type": "text",
-            "defaultValue": "oracle",
+            "defaultValue": "mysql",
             "required": "true",
             "validate": ""
         },
@@ -20,7 +19,7 @@
             "name": "端口",
             "help": "Mysql监听的TCP端口",
             "type": "text",
-            "defaultValue": "5432",
+            "defaultValue": "3306",
             "required": "true",
             "validate": ""
         },
@@ -45,9 +44,9 @@
         {
             "opt": "DB_NAME",
             "name": "DB名",
-            "help": "数据库名, 留空代表使用用户postgres",
+            "help": "数据库名, 可以为空",
             "type": "text",
-            "defaultValue": "postgres",
+            "defaultValue": "",
             "required": "false",
             "validate": ""
         },
@@ -66,8 +65,7 @@
             "help": "是否允许SQL查询返回空集合",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "是",
                         "value": "0"
                     },
@@ -128,14 +126,12 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
-            "opt": "queryResult",
-            "name": "查询结果数据",
-            "help": "结果json数组, 一个数组元素代表一行",
-            "type": "json",
-            "defaultValue": "",
-            "required": "false"
-        }
-    ]
+    "output": [{
+        "opt": "queryResult",
+        "name": "查询结果数据",
+        "help": "结果json数组, 一个数组元素代表一行",
+        "type": "json",
+        "defaultValue": "",
+        "required": "false"
+    }]
 }
