@@ -8,6 +8,8 @@ use POSIX;
 use Cwd;
 use Socket;
 use Getopt::Long;
+use File::Basename;
+use File::Spec::Functions qw(catfile rel2abs);
 use AutoExecUtils;
 
 sub usage {
@@ -25,7 +27,6 @@ sub __read_config {
     }
 
     my $content = "";
-    my $opts    = {};    #{ err_mode => "quiet" };
 
     # store the names to skip when reading directories
     my %skip;
@@ -34,14 +35,14 @@ sub __read_config {
 
     if ( $what eq "file" ) {
         my $base_dir = dirname($path);
-        $content = read_file( $opts, $path );
+        $content = AutoExecUtils::getFileContent($path);
 
         # handle single param (without value)
         $content =~ s{^\s*(\w+(?:-\w+)*)\s*$}{$1 = yes}xgm;
 
         # handle includes
         $content =~ s{^\s*!include(dir)?\s+(.+)\s*$}
-                     { __read_config($1 || "file", rel2abs($2, $base_dir)) }xgme;
+                     { __read_config(rel2abs($2, $base_dir),$1 || "file") }xgme;
     }
     elsif ( $what eq "dir" ) {
         opendir( my $dirh, $path ) or return "";
@@ -55,16 +56,17 @@ sub __read_config {
             my $filepath = catfile( $path, $file );
 
             if ( -f $filepath ) {
-                $content .= __read_config( file => $filepath );
+                $content .= __read_config( $filepath, 'file' );
             }
             elsif ( -d _ ) {
-                $content .= __read_config( dir => $filepath );
+                $content .= __read_config( $filepath, 'dir' );
             }
         }
 
         closedir($dirh);
     }
 
+    print("DEBUG:$content\n");
     return $content;
 }
 
@@ -178,7 +180,7 @@ sub getMysqldConf {
     }
 
     if ( defined($pid) ) {
-        my $procInfoLine = `ps -p $pid -o user,comm `;
+        my $procInfoLine = `ps -p $pid -o user,args | tail -1 `;
         $procInfoLine =~ s/^\s*|\s*$//g;
         my $command = $procInfoLine;
         if ( defined($osUser) and $osUser ne '' and $command !~ s/^$osUser\s+// ) {
@@ -224,7 +226,7 @@ sub getDataDirConf {
 
     while ( my ( $mountPoint, $fileSys ) = each(%$mountsMap) ) {
         if ( $dataDir =~ /^$mountPoint/ ) {
-            my $mountPointLen = len($mountPoint);
+            my $mountPointLen = length($mountPoint);
             if ( $mountPointLen > $matchLen ) {
                 $matchLen       = $mountPointLen;
                 $matchedFileSys = $fileSys;
@@ -283,6 +285,7 @@ sub main {
         usage();
     }
 
+    my $hasError    = 0;
     my $mysqldConf  = getMysqldConf( $port, $osUser );
     my $dataDir     = $mysqldConf->{datadir};
     my $dataDirInfo = getDataDirConf($dataDir);
@@ -291,4 +294,7 @@ sub main {
     }
 
     AutoExecUtils::saveOutput($mysqldConf);
+    return $hasError;
 }
+
+exit main();
