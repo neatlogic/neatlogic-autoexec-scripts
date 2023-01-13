@@ -5,7 +5,8 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "连接到远程Mysql主机本地执行SQL",
-    "option": [{
+    "option": [
+        {
             "opt": "OS_USER",
             "name": "OS用户",
             "help": "Postgres运行OS用户",
