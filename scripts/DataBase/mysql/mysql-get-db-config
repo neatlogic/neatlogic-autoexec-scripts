@@ -225,14 +225,18 @@ sub getDataDirConf {
     }
 
     my $matchedFileSys;
+    my $matchedMountPoint;
+    my $rel2MountPointPath;
     my $matchLen = 0;
 
     while ( my ( $mountPoint, $fileSys ) = each(%$mountsMap) ) {
         if ( $dataDir =~ /^$mountPoint/ ) {
             my $mountPointLen = length($mountPoint);
             if ( $mountPointLen > $matchLen ) {
-                $matchLen       = $mountPointLen;
-                $matchedFileSys = $fileSys;
+                $matchLen           = $mountPointLen;
+                $matchedMountPoint  = $mountPoint;
+                $rel2MountPointPath = substr( $dataDir, length($matchedMountPoint) );
+                $matchedFileSys     = $fileSys;
             }
         }
     }
@@ -254,9 +258,11 @@ sub getDataDirConf {
             }
         }
 
-        $dataDirInfo->{lvName} = $lvName;
-        $dataDirInfo->{vgName} = $vgName;
-        $dataDirInfo->{lvPath} = $lvPath;
+        $dataDirInfo->{lvName}         = $lvName;
+        $dataDirInfo->{lvMountPoint}   = $matchedMountPoint;
+        $dataDirInfo->{rel2MountPoint} = $rel2MountPointPath;
+        $dataDirInfo->{vgName}         = $vgName;
+        $dataDirInfo->{lvPath}         = $lvPath;
     }
     else {
         print("INFO: Directory:$dataDir is not on a lvm volume.\n");

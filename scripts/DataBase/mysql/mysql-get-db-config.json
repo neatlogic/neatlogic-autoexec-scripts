@@ -57,6 +57,22 @@
             "required": "false"
         },
         {
+            "opt": "lvMountPoint",
+            "name": "LV卷挂载点",
+            "help": "Mysql的数据目录所在的挂载点目录",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "rel2MountPoint",
+            "name": "相对挂载点目录",
+            "help": "Mysql的数据目录相对挂载点的相对目录",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "lvName",
             "name": "lvmName",
             "help": "Mysql的数据目录所在LVM的LV名称",

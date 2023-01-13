@@ -36,7 +36,7 @@
             "opt": "PASSWORD",
             "name": "DB用户密码",
             "help": "数据库用户密码, 留空代表不需要密码",
-            "type": "text",
+            "type": "password",
             "defaultValue": "",
             "required": "false",
             "validate": ""
