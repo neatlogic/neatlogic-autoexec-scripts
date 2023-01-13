@@ -1,0 +1,74 @@
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+
+import os
+import argparse
+import json
+
+import AutoExecUtils
+
+
+def usage():
+    # 帮助信息
+    pname = os.path.basename(__file__)
+    print(pname + "--masternode <master node json> --slavenodes <slave nodes json> --slaveinfo <slave server_id json> --myserverid <my server_id>")
+
+
+if __name__ == "__main__":
+    # 参数处理
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--masternode', default='', help='master node')
+    parser.add_argument('--slavenodes', default='', help='slave nodes')
+    parser.add_argument('--slaveinfo', default='{}', help='slave info by show slave hosts')
+    parser.add_argument('--myserverid', default='0', help='self possible server_id')
+
+    args = parser.parse_args()
+
+    hasOptError = 0
+    if args.masternode == '':
+        print("ERROR: Must defined master node by option --masternode")
+        hasOptError = 1
+    if args.slavenodes == '':
+        print("ERROR: Must defined slave nodes by option --slavenodes")
+        hasOptError = 1
+
+    if hasOptError == 1:
+        usage()
+
+    slaveInfo = json.loads(args.slaveinfo)
+    myServerId = args.myserverid
+
+    masterNodes = json.loads(args.masternode)
+    slaveNodes = json.loads(args.slavenodes)
+
+    existsServerIds = {}
+    for slaveHost in slaveInfo:
+        serverId = slaveHost.get('Server_id')
+        if serverId is not None:
+            existsServerIds[serverId] = 1
+
+    serverId = ''
+
+    if myServerId in existsServerIds:
+        serverId = myServerId
+
+    else:
+        myNode = AutoExecUtils.getMyNode()
+        myIp = myNode.get('host')
+
+        allNodes = []
+        allNodes.append(masterNodes)
+        allNodes.append(slaveNodes)
+
+        serverId = 1
+        for node in allNodes:
+            while serverId in existsServerIds:
+                serverId += 1
+            if node.get('ip') == myIp:
+                break
+    out = {}
+
+    out['server_id'] = serverId
+
+    AutoExecUtils.saveOutput(out)
