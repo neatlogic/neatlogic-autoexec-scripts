@@ -339,18 +339,18 @@ sub getMysqldConf {
     my ( $port, $osUser ) = @_;
 
     my $mysqldConf = {};
-    $mysqldConf->{isRunning} = 0;
+    my $isRunning  = 0;
     my $pid;
-    my $listenLine = `netstat -nlp |grep :${port}[[:space:]]`;
+    my $listenLine = `netstat -nlp |grep :${port} `;
+    print("netstat -nlp |grep :${port}\n");
+    print( $listenLine, "\n" );
     $listenLine =~ s/^\s*|\s*$//g;
     if ( $listenLine eq '' ) {
         print("WARN: Mysql not listen on port $port.\n");
     }
-    else {
-        if ( $listenLine =~ /(\d+)\/mysqld/ ) {
-            $pid = $1;
-            $mysqldConf->{isRunning} = 1;
-        }
+    elsif ( $listenLine =~ /LISTEN\s+(\d+)/ ) {
+        $pid       = $1;
+        $isRunning = 1;
     }
 
     if ( defined($pid) ) {
@@ -377,6 +377,8 @@ sub getMysqldConf {
         }
     }
 
+    $mysqldConf->{isRunning} = $isRunning;
+
     return $mysqldConf;
 }
 
@@ -386,16 +388,17 @@ sub getDataDirConf {
     my $dataDirInfo = {};
 
     my $mountsMap  = {};
-    my $dfTxt      = `df -h`;
+    my $dfTxt      = `mount`;
     my @mountLines = split( /\n/, $dfTxt );
     my $linesCount = scalar(@mountLines);
-    for ( my $i = 1 ; $i < $linesCount ; $i++ ) {
+    for ( my $i = 0 ; $i < $linesCount ; $i++ ) {
         my $line = $mountLines[$i];
         $line =~ s/^\s*|\s*$//g;
-        my @info       = split( /\s+/, $line, 6 );
-        my $fileSystem = $info[0];
-        my $mountPoint = $info[5];
-        $mountsMap->{$mountPoint} = $fileSystem;
+        if ( $line =~ /^(.*?)\s+on\s+(.*?)\s+type\s/ ) {
+            my $fileSystem = $1;
+            my $mountPoint = $2;
+            $mountsMap->{$mountPoint} = $fileSystem;
+        }
     }
 
     my $matchedFileSys;
@@ -415,31 +418,34 @@ sub getDataDirConf {
         }
     }
 
-    my $lvPath;
-    my $lvName;
-    my $vgName;
-    my $lvTxt = `lvdisplay '$matchedFileSys'`;
-    if ( $? == 0 ) {
-        foreach my $line ( split( /\n/, $lvTxt ) ) {
-            if ( $line =~ /^\s*LV Path\s+(.*?)$/ ) {
-                $lvPath = $1;
+    if ( defined($matchedFileSys) ) {
+        my $lvPath;
+        my $lvName;
+        my $vgName;
+        print("lvdisplay '$matchedFileSys'\n");
+        my $lvTxt = `lvdisplay '$matchedFileSys'`;
+        if ( $? == 0 ) {
+            foreach my $line ( split( /\n/, $lvTxt ) ) {
+                if ( $line =~ /^\s*LV Path\s+(.*?)$/ ) {
+                    $lvPath = $1;
+                }
+                elsif ( $line =~ /^\s*LV Name\s+(.*?)$/ ) {
+                    $lvName = $1;
+                }
+                elsif ( $line =~ /^\s*VG Name\s+(.*?)$/ ) {
+                    $vgName = $1;
+                }
             }
-            elsif ( $line =~ /^\s*LV Name\s+(.*?)$/ ) {
-                $lvName = $1;
-            }
-            elsif ( $line =~ /^\s*VG Name\s+(.*?)$/ ) {
-                $vgName = $1;
-            }
-        }
 
-        $dataDirInfo->{lvName}         = $lvName;
-        $dataDirInfo->{lvMountPoint}   = $matchedMountPoint;
-        $dataDirInfo->{rel2MountPoint} = $rel2MountPointPath;
-        $dataDirInfo->{vgName}         = $vgName;
-        $dataDirInfo->{lvPath}         = $lvPath;
-    }
-    else {
-        print("INFO: Directory:$dataDir is not on a lvm volume.\n");
+            $dataDirInfo->{lvName}         = $lvName;
+            $dataDirInfo->{lvMountPoint}   = $matchedMountPoint;
+            $dataDirInfo->{rel2MountPoint} = $rel2MountPointPath;
+            $dataDirInfo->{vgName}         = $vgName;
+            $dataDirInfo->{lvPath}         = $lvPath;
+        }
+        else {
+            print("INFO: Directory:$dataDir is not on a lvm volume.\n");
+        }
     }
 
     return $dataDirInfo;
