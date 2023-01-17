@@ -609,6 +609,9 @@ sub main {
                 if ( $oldConf->{modified} == 0 ) {
                     print("No new configuration provided, config already changed.\n");
                 }
+
+                my $out = { mysqlConf => $$oldConf->getConfig() };
+                AutoExecUtils::saveOutput($out);
             }
         };
         if ($@) {

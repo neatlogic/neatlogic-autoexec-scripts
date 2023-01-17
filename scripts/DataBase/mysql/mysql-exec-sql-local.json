@@ -8,8 +8,8 @@
     "option": [
         {
             "opt": "dbversion",
-            "name": "PG版本",
-            "help": "PG数据库的主版本号",
+            "name": "Mysql版本",
+            "help": "Mysql数据库的主版本号",
             "type": "select",
             "dataSource": {
                 "dataList": [
@@ -30,6 +30,28 @@
             "help": "SQL脚本，支持一或多条SQL语句",
             "type": "textarea",
             "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "verbose",
+            "name": "输出详细",
+            "help": "输出明细信息, 如信息中有密码则需要主动关闭详细输出",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "1",
             "required": "false",
             "validate": ""
         }

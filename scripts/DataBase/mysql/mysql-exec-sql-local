@@ -25,6 +25,7 @@ sub main {
             node=s
             dbversion=s
             SQL=s
+            verbose=i
         }
     );
 
@@ -63,6 +64,7 @@ sub main {
     my $PASSWORD  = $nodeObj->{password};
     my $DB_NAME   = $nodeObj->{nodeName};
     my $dbVersion = $opts->{dbversion};
+    my $verbose   = $opts->{verbose};
 
     my $autoexecHome = $ENV{AUTOEXEC_HOME};
     my $toolsDir     = "$autoexecHome/tools";
@@ -82,7 +84,7 @@ sub main {
 
     my $exitCode = $mysql->do(
         sql     => $sqlTxt,
-        verbose => 1
+        verbose => $verbose
     );
 
     if ( $exitCode != 0 ) {

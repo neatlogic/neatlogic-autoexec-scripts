@@ -27,6 +27,7 @@ sub main {
             PORT=s
             DB_NAME=s
             SQL=s
+            verbose=i
         }
     );
 
@@ -53,6 +54,7 @@ sub main {
     my $PORT     = $opts->{PORT};
     my $DB_NAME  = $opts->{DB_NAME};
     my $sqlTxt   = $opts->{SQL};
+    my $verbose  = $opts->{verbose};
 
     if ( not defined($OS_USER) or $OS_USER eq '' ) {
         $hasOptErr = 1;
@@ -76,7 +78,7 @@ sub main {
 
     my $exitCode = $psql->do(
         sql     => $sqlTxt,
-        verbose => 1
+        verbose => $verbose
     );
 
     if ( $exitCode != 0 ) {
