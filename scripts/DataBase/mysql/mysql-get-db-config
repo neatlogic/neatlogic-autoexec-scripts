@@ -425,6 +425,7 @@ sub getDataDirConf {
         print("lvdisplay '$matchedFileSys'\n");
         my $lvTxt = `lvdisplay '$matchedFileSys'`;
         if ( $? == 0 ) {
+            print( $lvTxt, "\n" );
             foreach my $line ( split( /\n/, $lvTxt ) ) {
                 if ( $line =~ /^\s*LV Path\s+(.*?)$/ ) {
                     $lvPath = $1;
@@ -483,6 +484,14 @@ sub main {
         #为了变量名命名规范，把减号统一换成下划线
         $k =~ s/-/_/g;
         $mysqldConf->{$k} = $v;
+    }
+
+    if ( not defined( $mysqldConf->{server_id} ) ) {
+        $mysqldConf->{server_id} = '';
+    }
+
+    if ( not defined( $mysqldConf->{log_bin} ) ) {
+        $mysqldConf->{log_bin} = '';
     }
 
     AutoExecUtils::saveOutput($mysqldConf);

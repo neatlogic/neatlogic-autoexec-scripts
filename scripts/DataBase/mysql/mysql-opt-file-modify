@@ -610,7 +610,7 @@ sub main {
                     print("No new configuration provided, config already changed.\n");
                 }
 
-                my $out = { mysqlConf => $$oldConf->getConfig() };
+                my $out = { mysqlConf => $oldConf->getConfig() };
                 AutoExecUtils::saveOutput($out);
             }
         };
