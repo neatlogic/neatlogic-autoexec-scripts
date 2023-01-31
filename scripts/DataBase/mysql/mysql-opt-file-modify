@@ -20,11 +20,12 @@ use AutoExecUtils;
 #支持多文件式的mysql配置的增加、修改，但不支持删除配置
 #因为多文件配置，同一个section声明可以存在于多个文件中，所以新增的option会自动选择文件名和section名最为接近的文件进行相应的修改
 sub new {
-    my ( $pkg, $filePath ) = @_;
+    my ( $pkg, $filePath, $needBackup ) = @_;
 
     my $self = {
         hasError       => 0,
         isChanged      => 0,                                              #标记在修改过程中，某个配置文件是否发生过修改
+        needBackup     => $needBackup,
         ini            => { sectionComments => {}, optComments => {} },
         sectionFileMap => {},                                             #section和配置文件的关联，记录最佳的配置文件
         modified       => 0,                                              #从整体上标记配置是否发生过修改
@@ -56,9 +57,6 @@ sub new {
         my $dateTimeStr = strftime( "%Y%m%d-%H%M%S", localtime() );
         my $backupDir   = "$filePath.$dateTimeStr";
         $self->{backupDir} = $backupDir;
-        if ( not -e $backupDir ) {
-            mkdir($backupDir);
-        }
     }
 
     if ( defined($filePath) ) {
@@ -258,7 +256,7 @@ sub __parseINI {
 }
 
 sub modifyConf {
-    my ( $self, $filePath, $updateINI ) = @_;
+    my ( $self, $filePath, $updateINI, $needBackup ) = @_;
 
     $self->__modify_config( $filePath, $updateINI, 'file' );
 
@@ -267,7 +265,9 @@ sub modifyConf {
     $topFileContent = $self->__appendNewSection( $topFileContent, $filePath, $updateINI );
     if ( $self->{isChanged} == 1 and defined($topFileContent) ) {
         $self->{modified} = 1;
-        $self->backup($filePath);
+        if ( $self->{needBackup} == 1 ) {
+            $self->backup($filePath);
+        }
         my $fh = IO::File->new(">$filePath");
         if ( defined($fh) ) {
             print $fh ($topFileContent);
@@ -289,6 +289,10 @@ sub backup {
 
     my $rootDir   = $self->{rootDir};
     my $backupDir = $self->{backupDir};
+
+    if ( not -e $backupDir ) {
+        mkdir($backupDir);
+    }
 
     my $relPath = $filePath;
     $relPath =~ s/^$rootDir\///;
@@ -597,7 +601,7 @@ sub main {
 
     if ( $exitCode == 0 ) {
         eval {
-            my $oldConf = Mysql::Conf->new($filePath);
+            my $oldConf = Mysql::Conf->new( $filePath, $needBackup );
             my $newConf = Mysql::Conf->new();
             if ( $oldConf->{hasError} or $newConf->{hasError} ) {
                 $exitCode = 4;
