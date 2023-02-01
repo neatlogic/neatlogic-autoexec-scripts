@@ -1,0 +1,60 @@
+{
+    "opType": "target",
+    "typeName": "BASIC",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "修改Mysql的配置文件",
+    "option": [
+        {
+            "opt": "backup",
+            "name": "备份文件",
+            "help": "在修改前备份文件到xxx.%Y%m%d-%H%M%S",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "filepath",
+            "name": "文件路径",
+            "help": "Ini配置文件的路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "content",
+            "name": "需修改内容",
+            "help": "支持多行, 例如：[mysqld]\nbind-address=0.0.0.0",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "mysqlConf",
+            "name": "mysqlConf配置内容",
+            "help": "更新后的Ini配置内容",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

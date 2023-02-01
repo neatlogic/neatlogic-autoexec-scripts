@@ -1,0 +1,56 @@
+{
+    "opType": "runner_target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "python",
+    "defaultProfile": null,
+    "description": "生成Mysql节点配置需要的server_id",
+    "option": [
+        {
+            "opt": "masternode",
+            "name": "Master节点",
+            "help": "主从同步中Master节点信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "slavenodes",
+            "name": "Slave节点",
+            "help": "主从同步中Slave节点信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "slaveinfo",
+            "name": "SlaveHost信息",
+            "help": "Master上show slave host输出的表格数据",
+            "type": "json",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "myserverid",
+            "name": "自身的server_id",
+            "help": "通过mysql-get-db-config工具获取的自身的server_id",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "server_id",
+            "name": "我的server_id",
+            "help": "当前节点的server_id",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true"
+        }
+    ]
+}

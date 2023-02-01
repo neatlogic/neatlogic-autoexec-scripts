@@ -23,6 +23,7 @@ sub main {
             ORACLE_USER=s
             ORACLE_SID=s
             SQL=s
+            verbose=i
         }
     );
 
@@ -30,6 +31,7 @@ sub main {
     my $ORACLE_USER = $opts->{ORACLE_USER};
     my $ORACLE_SID  = $opts->{ORACLE_SID};
     my $sqlTxt      = $opts->{SQL};
+    my $verbose     = $opts->{verbose};
 
     if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
         $hasOptErr = 1;
@@ -49,7 +51,7 @@ sub main {
 
     my $exitCode = $sqlplus->do(
         sql     => $sqlTxt,
-        verbose => 1
+        verbose => $verbose
     );
 
     if ( $exitCode != 0 ) {

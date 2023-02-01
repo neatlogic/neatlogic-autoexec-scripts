@@ -6,6 +6,8 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
+use JSON;
+
 use PostgresqlExec;
 use AutoExecUtils;
 
@@ -24,6 +26,7 @@ sub main {
             dbversion=s
             sslmode=s
             SQL=s
+            verbose=s
         }
     );
 
@@ -63,6 +66,7 @@ sub main {
     my $DB_NAME   = $nodeObj->{nodeName};
     my $dbVersion = $opts->{dbversion};
     my $sslMode   = $opts->{sslmode};
+    my $verbose   = $opts->{verbose};
 
     my $autoexecHome = $ENV{AUTOEXEC_HOME};
     my $toolsDir     = "$autoexecHome/tools";
@@ -82,7 +86,7 @@ sub main {
 
     my $exitCode = $psql->do(
         sql     => $sqlTxt,
-        verbose => 1
+        verbose => $verbose
     );
 
     if ( $exitCode != 0 ) {

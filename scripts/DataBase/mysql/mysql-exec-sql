@@ -6,9 +6,10 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use strict;
 use IO::File;
 use Getopt::Long;
+use JSON;
+
 use MysqlExec;
 use AutoExecUtils;
-use JSON;
 
 sub usage {
     my $pname = $FindBin::Script;
@@ -27,6 +28,7 @@ sub main {
             PASSWORD=s
             DB_NAME=s
             SQL=s
+            verbose=i
         }
     );
 
@@ -54,6 +56,7 @@ sub main {
     my $PASSWORD  = $opts->{PASSWORD};
     my $DB_NAME   = $opts->{DB_NAME};
     my $sqlTxt    = $opts->{SQL};
+    my $verbose   = $opts->{verbose};
 
     if ( not defined($OS_USER) or $OS_USER eq '' ) {
         $hasOptErr = 1;
@@ -81,7 +84,7 @@ sub main {
 
     my $exitCode = $mysql->do(
         sql     => $sqlTxt,
-        verbose => 1
+        verbose => $verbose
     );
 
     if ( $exitCode != 0 ) {
