@@ -58,8 +58,8 @@ if __name__ == "__main__":
         serverId = myServerId
     else:
         allNodes = []
-        allNodes.append(masterNodes)
-        allNodes.append(slaveNodes)
+        allNodes.extend(masterNodes)
+        allNodes.extend(slaveNodes)
 
         serverId = 1
         for node in allNodes:
