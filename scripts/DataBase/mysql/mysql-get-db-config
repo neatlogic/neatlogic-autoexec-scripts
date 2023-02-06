@@ -374,6 +374,16 @@ sub getMysqldConf {
                 $k =~ s/-/_/g;
                 $mysqldConf->{$k} = $v;
             }
+
+            my $autoCnfFile = $mysqldConf->{datadir} . '/auto.cnf';
+            if ( -f $autoCnfFile ) {
+                my $dataConf   = Mysql::Conf->new($autoCnfFile);
+                my $autoIni    = $dataConf->getConfig();
+                my $autoConfig = $autoIni->{auto};
+                if ( defined($autoConfig) ) {
+                    $mysqldConf->{server_uuid} = $autoConfig->{'server-uuid'};
+                }
+            }
         }
     }
 
