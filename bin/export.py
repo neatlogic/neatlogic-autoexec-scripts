@@ -35,7 +35,7 @@ def exportJsonInfo(params):
     tenant = params.get('tenant')
     pathStr = params.get('destDir')
     catalogList = params.get('catalogList')
-    uri = '/codedriver/api/binary/autoexec/script/export/forautoexec'
+    uri = '/neatlogic/api/binary/autoexec/script/export/forautoexec'
     url = params.get('baseUrl') + uri
     # 获取json数据
     headers = {
