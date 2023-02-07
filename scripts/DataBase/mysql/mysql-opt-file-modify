@@ -20,14 +20,16 @@ use AutoExecUtils;
 #支持多文件式的mysql配置的增加、修改，但不支持删除配置
 #因为多文件配置，同一个section声明可以存在于多个文件中，所以新增的option会自动选择文件名和section名最为接近的文件进行相应的修改
 sub new {
-    my ( $pkg, $filePath ) = @_;
+    my ( $pkg, $filePath, $needBackup ) = @_;
 
     my $self = {
         hasError       => 0,
-        isChanged      => 0,                                              #标记在修改过程中，某个配置文件是否发生过修改
+        needBackup     => $needBackup,
         ini            => { sectionComments => {}, optComments => {} },
         sectionFileMap => {},                                             #section和配置文件的关联，记录最佳的配置文件
         modified       => 0,                                              #从整体上标记配置是否发生过修改
+        changedMap     => {},
+        backupMap      => {},                                             # #标记在修改过程中，哪些配置文件是否发生过修改
         current        => undef                                           #当前的section名称
     };
 
@@ -56,9 +58,6 @@ sub new {
         my $dateTimeStr = strftime( "%Y%m%d-%H%M%S", localtime() );
         my $backupDir   = "$filePath.$dateTimeStr";
         $self->{backupDir} = $backupDir;
-        if ( not -e $backupDir ) {
-            mkdir($backupDir);
-        }
     }
 
     if ( defined($filePath) ) {
@@ -127,10 +126,10 @@ sub __read_config {
         $self->__parseINI( $content, $path );
     }
     elsif ( $what eq "dir" ) {
-        opendir( my $dirh, $path ) or return "";
-        if ( not defined($dirh) ) {
+        my $dirh;
+        if ( not opendir( $dirh, $path ) ) {
             $self->{hasError} = 1;
-            print("ERROR: Directory not exists.\n");
+            print("ERROR: Open directory $path failed, $!.\n");
         }
 
         while ( my $file = readdir($dirh) ) {
@@ -201,7 +200,10 @@ sub __parseINI {
                 $section = $ini->{$current};
                 my $preSectionFile = basename( $sectionFileMap->{$current} );
                 my $curSectionFile = basename($filePath);
-                if ( not $preSectionFile =~ /$current/ and $curSectionFile =~ /$current/ ) {
+                if ( not defined($preSectionFile) ) {
+                    $sectionFileMap->{$current} = $filePath;
+                }
+                elsif ( not $preSectionFile =~ /$current/ and $curSectionFile =~ /$current/ ) {
                     $sectionFileMap->{$current} = $filePath;
                 }
                 elsif ( length($curSectionFile) < length($preSectionFile) ) {
@@ -258,14 +260,16 @@ sub __parseINI {
 }
 
 sub modifyConf {
-    my ( $self, $filePath, $updateINI ) = @_;
+    my ( $self, $filePath, $updateINI, $needBackup ) = @_;
+
+    my $changedMap = $self->{changedMap};
 
     $self->__modify_config( $filePath, $updateINI, 'file' );
 
     #处理全新增加的section
     my $topFileContent = $self->getFileContent($filePath);
     $topFileContent = $self->__appendNewSection( $topFileContent, $filePath, $updateINI );
-    if ( $self->{isChanged} == 1 and defined($topFileContent) ) {
+    if ( defined( $changedMap->{$filePath} ) and defined($topFileContent) ) {
         $self->{modified} = 1;
         $self->backup($filePath);
         my $fh = IO::File->new(">$filePath");
@@ -283,12 +287,26 @@ sub modifyConf {
 sub backup {
     my ( $self, $filePath ) = @_;
 
+    if ( $self->{needBackup} != 1 ) {
+        return;
+    }
+
+    my $backupMap = $self->{backupMap};
+
+    if ( defined( $backupMap->{$filePath} ) ) {
+        return;
+    }
+
     if ( not -e $filePath ) {
         return;
     }
 
     my $rootDir   = $self->{rootDir};
     my $backupDir = $self->{backupDir};
+
+    if ( not -e $backupDir ) {
+        mkdir($backupDir);
+    }
 
     my $relPath = $filePath;
     $relPath =~ s/^$rootDir\///;
@@ -297,6 +315,7 @@ sub backup {
     if ( not copy( "$filePath", "$backupDir/$relPath" ) ) {
         die("ERROR: Backup $filePath to $backupDir/$relPath failed, $!.\n");
     }
+    $backupMap->{$filePath} = 1;
 
     return;
 }
@@ -304,7 +323,8 @@ sub backup {
 sub __modify_config {
     my ( $self, $path, $updateINI, $what ) = @_;
 
-    my $oldINI = $self->getConfig();
+    my $changedMap = $self->{changedMap};
+    my $oldINI     = $self->getConfig();
 
     if ( not defined($what) ) {
         $what = 'file';
@@ -324,7 +344,7 @@ sub __modify_config {
         }
         $content = $self->getFileContent($path);
         my $newContent = $self->__modifyINI( $content, $path, $updateINI );
-        if ( $self->{isChanged} == 1 and defined($newContent) ) {
+        if ( defined( $changedMap->{$path} ) and defined($newContent) ) {
             $self->{modified} = 1;
             $self->backup($path);
             my $fh = IO::File->new(">$path");
@@ -364,10 +384,10 @@ sub __modify_config {
 sub __modifyINI {
     my ( $self, $content, $filePath, $updateINI ) = @_;
 
+    my $changedMap     = $self->{changedMap};
     my $oldINI         = $self->getConfig();
     my $sectionFileMap = $self->{sectionFileMap};
 
-    $self->{isChanged} = 0;
     my $baseDir = dirname($filePath);
     my $current;
     my $currentSection = {};
@@ -468,14 +488,14 @@ sub __modifyINI {
                 }
 
                 if ( $equals == 0 ) {
-                    $self->{isChanged} = 1;
+                    $changedMap->{$filePath} = 1;
                     print( "Changed option: $k = [" . join( ',', @$newV ) . "] in section:$current file:$filePath.\n" );
                     $oldSection->{$k} = $newV;
                 }
             }
             else {
                 if ( $newV ne $v ) {
-                    $self->{isChanged} = 1;
+                    $changedMap->{$filePath} = 1;
                     if ( defined($optComment) and $optComment ne '' and $newContent !~ /$optComment\n$/is ) {
                         $newContent = $newContent . $optComment . "\n";
                     }
@@ -500,6 +520,7 @@ sub __modifyINI {
 sub __appendSectionOpts {
     my ( $self, $filePath, $newContent, $section, $updateINI ) = @_;
 
+    my $changedMap  = $self->{changedMap};
     my $oldINI      = $self->getConfig();
     my $oldSection  = $oldINI->{$section};
     my $updSection  = $updateINI->{$section};
@@ -507,7 +528,7 @@ sub __appendSectionOpts {
 
     while ( my ( $updK, $updV ) = each(%$updSection) ) {
         if ( not defined( $oldSection->{$updK} ) ) {
-            $self->{isChanged} = 1;
+            $changedMap->{$filePath} = 1;
             my $optComment = $optComments->{"$section.$updK"};
             if ( defined($optComment) and $optComment ne '' and $newContent !~ /$optComment\n$/is ) {
                 $newContent = $newContent . $optComment . "\n";
@@ -535,7 +556,7 @@ sub __appendSectionOpts {
 sub __appendNewSection {
     my ( $self, $content, $filePath, $updateINI ) = @_;
 
-    $self->{isChanged} = 0;
+    my $changedMap = $self->{changedMap};
 
     my $oldINI          = $self->getConfig();
     my $sectionComments = $updateINI->{sectionComments};
@@ -543,7 +564,7 @@ sub __appendNewSection {
     while ( my ( $updSectionName, $updSection ) = each(%$updateINI) ) {
         my $oldSection = $oldINI->{$updSectionName};
         if ( not defined($oldSection) ) {
-            $self->{isChanged} = 1;
+            $changedMap->{$filePath} = 1;
             my $sectionComment = $sectionComments->{$updSectionName};
             if ( defined($sectionComment) and $sectionComment ne '' and $content !~ /$sectionComment\n$/is ) {
                 $content = $content . $sectionComment . "\n";
@@ -597,7 +618,7 @@ sub main {
 
     if ( $exitCode == 0 ) {
         eval {
-            my $oldConf = Mysql::Conf->new($filePath);
+            my $oldConf = Mysql::Conf->new( $filePath, $needBackup );
             my $newConf = Mysql::Conf->new();
             if ( $oldConf->{hasError} or $newConf->{hasError} ) {
                 $exitCode = 4;

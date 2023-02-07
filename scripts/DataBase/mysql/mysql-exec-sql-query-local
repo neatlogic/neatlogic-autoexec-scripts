@@ -180,6 +180,10 @@ sub main {
         }
     }
 
+    if ( not defined($rows) ) {
+        $rows = [];
+    }
+
     my $out = { queryResult => $rows };
     AutoExecUtils::saveOutput($out);
 

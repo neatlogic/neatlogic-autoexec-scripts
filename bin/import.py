@@ -182,7 +182,7 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
 
 def importJsonInfo(params):
     hasError = 0
-    uri = '/codedriver/api/stream/autoexec/script/import/fromjson'
+    uri = '/neatlogic/api/stream/autoexec/script/import/fromjson'
     params['uri'] = uri
     url = params.get('baseUrl') + uri
     params['url'] = url
