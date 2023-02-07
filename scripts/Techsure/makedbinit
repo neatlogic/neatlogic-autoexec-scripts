@@ -198,14 +198,14 @@ class mysqlLocal:
             use = ''
             src = None 
             dst = None
-            if databse == 'codedriver_demo' :
-                use = "use codedriver_{} ;".format(self.tenant_name)
-                src = os.path.join(path, 'codedriver_demo')
-                dst = "db_base/codedriver_{}/".format(self.tenant_name)
-            elif databse == 'codedriver_demo_data':
-                use = "use codedriver_{}_data ;".format(self.tenant_name)
-                src = os.path.join(path, 'codedriver_demo_data')
-                dst = "db_base/codedriver_{}_data/".format(self.tenant_name)
+            if databse == 'neatlogic_demo' :
+                use = "use neatlogic_{} ;".format(self.tenant_name)
+                src = os.path.join(path, 'neatlogic_demo')
+                dst = "db_base/neatlogic_{}/".format(self.tenant_name)
+            elif databse == 'neatlogic_demo_data':
+                use = "use neatlogic_{}_data ;".format(self.tenant_name)
+                src = os.path.join(path, 'neatlogic_demo_data')
+                dst = "db_base/neatlogic_{}_data/".format(self.tenant_name)
             else :
                 use = "use codedriver ;"
 
@@ -218,7 +218,7 @@ class mysqlLocal:
                         newContent = newContent + line
                         continue 
                     
-                    line = line.replace('codedriver_demo' , "codedriver_{}".format(self.tenant_name))
+                    line = line.replace('neatlogic_demo' , "neatlogic_{}".format(self.tenant_name))
                     newContent = newContent +  line
 
                 self.writeFile(filepath ,newContent)
@@ -227,7 +227,7 @@ class mysqlLocal:
                 os.rename(src, dst)
                 if os.path.exists(src):
                     shutil.rmtree(src)
-        print("INFO:: Change tenant codedriver_demo to codedriver_{} success.".format(self.tenant_name))
+        print("INFO:: Change tenant neatlogic_demo to neatlogic_{} success.".format(self.tenant_name))
 
     #初始化租户data数据
     def initTenantData(self):
@@ -236,12 +236,12 @@ class mysqlLocal:
         for databse in os.listdir(path):
             databasepath = os.path.join(path, databse)
             use = ''
-            if databse == 'codedriver_demo' :
-                use = "use codedriver_{} ;".format(self.tenant_name)
+            if databse == 'neatlogic_demo' :
+                use = "use neatlogic_{} ;".format(self.tenant_name)
             else :
                 use = "use codedriver ;"
 
-            savepath = "db_init/codedriver_{}_data/".format(self.tenant_name)
+            savepath = "db_init/neatlogic_{}_data/".format(self.tenant_name)
             if not os.path.exists(savepath):
                 os.makedirs(savepath)
 
@@ -255,12 +255,12 @@ class mysqlLocal:
                         newContent = newContent + line
                         continue 
                     
-                    line = line.replace('codedriver_demo' , "codedriver_{}".format(self.tenant_name))
+                    line = line.replace('neatlogic_demo' , "neatlogic_{}".format(self.tenant_name))
                     newContent = newContent +  line
 
-                savefile = savepath + '/'+ "codedriver_{}_data.sql".format(self.tenant_name)
+                savefile = savepath + '/'+ "neatlogic_{}_data.sql".format(self.tenant_name)
                 self.writeFile(savefile ,newContent)
-        print("INFO:: Init tenant codedriver_{}_data success.".format(self.tenant_name))
+        print("INFO:: Init tenant neatlogic_{}_data success.".format(self.tenant_name))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -312,7 +312,7 @@ if __name__ == "__main__":
         shutil.rmtree('db_init')
     
     local = mysqlLocal(techsure_home, ip , port , user , password, tenant_name, license , modules)
-    dbname_list = [ "codedriver" , "codedriver_demo" ,"codedriver_demo_data" ]
+    dbname_list = [ "neatlogic" , "neatlogic_demo" ,"neatlogic_demo_data" ]
     if type is None or type == '' or type == 'patch' :
         mysql = mysqlManager(ip ,port ,user , password)
         ( db , cursor ) = mysql.getConnect()
@@ -325,7 +325,7 @@ if __name__ == "__main__":
             cleanTableMap = local.getCleanTable(db_name)
             tables = mysql.getDBtables(cursor , db_name)
             for table in tables :
-                if table in cleanTableMap  or db_name == 'codedriver_demo_data':
+                if table in cleanTableMap  or db_name == 'neatlogic_demo_data':
                     local.dumpTable(db_name, table , 'nodata')
                 else:
                     local.dumpTable(db_name, table , 'all')
