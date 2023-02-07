@@ -170,7 +170,7 @@ class mysqlLocal:
     #生成租户基础数据
     def initTenantDefine(self):
         jdbc = "jdbc:mysql://{host}:{port}/{dbname}?characterEncoding=UTF-8&jdbcCompliantTruncation=false&allowMultiQueries=true&useSSL=false&&serverTimeZone=Asia/Shanghai"
-        sql="use codedriver;\n"
+        sql="use neatlogic;\n"
         sql = sql + '\n' + "insert  into `datasource`(`tenant_id`,`tenant_uuid`,`url`,`username`,`password`,`driver`,`host`,`port`) values (1,'{}','{}','root','zanyue$2012','com.mysql.cj.jdbc.Driver','127.0.0.1',3306);".format(self.tenant_name,jdbc)
         sql = sql + '\n' + "insert  into `mongodb`(`tenant_id`,`tenant_uuid`,`database`,`username`,`password`,`host`,`option`) values (1,'{}','autoexec','autoexec','u1OPgeInMhxsNkNl','127.0.0.1:27017','authSource=autoexec');".format(self.tenant_name)
         sql = sql + '\n' + "insert  into `tenant`(`id`,`uuid`,`name`,`is_active`,`status`,`expire_date`,`description`) values (1,'{}','{}',1,NULL,NULL,NULL);".format(self.tenant_name,self.tenant_name)
@@ -179,11 +179,11 @@ class mysqlLocal:
         for module in self.modules:
             sql = sql + '\n' + "insert  into `tenant_modulegroup`(`tenant_id`,`tenant_uuid`,`module_group`) values (1,'{}','{}');".format(self.tenant_name , module)
 
-        savepath = "db_init/codedriver/"
+        savepath = "db_init/neatlogic/"
         if not os.path.exists(savepath):
             os.makedirs(savepath)
 
-        filepath="db_init/codedriver/codedriver.sql"
+        filepath="db_init/neatlogic/neatlogic.sql"
         if os.path.exists(filepath):
             os.unlink(filepath)
         
@@ -207,7 +207,7 @@ class mysqlLocal:
                 src = os.path.join(path, 'neatlogic_demo_data')
                 dst = "db_base/neatlogic_{}_data/".format(self.tenant_name)
             else :
-                use = "use codedriver ;"
+                use = "use neatlogic ;"
 
             for table in os.listdir(databasepath):
                 newContent = use
@@ -239,7 +239,7 @@ class mysqlLocal:
             if databse == 'neatlogic_demo' :
                 use = "use neatlogic_{} ;".format(self.tenant_name)
             else :
-                use = "use codedriver ;"
+                use = "use neatlogic ;"
 
             savepath = "db_init/neatlogic_{}_data/".format(self.tenant_name)
             if not os.path.exists(savepath):
