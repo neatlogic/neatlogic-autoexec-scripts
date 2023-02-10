@@ -49,9 +49,27 @@
             "name": "license到期日期",
             "help": "license到期日期，如：2030-12-30",
             "type": "text",
-            "required": "true",
+            "required": "false",
             "validate": "",
             "defaultValue": ""
+        },
+        {
+            "opt": "expire_useDay",
+            "name": "过期后仍可以使用天数",
+            "help": "license到期后还能使用天数",
+            "type": "text",
+            "required": "false",
+            "validate": ["integer_p"],
+            "defaultValue": "30"
+        },
+        {
+            "opt": "expire_beforeDay",
+            "name": "即将到截止日期前提醒天数",
+            "help": "license到期后还能使用天数",
+            "type": "text",
+            "required": "false",
+            "validate": ["integer_p"],
+            "defaultValue": "30"
         }
     ],
     "output": [

@@ -1,0 +1,80 @@
+{
+    "opDesc": "数据库租户打包初始化",
+    "opType": "runner_target",
+    "typeName": "BASIC",
+    "riskName": "LOW",
+    "interpreter": "python",
+    "defaultProfile": null,
+    "enabled": 0,
+    "description": "数据库租户打包初始化",
+    "option": [
+        {
+            "opt": "tenant_name",
+            "name": "租户名称",
+            "help": "租户名称",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "license",
+            "name": "license",
+            "help": "租户名称对应的license",
+            "type": "textarea",
+            "required": "false",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "modules",
+            "name": "需要模块",
+            "help": "需要模块",
+            "type": "multiselect",
+            "required": "true",
+            "validate": "",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "仪表板",
+                        "value": "dashboard"
+                    },
+                    {
+                        "text": "流程管理",
+                        "value": "process"
+                    },
+                    {
+                        "text": "配置管理",
+                        "value": "cmdb"
+                    },
+                    {
+                        "text": "自动化",
+                        "value": "autoexec"
+                    },
+                    {
+                        "text": "巡检",
+                        "value": "inspect"
+                    },
+                    {
+                        "text": "发布",
+                        "value": "deploy"
+                    },
+                    {
+                        "text": "知识库",
+                        "value": "knowledge"
+                    },
+                    {
+                        "text": "监管报送",
+                        "value": "pbc"
+                    },
+                    {
+                        "text": "报表",
+                        "value": "report"
+                    }
+                ]
+            },
+            "defaultValue": ["dashboard" ,"report"]
+        }
+    ],
+    "output": []
+}
