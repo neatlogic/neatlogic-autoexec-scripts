@@ -62,8 +62,12 @@ class mysqlLocal:
     def dumpAll(self , database):
         savepath = "{}/db_init/{}".format(self.backup_dir, database)
         savefile = "{}/db_init/{}/{}.sql".format(self.backup_dir,database,database)
+        
         if(not os.path.exists(savepath)):
             os.makedirs(savepath)
+
+        if( os.path.exists(savefile)):
+            os.remove(savefile)
 
         runCmd ="{} -u{} -p'{}' -h {} -E -R --routines {} > {} ".format(self.mysqldumpExec , self.user , self.password , self.ip , database , savefile)
         viewCmd ="{} -u{} -p'{}' -h {} -E -R --routines {} > {} ".format(self.mysqldumpExec , self.user , "******" , self.ip , database , savefile )
@@ -110,9 +114,6 @@ if __name__ == "__main__":
     if database_names is None or database_names == '':
         print("ERROR:: Must defind option --database_names")
         exit(1)
-    
-    if os.path.exists('db_data'):
-        shutil.rmtree('db_data')
     
     local = mysqlLocal(mysql_home, ip , port , user , password , backup_dir)
     dbname_list = database_names.split(',')
