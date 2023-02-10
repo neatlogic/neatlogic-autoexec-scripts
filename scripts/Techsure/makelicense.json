@@ -65,7 +65,7 @@
         {
             "opt": "expire_beforeDay",
             "name": "即将到截止日期前提醒天数",
-            "help": "license到期后还能使用天数",
+            "help": "license即将到截止日期前提醒天数",
             "type": "text",
             "required": "false",
             "validate": ["integer_p"],
