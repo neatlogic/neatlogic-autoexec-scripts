@@ -20,7 +20,7 @@ sub main {
     $| = 1;    #不对输出进行buffer，便于实时看到输出日志
     AutoExecUtils::setEnv();
 
-    my ( $ishelp, $customer_name, $tenant_name , $db_info, $license_date , $jarpath);
+    my ( $ishelp, $customer_name, $tenant_name , $db_info, $license_date , $jarpath , $expire_useDay , $expire_beforeDay,$temp_licenseDay);
 
     GetOptions(
         'help'           => \$ishelp,
@@ -28,7 +28,10 @@ sub main {
         'tenant_name=s'       => \$tenant_name,
         'db_info=s'       => \$db_info,
         'license_date=s'       => \$license_date,
-        'jarpath=s'         =>\$jarpath
+        'jarpath=s'         =>\$jarpath,
+        'expire_beforeDay=s'         =>\$expire_beforeDay,
+        'expire_useDay=s'         =>\$expire_useDay,
+        'temp_licenseDay=s'          =>\$temp_licenseDay
     );
 
     my $hasOptErr = 0;
@@ -43,8 +46,20 @@ sub main {
     }
 
     if (not defined($license_date) or  $license_date eq '' ) {
-        $hasOptErr = 1;
-        print("ERROR: Option --license_date not defined.\n");
+        #默认license为21天，适用于POC
+        if (not defined($temp_licenseDay) or $temp_licenseDay eq '' ){
+            $temp_licenseDay = 21;
+        }
+        $license_date = `date -d "+$temp_licenseDay days" '+%Y-%m-%d'`;
+        chomp($license_date);
+    }
+
+    if(not defined($expire_beforeDay) or  $expire_beforeDay eq '' ){
+        $expire_beforeDay = 30;
+    }
+
+    if(not defined($expire_useDay) or  $expire_useDay eq '' ){
+        $expire_useDay = 30;
     }
 
     if ( $hasOptErr == 1 ) {
@@ -102,13 +117,13 @@ sub main {
         ],
         [
             qr/截止日期后仍可以使用天数\s*/ => sub {
-                $spawn->send("\n");
+                $spawn->send("$expire_useDay\n");
                 $spawn->exp_continue;
             }
         ],        
         [
             qr/即将到截止日期前提醒天数\s*/ => sub {
-                $spawn->send("\n");
+                $spawn->send("$expire_beforeDay\n");
                 $spawn->exp_continue;
             }
         ],
