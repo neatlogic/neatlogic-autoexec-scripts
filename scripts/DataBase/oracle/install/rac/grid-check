@@ -36,10 +36,10 @@ if [ -z "$GRID_USER" ]; then
 fi
 
 #检查集群状态
-SUDO_CMD $GRID_USER crsctl check crs
-SUDO_CMD $GRID_USER crsctl check cluster
-SUDO_CMD $GRID_USER crsctl stat res -t
-SUDO_CMD $GRID_USER olsnodes -n -i -s
-SUDO_CMD $GRID_USER crsctl query css votedisk
-SUDO_CMD $GRID_USER srvctl config scan
-SUDO_CMD $GRID_USER srvctl config scan_listener
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" check crs
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" check cluster
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" stat res -t
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/olsnodes" -n -i -s
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" query css votedisk
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/srvctl" config scan
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/srvctl" config scan_listener

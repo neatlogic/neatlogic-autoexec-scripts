@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#执行前提：PATH中包含$GRID_HOME/bin:$ORACLE_HOME/bin, LD_LIBRARY_PATH包含$GRID_HOME/lib:$ORACLE_HOME/bin
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
