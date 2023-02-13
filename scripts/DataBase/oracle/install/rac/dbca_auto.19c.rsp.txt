@@ -220,7 +220,7 @@ nodelist=rac1,rac2
 # Default value : None
 # Mandatory     : Yes
 #-----------------------------------------------------------------------------
-templateName=/u01/app/oracle/product/19.3.0/db_1/assistants/dbca/templates/General_Purpose.dbc
+#templateName=/u01/app/oracle/product/19.3.0/db_1/assistants/dbca/templates/General_Purpose.dbc
 
 #-----------------------------------------------------------------------------
 # Name          : sysPassword
