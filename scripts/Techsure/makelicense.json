@@ -54,6 +54,35 @@
             "defaultValue": ""
         },
         {
+            "opt": "temp_licenseDay",
+            "name": "临时license有效期限",
+            "help": "临时license有效期限，默认为3周",
+            "type": "select",
+            "required": "false",
+            "validate": "",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "1周",
+                        "value": "7"
+                    },
+                    {
+                        "text": "2周",
+                        "value": "14"
+                    },
+                    {
+                        "text": "3周",
+                        "value": "21"
+                    },
+                    {
+                        "text": "4周",
+                        "value": "28"
+                    }
+                ]
+            },
+            "defaultValue": "21"
+        },
+        {
             "opt": "expire_useDay",
             "name": "过期后仍可以使用天数",
             "help": "license到期后还能使用天数",

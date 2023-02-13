@@ -1,12 +1,12 @@
 {
     "opDesc": "指定数据Dump备份",
-    "opType": "runner_target",
+    "opType": "runner",
     "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "python",
     "defaultProfile": null,
     "enabled": 0,
-    "description": "指定数据Dump备份",
+    "description": "指定数据Dump备份，备份内容包括：表结构、数据、视图、存储过程、函数。",
     "option": [
         {
             "opt": "backup_dir",
@@ -21,15 +21,6 @@
             "opt": "mysql_home",
             "name": "mysql安装目录",
             "help": "mysql安装目录，如：/opt/mysql/",
-            "type": "text",
-            "required": "true",
-            "validate": "",
-            "defaultValue": ""
-        },
-        {
-            "opt": "database_names",
-            "name": "指定数据库",
-            "help": "指定数据库，多个逗号分隔，如：asm,bsm",
             "type": "text",
             "required": "true",
             "validate": "",
@@ -52,6 +43,15 @@
             "required": "false",
             "validate": "",
             "defaultValue": "3306"
+        },
+        {
+            "opt": "database_names",
+            "name": "数据库名称",
+            "help": "指定数据库，多个逗号分隔，如：asm,bsm",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
         },
         {
             "opt": "user",

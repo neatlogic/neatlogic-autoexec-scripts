@@ -20,7 +20,7 @@ sub main {
     $| = 1;    #不对输出进行buffer，便于实时看到输出日志
     AutoExecUtils::setEnv();
 
-    my ( $ishelp, $customer_name, $tenant_name , $db_info, $license_date , $jarpath , $expire_useDay , $expire_beforeDay);
+    my ( $ishelp, $customer_name, $tenant_name , $db_info, $license_date , $jarpath , $expire_useDay , $expire_beforeDay,$temp_licenseDay);
 
     GetOptions(
         'help'           => \$ishelp,
@@ -30,7 +30,8 @@ sub main {
         'license_date=s'       => \$license_date,
         'jarpath=s'         =>\$jarpath,
         'expire_beforeDay=s'         =>\$expire_beforeDay,
-        'expire_useDay=s'         =>\$expire_useDay
+        'expire_useDay=s'         =>\$expire_useDay,
+        'temp_licenseDay=s'          =>\$temp_licenseDay
     );
 
     my $hasOptErr = 0;
@@ -46,7 +47,10 @@ sub main {
 
     if (not defined($license_date) or  $license_date eq '' ) {
         #默认license为21天，适用于POC
-        $license_date = `date -d "+21 days" '+%Y-%m-%d'`;
+        if (not defined($temp_licenseDay) or $temp_licenseDay eq '' ){
+            $temp_licenseDay = 21;
+        }
+        $license_date = `date -d "+$temp_licenseDay days" '+%Y-%m-%d'`;
         chomp($license_date);
     }
 

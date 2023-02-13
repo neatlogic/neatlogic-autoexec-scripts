@@ -72,7 +72,10 @@ class mysqlLocal:
         runCmd ="{} -u{} -p'{}' -h {} -E -R --routines {} > {} ".format(self.mysqldumpExec , self.user , self.password , self.ip , database , savefile)
         viewCmd ="{} -u{} -p'{}' -h {} -E -R --routines {} > {} ".format(self.mysqldumpExec , self.user , "******" , self.ip , database , savefile )
         result= self.runCmd(runCmd , viewCmd)
-        print(result)
+        if ('Got error:' in result) :
+            print("INFO:: Mysqldump {} success.".format(database))
+        else:
+            print("ERROR:: Mysqldump {} failed, {}".format( database , result ) )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
