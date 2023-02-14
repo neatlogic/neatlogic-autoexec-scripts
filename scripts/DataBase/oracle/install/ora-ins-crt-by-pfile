@@ -377,6 +377,14 @@ sub startNoMountByPfile {
         verbose => 1
     );
 
+    if ( $exitCode != 0 ) {
+        print("Shutdown db immediate failed, try to shutdown abort...\n");
+        $exitCode = $sqlplus->do(
+            sql     => "shutdown abort;",
+            verbose => 1
+        );
+    }
+
     print("Try to startup db to nomount again...\n");
     $exitCode = $sqlplus->do(
         sql     => "startup nomount;",
