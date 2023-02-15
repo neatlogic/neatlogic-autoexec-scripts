@@ -161,6 +161,7 @@ sub main {
             print("WARN: Check failed, wait $retryInterval seconds and retry again...\n");
             sleep($retryInterval);
             print("INFO: Do another try...\n");
+            $hasError = 0;
         }
     }
 
