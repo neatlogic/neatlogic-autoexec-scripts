@@ -4,9 +4,9 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
+    "useLibName": ["DataBase/mysql/MysqlConfParser.pm"],
     "description": "在某个Mysql节点执行, 获取Mysql配置信息",
-    "option": [
-        {
+    "option": [{
             "opt": "OS_USER",
             "name": "运行用户",
             "help": "运行Mysqld的OS用户",
@@ -25,8 +25,7 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
+    "output": [{
             "opt": "isRunning",
             "name": "是否运行中",
             "help": "Mysqld是否正在运行中",
