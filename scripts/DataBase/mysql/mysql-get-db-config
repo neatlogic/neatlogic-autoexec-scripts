@@ -1,261 +1,8 @@
 #!/usr/bin/perl
 use FindBin;
+use lib "$FindBin::Bin";
 use lib "$FindBin::Bin/lib";
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
-
-package Mysql::Conf;
-
-use strict;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use File::Copy;
-use File::Path qw(make_path);
-use POSIX qw(strftime);
-use File::Spec::Functions qw(catfile rel2abs);
-
-use AutoExecUtils;
-
-#Mysql option文件配置读取和修改，支持!include和!includedir
-#支持多文件式的mysql配置的增加、修改，但不支持删除配置
-#因为多文件配置，同一个section声明可以存在于多个文件中，所以新增的option会自动选择文件名和section名最为接近的文件进行相应的修改
-sub new {
-    my ( $pkg, $filePath ) = @_;
-
-    my $self = {
-        hasError       => 0,
-        isChanged      => 0,                                              #标记在修改过程中，某个配置文件是否发生过修改
-        ini            => { sectionComments => {}, optComments => {} },
-        sectionFileMap => {},                                             #section和配置文件的关联，记录最佳的配置文件
-        modified       => 0,                                              #从整体上标记配置是否发生过修改
-        current        => undef                                           #当前的section名称
-    };
-
-    $self->{multipleOptions} = {
-        'binlog-do-db'     => 1,
-        'binlog-ignore-db' => 1,
-        'plugin-load'      => 1
-    };
-
-    #记录已经修改过的可重复option
-    $self->{multipleOptionsModifed} = {};
-
-    bless( $self, $pkg );
-
-    if ( defined($filePath) ) {
-        if ( not -e $filePath ) {
-            $self->{hasError} = 1;
-            print("ERROR: $filePath not exists.\n");
-        }
-        if ( not -f $filePath ) {
-            $self->{hasError} = 1;
-            print("ERROR: $filePath is not a file.\n");
-        }
-
-        $self->{rootDir} = dirname($filePath);
-        my $dateTimeStr = strftime( "%Y%m%d-%H%M%S", localtime() );
-        my $backupDir   = "$filePath.$dateTimeStr";
-        $self->{backupDir} = $backupDir;
-        if ( not -e $backupDir ) {
-            mkdir($backupDir);
-        }
-    }
-
-    if ( defined($filePath) ) {
-        $self->__read_config( $filePath, 'file' );
-    }
-
-    return $self;
-}
-
-sub getFileContent {
-    my ( $self, $filePath ) = @_;
-    my $content;
-
-    if ( -f $filePath ) {
-        my $size = -s $filePath;
-        my $fh   = new IO::File("<$filePath");
-
-        if ( defined($fh) ) {
-            $fh->read( $content, $size );
-            $fh->close();
-        }
-        else {
-            die("ERROR: File:$filePath open failed, $!.\n");
-        }
-    }
-
-    return $content;
-}
-
-sub getConfig {
-    my ( $self, $confTxt ) = @_;
-
-    if ( defined($confTxt) ) {
-        $self->{ini} = { sectionComments => {}, optComments => {} };
-        $self->__read_config( $confTxt, 'text' );
-    }
-
-    return $self->{ini};
-}
-
-sub __read_config {
-    my ( $self, $path, $what ) = @_;
-
-    if ( not defined($what) ) {
-        $what = 'file';
-    }
-
-    my $content = "";
-
-    # store the names to skip when reading directories
-    my %skip;
-    my @skip_names = qw(. ..);
-    @skip{@skip_names} = (1) x @skip_names;
-
-    if ( $what eq 'text' ) {
-        $content = $path;
-        $self->__parseINI( $content, $path );
-    }
-    elsif ( $what eq "file" ) {
-        if ( not -f ($path) ) {
-            $self->{hasError} = 1;
-            print("ERROR: $path is not a file.\n");
-        }
-
-        $content = $self->getFileContent($path);
-        $self->__parseINI( $content, $path );
-    }
-    elsif ( $what eq "dir" ) {
-        opendir( my $dirh, $path ) or return "";
-        if ( not defined($dirh) ) {
-            $self->{hasError} = 1;
-            print("ERROR: Directory not exists.\n");
-        }
-
-        while ( my $file = readdir($dirh) ) {
-
-            # skip invisible files and directories we shouldn't
-            # recurse into, like ../ or CVS/
-            next if $skip{$file} or index( $file, "." ) == 0;
-
-            my $filepath = catfile( $path, $file );
-
-            if ( -f $filepath ) {
-                __read_config( $self, $filepath, 'file' );
-            }
-            elsif ( -d $filepath ) {
-                __read_config( $self, $filepath, 'dir' );
-            }
-        }
-
-        closedir($dirh);
-    }
-}
-
-sub __parseINI {
-    my ( $self, $content, $filePath ) = @_;
-
-    my $baseDir         = dirname($filePath);
-    my $ini             = $self->{ini};
-    my $sectionComments = $ini->{sectionComments};
-    my $optComments     = $ini->{optComments};
-    my $sectionFileMap  = $self->{sectionFileMap};
-    my $current         = $self->{current};
-    my $section         = {};
-
-    my $comment = '';
-    $content =~ s/^\s*|\s*$//g;
-    foreach my $line ( split( /\n/, $content ) ) {
-        $line =~ s/^\s*|\s*$//g;
-
-        # handle comments
-        if ( $line =~ /^[;#]/ ) {
-            $comment = $comment . $line . "\n";
-            next;
-        }
-        elsif ( $line eq '' ) {
-            $comment = $comment . "\n";
-            next;
-        }
-
-        # handle includes
-        if ( $line =~ /^\s*!include(dir)?\s+(.+)\s*$/ ) {
-            my $incDir   = $1;
-            my $filePath = $2;
-            if ( defined($incDir) ) {
-                $self->__read_config( rel2abs( $filePath, $baseDir ), 'dir' );
-            }
-            else {
-                $self->__read_config( rel2abs( $filePath, $baseDir ), 'file' );
-            }
-            next;
-        }
-
-        #handle section
-        elsif ( $line =~ /^\s*\[(.*)\]\s*$/ ) {
-            $current = $1;
-            if ( defined( $ini->{$current} ) ) {
-
-                #如果已经存在section，那么此section在多个文件中有配置，计算最匹配的文件，用于配置增加的option
-                $section = $ini->{$current};
-                my $preSectionFile = basename( $sectionFileMap->{$current} );
-                my $curSectionFile = basename($filePath);
-                if ( not $preSectionFile =~ /$current/ and $curSectionFile =~ /$current/ ) {
-                    $sectionFileMap->{$current} = $filePath;
-                }
-                elsif ( length($curSectionFile) < length($preSectionFile) ) {
-                    $sectionFileMap->{$current} = $filePath;
-                }
-            }
-            else {
-                my $newSection = {};
-                $ini->{$current} = $newSection;
-                $section = $newSection;
-
-                if ( defined($comment) and $comment ne '' ) {
-                    my $thisComment = $comment;
-                    $thisComment =~ s/^\s*|\s*$//g;
-                    $sectionComments->{$current} = $thisComment;
-                    undef($comment);
-                    $comment = '';
-                }
-                $sectionFileMap->{$current} = $filePath;
-            }
-            next;
-        }
-
-        if ( $line !~ /=/ ) {
-            $line = join( '=', $line, 1 );
-        }
-
-        my ( $k, $v ) = split( /\s*=\s*/, $line, 2 );
-        my $oldV = $section->{$k};
-
-        my $multipleOptions = $self->{multipleOptions};
-
-        #mysql的配置中binlog-do-db和binlog-ignore-db以及plugin-load是可以重复配置的
-        if ( $multipleOptions->{$k} ) {
-            if ( ref($oldV) eq "ARRAY" ) {
-                push( @$oldV, $v );
-            }
-            else {
-                $section->{$k} = [$v];
-            }
-        }
-        else {
-            $section->{$k} = $v;
-        }
-
-        if ( defined($comment) and $comment ne '' ) {
-            my $thisComment = $comment;
-            $thisComment =~ s/^\s*|\s*$//g;
-            $optComments->{"$current.$k"} = $thisComment;
-            undef($comment);
-            $comment = '';
-        }
-    }
-}
 
 package Main;
 use strict;
@@ -265,7 +12,9 @@ use Socket;
 use Getopt::Long;
 use File::Basename;
 use File::Spec::Functions qw(catfile rel2abs);
+
 use AutoExecUtils;
+use MysqlConfParser;
 
 sub usage {
     my $pname = $FindBin::Script;
@@ -364,7 +113,7 @@ sub getMysqldConf {
             my $cmdOpts = parseCommandOpts( $pid, $command );
 
             my $confFile  = $cmdOpts->{configFile};
-            my $mysqlConf = Mysql::Conf->new($confFile);
+            my $mysqlConf = MysqlConfParser->new($confFile);
             my $ini       = $mysqlConf->getConfig();
 
             $mysqldConf = $ini->{mysqld};
@@ -377,7 +126,7 @@ sub getMysqldConf {
 
             my $autoCnfFile = $mysqldConf->{datadir} . '/auto.cnf';
             if ( -f $autoCnfFile ) {
-                my $dataConf   = Mysql::Conf->new($autoCnfFile);
+                my $dataConf   = MysqlConfParser->new($autoCnfFile);
                 my $autoIni    = $dataConf->getConfig();
                 my $autoConfig = $autoIni->{auto};
                 if ( defined($autoConfig) ) {
