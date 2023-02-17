@@ -129,6 +129,7 @@ sub main {
             $hasError = 1;
             if ( $tryCount >= $retryCount ) {
                 print("ERROR: Errors occur while executing sql.\n");
+                last;
             }
         }
 
