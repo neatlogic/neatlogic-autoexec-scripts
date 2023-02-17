@@ -5,19 +5,16 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "description": "在Runner上连接到远程Postgresql库执行SQL",
-    "option": [
-        {
+    "option": [{
             "opt": "dbversion",
             "name": "PG版本",
             "help": "PG数据库的主版本号",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
-                        "text": "默认",
-                        "value": ""
-                    }
-                ],
+                "dataList": [{
+                    "text": "默认",
+                    "value": ""
+                }],
                 "dataType": "static"
             },
             "defaultValue": "",
@@ -30,19 +27,18 @@
             "help": "PG数据库SSL模式",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
-                        "text": "Disable",
-                        "value": "Disable"
+                "dataList": [{
+                        "text": "disable",
+                        "value": "disable"
                     },
                     {
-                        "text": "Require",
-                        "value": "Require"
+                        "text": "require",
+                        "value": "require"
                     }
                 ],
                 "dataType": "static"
             },
-            "defaultValue": "Disable",
+            "defaultValue": "disable",
             "required": "false",
             "validate": ""
         },
@@ -61,8 +57,7 @@
             "help": "输出明细信息, 如信息中有密码则需要主动关闭详细输出",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "是",
                         "value": "1"
                     },
