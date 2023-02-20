@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "集群状态检查(在root用户下执行, 会su到grid用户执行)",
     "argument": {
         "name": "GRID_USER",

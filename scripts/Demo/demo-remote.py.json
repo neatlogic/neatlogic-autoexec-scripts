@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "python",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "在远程target OS执行工具的Demo",
     "option": [
         {

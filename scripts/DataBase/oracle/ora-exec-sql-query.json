@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "连接Oracle主机执行SQL并检查和输出数据",
     "option": [
         {

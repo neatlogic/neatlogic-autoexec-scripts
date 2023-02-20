@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "python",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "根据删除节点名和集群节点的IP信息, 生成删除节点需要的相关信息",
     "option": [
         {

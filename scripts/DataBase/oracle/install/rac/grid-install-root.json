@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "OracleGRID安装执行root脚本(root用户执行)",
     "option": [
         {

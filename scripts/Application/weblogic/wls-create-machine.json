@@ -1,19 +1,22 @@
 {
-	"opType": "target",
-	"typeName": "INSTALL",
-	"riskName": "LOW",
-	"interpreter": "bash",
-	"defaultProfile": null,
-	"description": "weblogic创建machine",
-	"option": [{
-			"opt": "run_user",
-			"name": "软件安装用户",
-			"help": "为软件安装指定特定的用户，如：weblogic",
-			"type": "text",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		},
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "weblogic创建machine",
+    "option": [
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
         {
             "opt": "run_group",
             "name": "进程用户组",
@@ -23,51 +26,51 @@
             "required": "true",
             "validate": ""
         },
-		{
-			"opt": "weblogic_home",
-			"name": "软件安装路径",
-			"help": "软件安装路径，如：/home/weblogic/Oracle/Middlle",
-			"type": "text",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		},
-		{
-			"opt": "t3_url",
-			"name": "t3管理地址",
-			"help": "t3管理地址，如：t3:192.168.0.90:7001",
-			"type": "text",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		},
-		{
-			"opt": "machine_name",
-			"name": "计算机名称",
-			"help": "计算机名称,如:machine01，默认以ip为名称",
-			"type": "text",
-			"defaultValue": "",
-			"required": "false",
-			"validate": ""
-		},
-		{
-			"opt": "admin_username",
-			"name": "admin管理用户",
-			"help": "admin管理用户",
-			"type": "text",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		},
-		{
-			"opt": "admin_password",
-			"name": "admin管理密码",
-			"help": "admin管理密码",
-			"type": "password",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		}
-	],
-	"output": []
+        {
+            "opt": "weblogic_home",
+            "name": "软件安装路径",
+            "help": "软件安装路径，如：/home/weblogic/Oracle/Middlle",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "t3_url",
+            "name": "t3管理地址",
+            "help": "t3管理地址，如：t3:192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "machine_name",
+            "name": "计算机名称",
+            "help": "计算机名称,如:machine01，默认以ip为名称",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "admin_username",
+            "name": "admin管理用户",
+            "help": "admin管理用户",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_password",
+            "name": "admin管理密码",
+            "help": "admin管理密码",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
 }

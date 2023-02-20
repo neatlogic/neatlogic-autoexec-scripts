@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "增加集群Grid节点(在某个老节点上执行)",
     "option": [
         {

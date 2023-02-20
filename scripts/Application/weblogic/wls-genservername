@@ -59,7 +59,7 @@ sub main {
         $result = $result . $node->{'ip'} . '-' . $server_prefix . $count . ',' ;
         $count ++ ;
     }
-    
+
     my $out = {};
     $out->{serverNames}     = $result;
     AutoExecUtils::saveOutput($out);

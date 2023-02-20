@@ -1,9 +1,11 @@
 {
     "opType": "runner",
-    "typeName": "Basic",
+    "typeName": "BASIC",
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Linux sleep",
     "option": [
         {
@@ -11,9 +13,9 @@
             "name": "等待时间",
             "help": "等待时间,如：10s",
             "type": "text",
-            "defaultValue":"10" ,
+            "defaultValue": "10",
             "required": "true",
-            "validate": ["integer_p"]
+            "validate": ""
         }
     ],
     "output": []

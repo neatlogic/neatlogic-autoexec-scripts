@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Linux克隆机器后硬盘挂载、网卡配置、关闭防火墙",
     "option": [
         {

@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "更新节点的Oracle Inventory(在非删除节点用root用户执行, 一次只能删除一个节点)",
     "option": [
         {

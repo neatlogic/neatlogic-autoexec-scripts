@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "websphere启停Dmgr",
     "option": [
         {
@@ -21,7 +23,8 @@
                         "text": "停止",
                         "value": "stop"
                     }
-                ]
+                ],
+                "dataType": "static"
             },
             "defaultValue": "start",
             "required": "true",

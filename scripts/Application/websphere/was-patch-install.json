@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "WebSphere安装补丁",
     "option": [
         {
@@ -50,7 +52,7 @@
             "defaultValue": "",
             "required": "true",
             "validate": ""
-        },       
+        },
         {
             "opt": "run_group",
             "name": "软件安装用户组",

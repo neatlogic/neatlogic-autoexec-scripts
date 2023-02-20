@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "生成创建StandBy Redo日志的SQL, 大小跟原日志一致, 每个Thread多一组, 只需要在一个节点上执行",
     "option": [
         {

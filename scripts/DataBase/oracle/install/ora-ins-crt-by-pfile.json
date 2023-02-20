@@ -4,6 +4,8 @@
     "riskName": "MEDIUM",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "通过Pfile内容启动DB到noumount状态",
     "option": [
         {

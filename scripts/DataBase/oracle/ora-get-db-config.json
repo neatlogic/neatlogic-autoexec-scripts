@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "在某个Oracle节点执行, 获取当前节点和集群相关的节点等信息",
     "option": [
         {

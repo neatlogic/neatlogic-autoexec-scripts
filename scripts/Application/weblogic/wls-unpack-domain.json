@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "weblogic解压打包domain文件",
     "option": [
         {
@@ -41,7 +43,8 @@
             "defaultValue": "",
             "required": "true",
             "validate": ""
-        },{
+        },
+        {
             "opt": "domain_file",
             "name": "domain文件路径",
             "help": "domain文件路径",
@@ -49,7 +52,8 @@
             "defaultValue": "",
             "required": "true",
             "validate": ""
-        },{
+        },
+        {
             "opt": "dat_file",
             "name": "dat文件路径",
             "help": "adminserver机器domain产生的security dat",

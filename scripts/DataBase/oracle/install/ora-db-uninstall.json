@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "卸载OracleDB软件(root用户执行)",
     "option": [
         {

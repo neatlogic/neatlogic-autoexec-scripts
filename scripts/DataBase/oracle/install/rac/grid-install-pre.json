@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Oracle RAC 安装OS其他前置工作(root用户执行服务配置)",
     "option": [
         {

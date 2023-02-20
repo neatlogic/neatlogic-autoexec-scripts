@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "根据节点自动和服务名前缀生成weblogic服务名",
     "option": [
         {
@@ -11,18 +13,20 @@
             "name": "主节点",
             "help": "weblogic集群adminserver节点",
             "type": "node",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "true",
             "validate": ""
-        },{
+        },
+        {
             "opt": "slave_node",
             "name": "受管节点",
             "help": "weblogic集群managerserver节点",
             "type": "node",
-            "defaultValue": "",
+            "defaultValue": null,
             "required": "false",
             "validate": ""
-        },{
+        },
+        {
             "opt": "server_prefix",
             "name": "服务名前缀",
             "help": "服务名前缀,如：server",

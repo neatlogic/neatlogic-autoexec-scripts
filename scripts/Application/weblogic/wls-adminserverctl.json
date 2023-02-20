@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "weblogic启停adminserver",
     "option": [
         {
@@ -21,7 +23,8 @@
                         "text": "停止",
                         "value": "stop"
                     }
-                ]
+                ],
+                "dataType": "static"
             },
             "defaultValue": "start",
             "required": "true",

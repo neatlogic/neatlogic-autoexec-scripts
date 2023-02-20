@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Oracle DB软件强制手工卸载(在root用户下执行, 会su到oracle用户执行)",
     "option": [
         {

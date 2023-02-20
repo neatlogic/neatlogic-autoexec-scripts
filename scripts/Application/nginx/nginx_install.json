@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Unix安装Nginx",
     "option": [
         {
@@ -11,7 +13,6 @@
             "name": "安装模块",
             "help": "安装模块",
             "type": "multiselect",
-            "required": "false",
             "dataSource": {
                 "dataList": [
                     {
@@ -74,10 +75,17 @@
                         "text": "hash负载均衡算法模块",
                         "value": "--without-http_upstream_hash_module"
                     }
-                ]
+                ],
+                "dataType": "static"
             },
-            "validate": "",
-            "defaultValue": ["--with-http_stub_status_module","--with-http_ssl_module","--with-http_realip_module","--with-stream"]
+            "defaultValue": [
+                "--with-http_stub_status_module",
+                "--with-http_ssl_module",
+                "--with-http_realip_module",
+                "--with-stream"
+            ],
+            "required": "false",
+            "validate": ""
         },
         {
             "opt": "file_path",

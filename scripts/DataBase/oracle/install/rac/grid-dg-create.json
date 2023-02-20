@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "ASM磁盘组创建(redundancy=external, 会su到grid用户执行)",
     "option": [
         {

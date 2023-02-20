@@ -4,6 +4,8 @@
     "riskName": "MEDIUM",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "创建OracleRAC DB库(在root用户下执行, 会su到oracle用户执行)",
     "option": [
         {

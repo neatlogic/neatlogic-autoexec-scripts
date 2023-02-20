@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "根据某个pfile内容生成新的DB的pfile内容",
     "option": [
         {

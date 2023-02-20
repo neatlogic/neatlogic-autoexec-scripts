@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Oracle整库启停, 支持RAC和非RAC",
     "option": [
         {

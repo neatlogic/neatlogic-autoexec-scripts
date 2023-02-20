@@ -4,8 +4,11 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "OracleRAC DB软件安装(在root用户下执行, 会su到oracle用户执行)",
-    "option": [{
+    "option": [
+        {
             "opt": "EXEC_ENV",
             "name": "变量设置",
             "help": "执行前的变量设（使用${}引用作业参数）",
@@ -20,7 +23,8 @@
             "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "自动",
                         "value": "AUTO"
                     },

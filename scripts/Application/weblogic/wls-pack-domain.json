@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "weblogic在AdminServer上打包domain",
     "option": [
         {
@@ -32,7 +34,8 @@
             "defaultValue": "",
             "required": "true",
             "validate": ""
-        },{
+        },
+        {
             "opt": "storage_path",
             "name": "打包文件存放路径",
             "help": "打包生成文件包名名称",
@@ -40,7 +43,8 @@
             "defaultValue": "/tmp",
             "required": "true",
             "validate": ""
-        },{
+        },
+        {
             "opt": "file_name",
             "name": "生成文件名称",
             "help": "打包生成文件包名名称,默认生成的是jar包，不需要写文件后缀",

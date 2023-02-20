@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "weblogic创建domain",
     "option": [
         {
@@ -110,7 +112,7 @@
             "name": "console登录账户密码",
             "help": "console登录账户密码",
             "type": "password",
-            "defaultValue": "weblogic",
+            "defaultValue": "{RC4}9a46f0f58789ccd7",
             "required": "true",
             "validate": ""
         }
@@ -131,7 +133,8 @@
             "type": "text",
             "defaultValue": null,
             "required": "true"
-        },{
+        },
+        {
             "opt": "admin_http_url",
             "name": "admin http管理地址",
             "help": "adminserver的管理地址，如：http://192.168.0.90:7001",

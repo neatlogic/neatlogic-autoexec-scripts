@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "修改tnsnames.ora或listeners.ora",
     "option": [
         {

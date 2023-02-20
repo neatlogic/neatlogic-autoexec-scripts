@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "python",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "根据增加节点的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
     "option": [
         {

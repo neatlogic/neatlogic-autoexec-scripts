@@ -4,15 +4,20 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
-    "useLibName": ["DataBase/mysql/MysqlConfParser.pm"],
+    "isLib": 0,
+    "useLibName": [
+        "DataBase/mysql/MysqlConfParser.pm"
+    ],
     "description": "修改Mysql的配置文件",
-    "option": [{
+    "option": [
+        {
             "opt": "backup",
             "name": "备份文件",
             "help": "在修改前备份文件到xxx.%Y%m%d-%H%M%S",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "1"
                     },
@@ -46,12 +51,14 @@
             "validate": ""
         }
     ],
-    "output": [{
-        "opt": "mysqlConf",
-        "name": "mysqlConf配置内容",
-        "help": "更新后的Ini配置内容",
-        "type": "textarea",
-        "defaultValue": null,
-        "required": "false"
-    }]
+    "output": [
+        {
+            "opt": "mysqlConf",
+            "name": "mysqlConf配置内容",
+            "help": "更新后的Ini配置内容",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
 }

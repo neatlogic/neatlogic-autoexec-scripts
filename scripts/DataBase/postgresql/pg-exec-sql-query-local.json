@@ -4,17 +4,22 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "在Runner上连接到远程Postgresql库执行SQL并输出和检查数据",
-    "option": [{
+    "option": [
+        {
             "opt": "dbversion",
             "name": "PG版本",
             "help": "PG数据库的主版本号",
             "type": "select",
             "dataSource": {
-                "dataList": [{
-                    "text": "默认",
-                    "value": ""
-                }],
+                "dataList": [
+                    {
+                        "text": "默认",
+                        "value": ""
+                    }
+                ],
                 "dataType": "static"
             },
             "defaultValue": "",
@@ -27,7 +32,8 @@
             "help": "PG数据库SSL模式",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "disable",
                         "value": "disable"
                     },
@@ -57,7 +63,8 @@
             "help": "是否允许SQL查询返回空集合",
             "type": "select",
             "dataSource": {
-                "dataList": [{
+                "dataList": [
+                    {
                         "text": "是",
                         "value": "0"
                     },
@@ -118,12 +125,14 @@
             "validate": ""
         }
     ],
-    "output": [{
-        "opt": "queryResult",
-        "name": "查询结果数据",
-        "help": "结果json数组, 一个数组元素代表一行",
-        "type": "json",
-        "defaultValue": "",
-        "required": "false"
-    }]
+    "output": [
+        {
+            "opt": "queryResult",
+            "name": "查询结果数据",
+            "help": "结果json数组, 一个数组元素代表一行",
+            "type": "json",
+            "defaultValue": "",
+            "required": "false"
+        }
+    ]
 }

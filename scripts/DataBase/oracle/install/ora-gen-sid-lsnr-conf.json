@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "生成SID Listener配置文本(同时支持RAC和非RAC), 每个节点SID都不一样, 都要执行",
     "option": [
         {

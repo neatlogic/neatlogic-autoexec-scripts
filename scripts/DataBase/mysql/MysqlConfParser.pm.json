@@ -5,6 +5,7 @@
     "interpreter": "perl",
     "defaultProfile": null,
     "isLib": 1,
+    "useLibName": null,
     "description": "Mysql的配置文件分析库",
     "option": [],
     "output": []

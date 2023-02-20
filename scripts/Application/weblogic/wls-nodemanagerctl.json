@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "weblogic启停nodeManager",
     "option": [
         {
@@ -21,7 +23,8 @@
                         "text": "停止",
                         "value": "stop"
                     }
-                ]
+                ],
+                "dataType": "static"
             },
             "defaultValue": "start",
             "required": "true",
@@ -46,14 +49,14 @@
             "validate": ""
         },
         {
-			"opt": "t3_url",
-			"name": "t3管理地址",
-			"help": "t3管理地址，如：t3:192.168.0.90:7001",
-			"type": "text",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		},
+            "opt": "t3_url",
+            "name": "t3管理地址",
+            "help": "t3管理地址，如：t3:192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
         {
             "opt": "weblogic_home",
             "name": "weblogic安装路径",
@@ -73,23 +76,23 @@
             "validate": ""
         },
         {
-			"opt": "admin_username",
-			"name": "admin管理用户",
-			"help": "admin管理用户",
-			"type": "text",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		},
-		{
-			"opt": "admin_password",
-			"name": "admin管理密码",
-			"help": "admin管理密码",
-			"type": "password",
-			"defaultValue": "",
-			"required": "true",
-			"validate": ""
-		}
+            "opt": "admin_username",
+            "name": "admin管理用户",
+            "help": "admin管理用户",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_password",
+            "name": "admin管理密码",
+            "help": "admin管理密码",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
     ],
     "output": []
 }

@@ -4,6 +4,8 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "在runner执行工具的Demo",
     "option": [
         {

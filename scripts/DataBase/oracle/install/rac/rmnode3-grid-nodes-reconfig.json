@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "从Grid集群配置中移除删除节点(一次只能删除一个节点)",
     "option": [
         {

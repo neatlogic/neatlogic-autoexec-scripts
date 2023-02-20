@@ -4,6 +4,8 @@
     "riskName": "HIGH",
     "interpreter": "perl",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "在Runner上连接到远程Mysql库执行SQL并输出和检查数据",
     "option": [
         {

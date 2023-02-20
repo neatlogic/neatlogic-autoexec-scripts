@@ -4,6 +4,8 @@
     "riskName": "MEDIUM",
     "interpreter": "bash",
     "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
     "description": "Oracle Grid软件安装(在root用户下执行, 会su到grid用户执行)",
     "option": [
         {

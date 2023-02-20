@@ -110,7 +110,7 @@ do
             is_server=`ps -ef | grep websphere |grep $dir | grep $server |awk '{print $2}'`
             if [[ -n "$is_server" ]] ; then 
                 echo "INFO:: Stop $dir Profile Server $server start."
-                
+
                 if [[ -n "$admin_userName" && -n "$admin_password" ]] ; then 
                     sh $was_home/profiles/$dir/bin/stopServer.sh $server -username $admin_userName -password $admin_password
                 else 
