@@ -20,7 +20,9 @@ sub new {
         filePath    => $filePath,
         needBackup  => $needBackup,
         confItems   => [],
-        confItemMap => {}
+        confItemMap => {},
+        headComment => '',
+        tailComment => ''
     };
 
     bless( $self, $pkg );
@@ -102,7 +104,7 @@ sub __parseConf {
 
         my @fields = split( /\s+/, $line, 3 );
         my ( $mapName, $sysUserName, $pgUserName );
-        if ( scalar(@fields) == 4 ) {
+        if ( scalar(@fields) == 3 ) {
             $mapName     = $fields[0];
             $sysUserName = $fields[1];
             $pgUserName  = $fields[2];
@@ -110,14 +112,32 @@ sub __parseConf {
             my $item = {
                 'MAPNAME'         => $mapName,
                 'SYSTEM-USERNAME' => $sysUserName,
-                'PG-USERNAME'     => $pgUserName
+                'PG-USERNAME'     => $pgUserName,
+                'COMMENT'         => $comment
             };
             my $key = $mapName;
             push( @confItems, $item );
             $confItemMap->{$key} = $item;
+            $comment = '';
         }
     }
 
+    if ( $comment ne '' ) {
+        if ( scalar(@confItems) > 0 ) {
+            foreach my $line ( split( /\n/, $comment ) ) {
+                if ( index( $self->{tailComment}, $line ) < 0 ) {
+                    $self->{tailComment} = $self->{tailComment} . $line . "\n";
+                }
+            }
+        }
+        else {
+            foreach my $line ( split( /\n/, $comment ) ) {
+                if ( index( $self->{headComment}, $line ) < 0 ) {
+                    $self->{headComment} = $self->{headComment} . $line . "\n";
+                }
+            }
+        }
+    }
     return ( \@confItems, $confItemMap );
 }
 
@@ -160,8 +180,15 @@ sub modifyConf {
 
     my $newContent = '';
     foreach my $item (@$confItems) {
-        $newContent = $newContent . $item->{COMMENT} . "\n";
-        $newContent = $newContent . $item->{MAPNAME} . "\t" . $item->{'SYSTEM-USERNAME'} . "\t" . $item->{'PG-USERNAME'} . "\n";
+        $newContent = $newContent . $item->{COMMENT};
+        my $mapName     = $item->{MAPNAME};
+        my $sysUserName = $item->{'SYSTEM-USERNAME'};
+        my $pgUserName  = $item->{'PG-USERNAME'};
+
+        $mapName     = $mapName . ' ' x ( 15 - length($mapName) );
+        $sysUserName = $sysUserName . ' ' x ( 23 - length($sysUserName) );
+
+        $newContent = $newContent . "$mapName $sysUserName $pgUserName\n";
     }
 
     if ( $modified == 1 ) {
@@ -172,7 +199,9 @@ sub modifyConf {
 
         my $confFile = IO::File->new(">$filePath");
         if ( defined($confFile) ) {
+            print $confFile ( $self->{headComment} );
             print $confFile ($newContent);
+            print $confFile ( $self->{tailComment} );
             $confFile->close();
         }
         else {
@@ -184,7 +213,7 @@ sub modifyConf {
         print("INFO: Config not changed.\n");
     }
 
-    return $newcontent;
+    return $newContent;
 }
 
 sub usage {
@@ -216,11 +245,17 @@ sub main {
         usage();
     }
 
-    my $confParser  = IdentConfParser->new( $filePath, $needBackup );
-    my $confContent = $confParser->modifyConf($content);
+    my $confParser = IdentConfParser->new( $filePath, $needBackup );
+    my $hasError   = $confParser->{hasError};
+    if ( $hasError == 0 ) {
+        my $confContent = $confParser->modifyConf($content);
 
-    my $out = { identConf => $confContent };
-    AutoExecUtils::saveOutput($out);
+        my $out = { identConf => $confContent };
+        AutoExecUtils::saveOutput($out);
+        $hasError = $confParser->{hasError};
+    }
+
+    return $hasError;
 }
 
 exit main();

@@ -20,7 +20,9 @@ sub new {
         filePath    => $filePath,
         needBackup  => $needBackup,
         confItems   => [],
-        confItemMap => {}
+        confItemMap => {},
+        headComment => '',
+        tailComment => ''
     };
 
     bless( $self, $pkg );
@@ -34,9 +36,7 @@ sub new {
             $self->{hasError} = 1;
             print("ERROR: $filePath is not a file.\n");
         }
-    }
 
-    if ( defined($filePath) ) {
         my ( $confItems, $confItemMap ) = $self->__read_config( $filePath, 'file' );
         $self->{confItems}   = $confItems;
         $self->{confItemMap} = $confItemMap;
@@ -100,32 +100,60 @@ sub __parseConf {
             next;
         }
 
-        my @fields = split( /\s+/, $line, 4 );
-        my ( $type, $database, $address, $method );
-        if ( scalar(@fields) == 4 ) {
+        my @fields = split( /\s+/, $line, 5 );
+        my ( $type, $database, $user, $address, $method );
+        if ( scalar(@fields) == 5 ) {
             $type     = $fields[0];
             $database = $fields[1];
-            $address  = $fields[2];
-            $method   = $fields[3];
+            $user     = $fields[2];
+
+            $address = $fields[3];
+            if ( $address !~ /\/\d+$/ ) {
+                $address = '';
+                $method  = $fields[3];
+            }
+            else {
+                $method = $fields[4];
+            }
         }
-        elsif ( scalar(@fields) == 3 ) {
+        elsif ( scalar(@fields) == 4 ) {
             $type     = $fields[0];
             $database = $fields[1];
+            $user     = $fields[2];
             $address  = '';
-            $method   = $fields[2];
+            $method   = $fields[3];
         }
 
         if ( defined($type) and defined($database) ) {
             my $item = {
                 'TYPE'     => $type,
                 'DATABASE' => $database,
+                'USER'     => $user,
                 'ADDRESS'  => $address,
                 'METHOD'   => $method,
                 'COMMENT'  => $comment
             };
-            my $key = "$type.$database.$address";
+            my $key = "$type.$database.$user.$address";
             push( @confItems, $item );
             $confItemMap->{$key} = $item;
+            $comment = '';
+        }
+    }
+
+    if ( $comment ne '' ) {
+        if ( scalar(@confItems) > 0 ) {
+            foreach my $line ( split( /\n/, $comment ) ) {
+                if ( index( $self->{tailComment}, $line ) < 0 ) {
+                    $self->{tailComment} = $self->{tailComment} . $line . "\n";
+                }
+            }
+        }
+        else {
+            foreach my $line ( split( /\n/, $comment ) ) {
+                if ( index( $self->{headComment}, $line ) < 0 ) {
+                    $self->{headComment} = $self->{headComment} . $line . "\n";
+                }
+            }
         }
     }
 
@@ -142,13 +170,13 @@ sub modifyConf {
     my $modified = 0;
     if ( defined($newItems) ) {
         foreach my $item (@$newItems) {
-            my $key     = $item->{TYPE} . '.' . $item->{DATABASE} . '.' . $item->{ADDRESS};
+            my $key     = $item->{TYPE} . '.' . $item->{DATABASE} . '.' . $item->{USER} . '.' . $item->{ADDRESS};
             my $oldItem = $confItemMap->{$key};
             if ( defined($oldItem) ) {
                 if ( $oldItem->{METHOD} ne $item->{METHOD} ) {
                     $modified = 1;
                     $oldItem->{METHOD} = $item->{METHOD};
-                    print( "INFO: Change " . $item->{TYPE} . "\t" . $item->{DATABASE} . "\t" . $item->{ADDRESS} . "\t" . $item->{METHOD} . "\n" );
+                    print( "INFO: Change " . $item->{TYPE} . "\t" . $item->{DATABASE} . "\t" . $item->{USER} . "\t" . $item->{ADDRESS} . "\t" . $item->{METHOD} . "\n" );
                 }
                 my $oldComment = $oldItem->{COMMENT};
                 my $newComment = $item->{COMMENT};
@@ -163,15 +191,26 @@ sub modifyConf {
                 $modified = 1;
                 push( @$confItems, $item );
                 $confItemMap->{$key} = $item;
-                print( "INFO: Append " . $item->{TYPE} . "\t" . $item->{DATABASE} . "\t" . $item->{ADDRESS} . "\t" . $item->{METHOD} . "\n" );
+                print( "INFO: Append " . $item->{TYPE} . "\t" . $item->{DATABASE} . "\t" . $item->{USER} . "\t" . $item->{ADDRESS} . "\t" . $item->{METHOD} . "\n" );
             }
         }
     }
 
     my $newContent = '';
     foreach my $item (@$confItems) {
-        $newContent = $newContent . $item->{COMMENT} . "\n";
-        $newContent = $newContent . $item->{TYPE} . "\t" . $item->{DATABASE} . "\t" . $item->{ADDRESS} . "\t" . $item->{METHOD} . "\n";
+        $newContent = $newContent . $item->{COMMENT};
+        my $type     = $item->{TYPE};
+        my $database = $item->{DATABASE};
+        my $user     = $item->{USER};
+        my $address  = $item->{ADDRESS};
+        my $method   = $item->{METHOD};
+
+        $type     = $type . ' ' x ( 8 - length($type) );
+        $database = $database . ' ' x ( 16 - length($database) );
+        $user     = $user . ' ' x ( 16 - length($user) );
+        $address  = $address . ' ' x ( 24 - length($address) );
+
+        $newContent = $newContent . "$type $database $user $address $method\n";
     }
 
     if ( $modified == 1 ) {
@@ -182,7 +221,9 @@ sub modifyConf {
 
         my $confFile = IO::File->new(">$filePath");
         if ( defined($confFile) ) {
+            print $confFile ( $self->{headComment} );
             print $confFile ($newContent);
+            print $confFile ( $self->{tailComment} );
             $confFile->close();
         }
         else {
@@ -226,13 +267,17 @@ sub main {
         usage();
     }
 
-    my $confParser  = HBAConfParser->new( $filePath, $needBackup );
-    my $confContent = $confParser->modifyConf($content);
+    my $confParser = HBAConfParser->new( $filePath, $needBackup );
+    my $hasError   = $confParser->{hasError};
+    if ( $hasError == 0 ) {
+        my $confContent = $confParser->modifyConf($content);
 
-    my $out = { hbaConf => $confContent };
-    AutoExecUtils::saveOutput($out);
+        my $out = { hbaConf => $confContent };
+        AutoExecUtils::saveOutput($out);
+        $hasError = $confParser->{hasError};
+    }
 
-    return $confParser->{hasError};
+    return $hasError;
 }
 
 exit main();
