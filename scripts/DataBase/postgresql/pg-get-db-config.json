@@ -4,7 +4,7 @@
     "riskName": "LOW",
     "interpreter": "perl",
     "defaultProfile": null,
-    "useLibName": ["DataBase/mysql/PostgresqlConfParser.pm"],
+    "useLibName": [],
     "description": "在某个Postgresql节点执行, 获取Postgresql配置信息",
     "option": [{
             "opt": "OS_USER",
