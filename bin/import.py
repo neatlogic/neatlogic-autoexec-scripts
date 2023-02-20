@@ -126,6 +126,8 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
             jsonInfo['riskName'] = data.get('riskName')
             jsonInfo['typeName'] = data.get('typeName')
             jsonInfo['defaultProfileName'] = data.get('defaultProfile')
+            jsonInfo['isLib'] = data.get('isLib', 0)
+            jsonInfo['useLibName'] = data.get('useLibName', [])
             jsonInfo['description'] = data.get('description')
 
         lineList = []
