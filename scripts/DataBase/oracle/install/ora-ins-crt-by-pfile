@@ -383,6 +383,7 @@ sub startNoMountByPfile {
             sql     => "shutdown abort;",
             verbose => 1
         );
+        sleep(10);
     }
 
     print("Try to startup db to nomount again...\n");
