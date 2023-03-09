@@ -68,8 +68,6 @@ sub main {
         $DB_NAME = 'postgres';
     }
 
-    my $hasError = 0;
-
     $sqlTxt =~ s/^\s*|\s*$//sg;
     $sqlTxt =~ s/\\n/\n/sg;
     $sqlTxt = $sqlTxt . "\n";
@@ -82,14 +80,13 @@ sub main {
     );
 
     if ( $exitCode != 0 ) {
-        $hasError = 1;
         print("ERROR: Errors occur while executing sql.\n");
     }
-
-    if ( $hasError == 0 ) {
+    else {
         print("FINE: Execute sql scripts success.\n");
     }
-    return $hasError;
+
+    return $exitCode;
 }
 
 exit( main() );

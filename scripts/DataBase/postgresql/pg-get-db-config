@@ -22,6 +22,23 @@ sub usage {
     exit(1);
 }
 
+sub getProcEnv {
+    my ($pid)       = @_;
+    my $envMap      = {};
+    my $envFilePath = "/proc/$pid/environ";
+    if ( -f $envFilePath ) {
+        my $content = AutoExecUtils::getFileContent($envFilePath);
+        my $line;
+        foreach $line ( split( /\x0/, $content ) ) {
+            if ( $line =~ /^(.*?)=(.*)$/ ) {
+                $envMap->{$1} = $2;
+            }
+        }
+    }
+
+    return $envMap;
+}
+
 sub getExecutablePath {
     my ($pid)  = @_;
     my @uname  = uname();
@@ -145,6 +162,23 @@ sub getPGConf {
 
     $pgConf->{isRunning} = $isRunning;
 
+    if ( not defined( $pgConf->{DATADIR} ) ) {
+        my $procEnv = getProcEnv($pid);
+        $pgConf->{DATADIR} = $procEnv->{PGDATA};
+    }
+
+    if ( not defined( $pgConf->{SOCKET_LOCATION} ) ) {
+        if ( -e "/var/run/postgresql/.s.PGSQL.$port" ) {
+            $pgConf->{SOCKET_LOCATION} = "/var/run/postgresql";
+        }
+        elsif ( -e "/tmp/.s.PGSQL.$port" ) {
+            $pgConf->{SOCKET_LOCATION} = "/tmp";
+        }
+    }
+    if ( defined( $pgConf->{SOCKET_LOCATION} ) ) {
+        $pgConf->{SOCKET_FILE} = $pgConf->{SOCKET_LOCATION} . "/.s.PGSQL.$port";
+    }
+
     return $pgConf;
 }
 
@@ -254,6 +288,8 @@ sub main {
         $postgresConf->{$k} = $v;
     }
 
+    $postgresConf->{NODE_HOST}   = $ENV{NODE_HOST};
+    $postgresConf->{LISTEN_PORT} = $port;
     AutoExecUtils::saveOutput($postgresConf);
     return $hasError;
 }
