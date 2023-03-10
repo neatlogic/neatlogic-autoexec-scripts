@@ -1,0 +1,67 @@
+{
+    "opType": "target",
+    "typeName": "BASIC",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "生成pg_hba.conf的授权配置",
+    "option": [{
+            "opt": "user",
+            "name": "用户名",
+            "help": "验证用户",
+            "type": "text",
+            "defaultValue": "replica",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "database",
+            "name": "授权库",
+            "help": "授权访问哪些库",
+            "type": "textarea",
+            "defaultValue": "all",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "method",
+            "name": "验证方法",
+            "help": "连接到库的验证方法",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "信任",
+                        "value": "trust"
+                    },
+                    {
+                        "text": "密码",
+                        "value": "md5"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "trust",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "nodesipinfo",
+            "name": "IP列表",
+            "help": "授权访问的IP列表",
+            "type": "json",
+            "defaultValue": "all",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [{
+        "opt": "hbaContent",
+        "name": "hbaConf配置内容",
+        "help": "更新后的配置内容",
+        "type": "textarea",
+        "defaultValue": null,
+        "required": "false"
+    }]
+}

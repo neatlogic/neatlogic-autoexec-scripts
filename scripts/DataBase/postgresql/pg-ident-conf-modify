@@ -245,6 +245,7 @@ sub main {
         usage();
     }
 
+    $content =~ s/\\n/\n/g;
     my $confParser = IdentConfParser->new( $filePath, $needBackup );
     my $hasError   = $confParser->{hasError};
     if ( $hasError == 0 ) {

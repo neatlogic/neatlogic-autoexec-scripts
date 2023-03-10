@@ -180,7 +180,7 @@
                 "--backup",
                 "1",
                 "--content",
-                "#内网\nhost    all             all             192.168.0.0/24            trust\n#外网\nhost    all             all             192.168.1.0/24            trust"
+                "# 允许所有ip访问\nhost    all             all             0.0.0.0/0               trust\n# replication privilege.\nlocal   replication     all                                     peer\nhost    replication     replica         192.168.0.0/24          md5"
             ],
             "reloadModules": true,
             "stopOnEntry": false,
