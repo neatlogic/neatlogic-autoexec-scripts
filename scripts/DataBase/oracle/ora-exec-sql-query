@@ -85,7 +85,7 @@ sub main {
     my ( $exitCode, $rows );
     my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, sid => $ORACLE_SID );
 
-       my $hasError = 1;
+    my $hasError = 1;
     my $tryCount = 0;
     while ( $tryCount <= $retryCount ) {
         ( $exitCode, $rows ) = $sqlplus->query(
@@ -134,7 +134,7 @@ sub main {
                         }
                     }
                 }
-                else{
+                else {
                     $hasError = 0;
                 }
             }
