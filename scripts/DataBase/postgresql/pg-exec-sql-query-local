@@ -138,8 +138,8 @@ sub main {
         if ( $hasError == 0 ) {
             print("INFO: Execute sql scripts success.\n");
 
-            if ( not defined($rows) ) {
-                if ( $emptyIsGood != 1 or scalar(@$rows) == 0) {
+            if ( not defined($rows) or scalar(@$rows) == 0) {
+                if ( $emptyIsGood != 1 ) {
                     $hasError = 2;
                     if ( $tryCount >= $retryCount ) {
                         print("ERROR: Query result is empty.\n");
