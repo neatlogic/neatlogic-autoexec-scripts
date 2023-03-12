@@ -212,6 +212,73 @@
             "reloadModules": true,
             "stopOnEntry": false,
             "console": "integratedTerminal"
+        },
+        {
+            "name": "pg-gen-hba-conf",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/DataBase/postgresql/pg-gen-hba-conf",
+            "env": {
+                "RUNNER_ID": "1",
+                "TENANT": "develop",
+                "AUTOEXEC_JOBID": "0",
+                "AUTOEXEC_PHASE_NAME": "run-sql",
+                "AUTOEXEC_WORK_PATH": "${workspaceFolder}/data/job/0",
+                "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                "_DEPLOY_PATH": "mysys/mymodule/SIT",
+                "_DEPLOY_ID_PATH": "0/0/0",
+                "_DEPLOY_RUNNERGROUP": "{\"1\":\"192.168.0.26\"}",
+                "VERSION": "2.0.0",
+                "BUILD_NO": "1",
+                "IS_RELEASE": "1",
+                "AUTOEXEC_NODE": "{\"nodeName\":\"bsm\",\"protocol\":\"tagent\",\"password\":\"ts9012501\",\"resourceId\":493223793188870,\"port\":3306,\"host\":\"192.168.0.26\",\"nodeType\":\"MySQL\",\"nodeId\":608528129384494,\"protocolPort\":3939,\"username\":\"root\"}",
+                "PYTHONPATH": "${workspaceFolder}/plugins/local/lib:${workspaceFolder}/lib",
+                "OUTPUT_PATH": "/tmp/output.json"
+            },
+            "args": ["--user",
+                "replica",
+                "--database",
+                "replication",
+                "--method",
+                "md5",
+                "--nodes",
+                "[{\"host\":\"192.168.0.190\"},{\"host\":\"192.168.0.191\"}]"
+            ],
+
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "pg-basebackup",
+            "type": "perl",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/DataBase/postgresql/pg-basebackup",
+            "inc": [
+                "${workspaceFolder}/lib"
+            ],
+            "env": {
+                "PERL5LIB": "${workspaceFolder}/lib",
+                "OUTPUT_PATH": "/tmp/output.json",
+                "RUNNER_ID": "1",
+                "AUTOEXEC_TENANT": "develop",
+                "AUTOEXEC_JOBID": "736961878614016"
+            },
+            "args": [
+                "--host",
+                "192.168.0.190",
+                "--port",
+                "5432",
+                "--user",
+                "replica",
+                "--password",
+                "mypassword",
+                "--datadir",
+                "/tmp/demodb",
+                "--cleandir",
+                "1"
+            ],
+            "reloadModules": true,
+            "stopOnEntry": false,
+            "console": "integratedTerminal"
         }
     ]
 }

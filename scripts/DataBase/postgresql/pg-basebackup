@@ -3,11 +3,18 @@ use FindBin;
 use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 use lib "$FindBin::Bin/lib";
 
+use strict;
+use IO::File;
+use Getopt::Long;
+
+use AutoExecUtils;
+
 sub main {
     $| = 1;    #不对输出进行buffer，便于实时看到输出日志
     my $host;
     my $port = 5432;
     my $user;
+    my $password;
     my $dataDir;
     my $cleanDir = 0;
 
@@ -47,7 +54,7 @@ sub main {
 
     my $hasError = 0;
 
-    if ( $cleanDir == 1 and -d $datqDir ) {
+    if ( $cleanDir == 1 and -d $dataDir ) {
         $hasError = system(qq{rm -rf "$dataDir/.*"});
         if ( $hasError != 0 ) {
             print("ERROR: Remove $dataDir content failed.\n");
@@ -56,12 +63,13 @@ sub main {
 
     if ( $hasError == 0 ) {
         if ( defined($password) and $password ne '' ) {
-            my @userInfo = getpwnam($user);
+            my $osUser = getpwuid($<);
+            my @userInfo = getpwnam($osUser);
             my $homePath = $userInfo[7];
             my $passFile = "$homePath/.pgpass";
 
             if ( not -e $passFile ) {
-                my $fh = IO::File(">$passFile");
+                my $fh = IO::File->new(">$passFile");
                 if ( defined($fh) ) {
                     $fh->close();
                 }
@@ -78,7 +86,7 @@ sub main {
                 #hostname:port:database:username:password
                 my $modified   = 0;
                 my $newContent = '';
-                my $newConf    = "$host:$port::$user";
+                my $newConf    = "$host:$port:$user";
                 foreach my $line ( split( /\n/, $content ) ) {
                     $line =~ s/^\s*|\s*$//g;
                     if ( $line =~ /^$newConf/ ) {
@@ -107,7 +115,9 @@ sub main {
     }
 
     if ( $hasError == 0 ) {
-        $hasError = system(qq{#pg_basebackup -D "$dataDir" -h $host -p $port -U $user -X stream -P});
+        my $cmd = qq{pg_basebackup -D "$dataDir" -h $host -p $port -U $user -X stream -P};
+        print("INFO: Execute->$cmd\n");
+        $hasError = system($cmd);
     }
 
     return $hasError;
@@ -115,4 +125,3 @@ sub main {
 
 exit main();
 
-1;
