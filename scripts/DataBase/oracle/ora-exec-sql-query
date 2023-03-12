@@ -24,7 +24,7 @@ sub main {
             ORACLE_USER=s
             ORACLE_SID=s
             SQL=s
-            emptyisgood=s
+            emptyisgood=i
             filter=s
             chkdsl=s
             message=s
@@ -106,7 +106,7 @@ sub main {
             print("INFO: Execute sql scripts success.\n");
 
             if ( not defined($rows) ) {
-                if ( $emptyIsGood != 1 ) {
+                if ( $emptyIsGood != 1 or scalar(@$rows) == 0 ) {
                     $hasError = 2;
                     if ( $tryCount >= $retryCount ) {
                         print("ERROR: Query result is empty.\n");

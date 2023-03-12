@@ -28,7 +28,7 @@ sub main {
             PASSWORD=s
             DB_NAME=s
             SQL=s
-            emptyisgood=s
+            emptyisgood=i
             filter=s
             chkdsl=s
             message=s
@@ -120,7 +120,7 @@ sub main {
         if ( $hasError == 0 ) {
             print("INFO: Execute sql scripts success.\n");
 
-            if ( not defined($rows) ) {
+            if ( not defined($rows) or scalar(@$rows) == 0 ) {
                 if ( $emptyIsGood != 1 ) {
                     $hasError = 2;
                     if ( $tryCount >= $retryCount ) {

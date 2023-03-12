@@ -39,9 +39,17 @@ if __name__ == "__main__":
     hbaContent = ''
     for node in nodes:
         for database in databases:
-            confLine = 'host  %s  %s  %s/24  %s' % (userName, database, node.get('host'), method)
-            print(confLine)
-            hbaContent = hbaContent + confLine + "\n"
+            hostAddr = node.get('ip')
+            if(hostAddr is None):
+                hostAddr = node.get('host')
+            
+            if hostAddr is None:
+                hasError = 1
+                print("ERROR: malform node info json format:%s" % (json.dumps(node)))
+            else:
+                confLine = 'host  %s  %s  %s/24  %s' % (userName, database, node.get('host'), method)
+                print(confLine)
+                hbaContent = hbaContent + confLine + "\n"
 
     out = {}
     out['hbaContent'] = hbaContent
