@@ -139,6 +139,7 @@ sub PGConfParser {
         if ( $line =~ /^([\w]+)\s*=\s*(.*?)\s*$/ ) {
             my $name = $1;
             my $val  = $2;
+            $val =~ s/\s*#.*$//;
             $val =~ s/^['"]|['"]$//g;
             $pgServerConf->{$name} = $val;
         }
@@ -333,7 +334,7 @@ sub main {
 
     $postgresConf->{NODE_HOST}   = $ENV{NODE_HOST};
     $postgresConf->{LISTEN_PORT} = $port;
-    
+
     AutoExecUtils::saveOutput($postgresConf);
     return $hasError;
 }
