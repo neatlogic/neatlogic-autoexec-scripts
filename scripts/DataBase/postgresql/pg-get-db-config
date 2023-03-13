@@ -27,7 +27,7 @@ sub getProcEnv {
     my $envMap      = {};
     my $envFilePath = "/proc/$pid/environ";
     if ( -f $envFilePath ) {
-        my $content = AutoExecUtils::getFileContent($envFilePath);
+        my $content = `cat $envFilePath`;
         my $line;
         foreach $line ( split( /\x0/, $content ) ) {
             if ( $line =~ /^(.*?)=(.*)$/ ) {
