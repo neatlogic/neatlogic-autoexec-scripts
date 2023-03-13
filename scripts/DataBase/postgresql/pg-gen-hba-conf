@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument('--user', default='replica', help='Replica user name')
     parser.add_argument('--method', default='trust', help='Authenticate method')
     parser.add_argument('--database', default='all', help='Grant databases')
-    parser.add_argument('--nodesipinfo', default='{}', help='All nodes ip information')
+    parser.add_argument('--nodes', default='{}', help='All nodes ip information')
 
     hasError = 0
 
@@ -33,14 +33,23 @@ if __name__ == "__main__":
     databasesTxt = args.database
     databases = databasesTxt.split("\\n")
     # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
-    nodesIpInfo = json.loads(args.nodesipinfo)
-    nodes = list(nodesIpInfo.keys())
-    nodes.sort()
+    nodesList = json.loads(args.nodes)
+    nodes = list(nodesList)
 
     hbaContent = ''
-    for ip in nodes:
+    for node in nodes:
         for database in databases:
-            hbaContent = hbaContent + 'hsot  %s  %s  %s/24  %s\n' % (userName, database, ip, method)
+            hostAddr = node.get('ip')
+            if(hostAddr is None):
+                hostAddr = node.get('host')
+            
+            if hostAddr is None:
+                hasError = 1
+                print("ERROR: malform node info json format:%s" % (json.dumps(node)))
+            else:
+                confLine = 'host  %s  %s  %s/24  %s' % (userName, database, node.get('host'), method)
+                print(confLine)
+                hbaContent = hbaContent + confLine + "\n"
 
     out = {}
     out['hbaContent'] = hbaContent

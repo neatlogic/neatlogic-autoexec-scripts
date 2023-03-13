@@ -47,9 +47,9 @@
             "validate": ""
         },
         {
-            "opt": "nodesipinfo",
-            "name": "IP列表",
-            "help": "授权访问的IP列表",
+            "opt": "nodes",
+            "name": "节点列表",
+            "help": "节点列表JSON",
             "type": "json",
             "defaultValue": "all",
             "required": "true",

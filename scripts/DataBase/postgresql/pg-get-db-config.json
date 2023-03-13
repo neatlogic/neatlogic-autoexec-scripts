@@ -43,6 +43,14 @@
             "required": "false"
         },
         {
+            "opt": "WALDIR",
+            "name": "归档目录",
+            "help": "Postgresql的归档目录",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "pgHbaConfPath",
             "name": "HBA配置文件路径",
             "help": "配置文件pg_hba.conf全路径",

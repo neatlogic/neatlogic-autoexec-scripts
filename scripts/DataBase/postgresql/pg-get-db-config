@@ -130,6 +130,23 @@ sub parseCommandOpts {
     return $opts;
 }
 
+sub PGConfParser {
+    my ($content) = @_;
+
+    my $pgServerConf = {};
+    for my $line ( split( /\n/, $content ) ) {
+        $line =~ s/^\s*|\s*$//g;
+        if ( $line =~ /^([\w]+)\s*=\s*(.*?)\s*$/ ) {
+            my $name = $1;
+            my $val  = $2;
+            $val =~ s/^['"]|['"]$//g;
+            $pgServerConf->{$name} = $val;
+        }
+    }
+
+    return $pgServerConf;
+}
+
 sub getPGConf {
     my ( $port, $osUser ) = @_;
 
@@ -162,9 +179,11 @@ sub getPGConf {
 
     $pgConf->{isRunning} = $isRunning;
 
-    if ( not defined( $pgConf->{DATADIR} ) ) {
+    my $dataDir = $pgConf->{DATADIR};
+
+    if ( not defined($dataDir) ) {
         my $procEnv = getProcEnv($pid);
-        $pgConf->{DATADIR} = $procEnv->{PGDATA};
+        $dataDir = $procEnv->{PGDATA};
     }
 
     if ( not defined( $pgConf->{SOCKET_LOCATION} ) ) {
@@ -177,6 +196,28 @@ sub getPGConf {
     }
     if ( defined( $pgConf->{SOCKET_LOCATION} ) ) {
         $pgConf->{SOCKET_FILE} = $pgConf->{SOCKET_LOCATION} . "/.s.PGSQL.$port";
+    }
+
+    if ( defined($dataDir) and $dataDir ne '' ) {
+        $pgConf->{DATADIR} = $dataDir;
+        my $walDir = "$dataDir/pg_wal";
+        if ( -l $walDir ) {
+            $walDir = readlink($walDir);
+            my $curDir = Cwd::getcwd();
+            chdir($dataDir);
+            $walDir = Cwd::abs_path($walDir);
+            chdir($curDir);
+        }
+        $pgConf->{WALDIR} = $walDir;
+
+        if ( defined($dataDir) ) {
+            my $pgConfContent = AutoExecUtils::getFileContent("$dataDir/postgresql.conf");
+            my $pgServerConf  = PGConfParser($pgConfContent);
+
+            while ( my ( $key, $val ) = each(%$pgServerConf) ) {
+                $pgConf->{$key} = $val;
+            }
+        }
     }
 
     return $pgConf;
@@ -278,18 +319,21 @@ sub main {
     my $hasError     = 0;
     my $postgresConf = getPGConf( $port, $osUser );
     my $dataDir      = $postgresConf->{DATADIR};
-    $postgresConf->{pgHbaConfPath}      = "$dataDir/pg_hba.conf";
-    $postgresConf->{pgIdentityConfPath} = "$dataDir/pg_ident.conf";
-    my $dataDirInfo = getDataDirConf($dataDir);
-    while ( my ( $k, $v ) = each(%$dataDirInfo) ) {
+    if ( defined($dataDir) and $dataDir ne '' ) {
+        $postgresConf->{pgHbaConfPath}      = "$dataDir/pg_hba.conf";
+        $postgresConf->{pgIdentityConfPath} = "$dataDir/pg_ident.conf";
+        my $dataDirInfo = getDataDirConf($dataDir);
+        while ( my ( $k, $v ) = each(%$dataDirInfo) ) {
 
-        #为了变量名命名规范，把减号统一换成下划线
-        $k =~ s/-/_/g;
-        $postgresConf->{$k} = $v;
+            #为了变量名命名规范，把减号统一换成下划线
+            $k =~ s/-/_/g;
+            $postgresConf->{$k} = $v;
+        }
     }
 
     $postgresConf->{NODE_HOST}   = $ENV{NODE_HOST};
     $postgresConf->{LISTEN_PORT} = $port;
+    
     AutoExecUtils::saveOutput($postgresConf);
     return $hasError;
 }

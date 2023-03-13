@@ -27,7 +27,7 @@ sub main {
             PORT=s
             DB_NAME=s
             SQL=s
-            emptyisgood=s
+            emptyisgood=i
             filter=s
             chkdsl=s
             message=s
@@ -95,6 +95,7 @@ sub main {
     my ( $exitCode, $rows );
     my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $SOCK_DIR, port => $PORT, dbname => $DB_NAME );
 
+    my $hasError = 1;
     my $tryCount = 0;
     while ( $tryCount <= $retryCount ) {
         ( $exitCode, $rows ) = $psql->query(
@@ -104,47 +105,47 @@ sub main {
         $tryCount = $tryCount + 1;
 
         if ( $exitCode != 0 ) {
-            $hasError = 1;
-            if ( $tryCount >= $retryCount ) {
-                print("ERROR: Errors occur while executing sql.\n");
-                last;
-            }
+            print("ERROR: Errors occur while executing sql.\n");
         }
-
-        if ( $hasError == 0 ) {
+        else {
             print("INFO: Execute sql scripts success.\n");
 
-            if ( not defined($rows) ) {
-                if ( $emptyIsGood != 1 ) {
-                    $hasError = 2;
-                    if ( $tryCount >= $retryCount ) {
-                        print("ERROR: Query result is empty.\n");
-                    }
-                }
-            }
-            elsif ( defined($chkDsl) ) {
-                if ( defined($filter) ) {
-                    print("INFO: Dsl check filter:$filter.\n");
-                }
-
-                print("INFO: Dsl:$chkDsl.\n");
-
-                my $errorCode = AutoExecUtils::JsonToTableCheck( $rows, undef, $filter, $chkDsl );
-
-                if ( $errorCode == 0 ) {
-                    if ( defined($message) ) {
-                        print("FINE: Check passed:$message\n");
-                    }
-                    print("FINE: Query result full fill the dsl.\n");
+            if ( not defined($rows) or scalar(@$rows) == 0 ) {
+                if ( $emptyIsGood == 1 ) {
+                    $hasError = 0;
                 }
                 else {
-                    $hasError = 3;
-                    if ( $tryCount >= $retryCount ) {
-                        if ( defined($message) ) {
-                            print("ERROR: Check failed:$message\n");
-                        }
-                        print("ERROR: Query result not full fill the dsl.\n");
+                    print("ERROR: Query result is empty.\n");
+                }
+            }
+            else {
+                if ( defined($chkDsl) ) {
+                    if ( defined($filter) ) {
+                        print("INFO: Dsl check filter:$filter.\n");
                     }
+
+                    print("INFO: Dsl:$chkDsl.\n");
+
+                    my $errorCode = AutoExecUtils::JsonToTableCheck( $rows, undef, $filter, $chkDsl );
+
+                    if ( $errorCode == 0 ) {
+                        $hasError = 0;
+                        if ( defined($message) ) {
+                            print("FINE: Check passed:$message\n");
+                        }
+                        print("FINE: Query result full fill the dsl.\n");
+                    }
+                    else {
+                        if ( $tryCount >= $retryCount ) {
+                            if ( defined($message) ) {
+                                print("ERROR: Check failed:$message\n");
+                            }
+                            print("ERROR: Query result not full fill the dsl.\n");
+                        }
+                    }
+                }
+                else{
+                    $hasError = 0;
                 }
             }
         }
@@ -152,11 +153,10 @@ sub main {
         if ( $hasError == 0 ) {
             last;
         }
-        else {
+        elsif ( $tryCount < $retryCount ) {
             print("WARN: Check failed, wait $retryInterval seconds and retry again...\n");
             sleep($retryInterval);
             print("INFO: Do another try...\n");
-            $hasError = 0;
         }
     }
 
