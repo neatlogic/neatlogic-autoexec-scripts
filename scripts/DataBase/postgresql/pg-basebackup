@@ -63,7 +63,7 @@ sub main {
 
     if ( $hasError == 0 ) {
         if ( defined($password) and $password ne '' ) {
-            my $osUser = getpwuid($<);
+            my $osUser   = getpwuid($<);
             my @userInfo = getpwnam($osUser);
             my $homePath = $userInfo[7];
             my $passFile = "$homePath/.pgpass";
@@ -120,6 +120,9 @@ sub main {
         $hasError = system($cmd);
     }
 
+    if ( $hasError > 255 ) {
+        $hasError = $hasError >> 8;
+    }
     return $hasError;
 }
 

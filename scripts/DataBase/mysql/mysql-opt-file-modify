@@ -56,7 +56,7 @@ sub main {
 
             if ( $exitCode == 0 ) {
                 my $updateINI = $newConf->getConfig($content);
-                $oldConf->modifyConf( $filePath, $updateINI );
+                $oldConf->modifyConf( $filePath, $updateINI, $needBackup );
                 if ( $oldConf->{modified} == 0 ) {
                     print("No new configuration provided, config already changed.\n");
                 }

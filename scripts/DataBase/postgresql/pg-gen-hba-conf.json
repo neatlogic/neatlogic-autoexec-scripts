@@ -1,5 +1,5 @@
 {
-    "opType": "target",
+    "opType": "runner",
     "typeName": "BASIC",
     "riskName": "HIGH",
     "interpreter": "perl",

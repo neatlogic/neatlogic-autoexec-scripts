@@ -42,12 +42,12 @@ if __name__ == "__main__":
             hostAddr = node.get('ip')
             if(hostAddr is None):
                 hostAddr = node.get('host')
-            
+
             if hostAddr is None:
                 hasError = 1
                 print("ERROR: malform node info json format:%s" % (json.dumps(node)))
             else:
-                confLine = 'host  %s  %s  %s/24  %s' % (userName, database, node.get('host'), method)
+                confLine = 'host  %s  %s  %s/24  %s' % (database, userName, hostAddr, method)
                 print(confLine)
                 hbaContent = hbaContent + confLine + "\n"
 
