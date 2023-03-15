@@ -43,6 +43,14 @@
             "required": "false"
         },
         {
+            "opt": "wal_level",
+            "name": "归档日志水平",
+            "help": "Postgresql的归档日志水平,hot_standby|replica|logical支持复制",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
             "opt": "WALDIR",
             "name": "归档目录",
             "help": "Postgresql的归档目录",
@@ -124,7 +132,7 @@
         },
         {
             "opt": "SOCKET_LOCATION",
-            "name": "UnixDomainSocket",
+            "name": "Unix Domain Socket目录",
             "help": "Postgresql监听的Unix Domain Socket文件路径",
             "type": "text",
             "defaultValue": null,

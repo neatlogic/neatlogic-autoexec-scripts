@@ -46,6 +46,8 @@ sub main {
         print("ERROR: $filePath is not a file.\n");
     }
 
+    $content =~ s/\\n/\n/g;
+
     if ( $exitCode == 0 ) {
         eval {
             my $oldConf = MysqlConfParser->new( $filePath, $needBackup );
