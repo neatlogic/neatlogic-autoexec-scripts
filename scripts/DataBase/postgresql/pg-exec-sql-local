@@ -87,14 +87,16 @@ sub main {
         verbose => $verbose
     );
 
+    my $hasError = 0;
     if ( $exitCode != 0 ) {
+        $hasError = 1;
         print("ERROR: Errors occur while executing sql.\n");
     }
     else {
         print("FINE: Execute sql scripts success.\n");
     }
 
-    return $exitCode;
+    return $hasError;
 }
 
 exit( main() );
