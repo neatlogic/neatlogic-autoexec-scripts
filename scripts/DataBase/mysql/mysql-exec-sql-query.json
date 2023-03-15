@@ -7,14 +7,22 @@
     "isLib": 0,
     "useLibName": null,
     "description": "连接Mysql主机执行SQL并检查和输出数据",
-    "option": [
-        {
+    "option": [{
             "opt": "OS_USER",
             "name": "OS用户",
             "help": "Postgres运行OS用户",
             "type": "text",
             "defaultValue": "mysql",
             "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SOCK_PATH",
+            "name": "Sock路径",
+            "help": "Unix domain socket文件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
             "validate": ""
         },
         {
@@ -68,8 +76,7 @@
             "help": "是否允许SQL查询返回空集合",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "是",
                         "value": "0"
                     },
@@ -130,14 +137,12 @@
             "validate": ""
         }
     ],
-    "output": [
-        {
-            "opt": "queryResult",
-            "name": "查询结果数据",
-            "help": "结果json数组, 一个数组元素代表一行",
-            "type": "json",
-            "defaultValue": "",
-            "required": "false"
-        }
-    ]
+    "output": [{
+        "opt": "queryResult",
+        "name": "查询结果数据",
+        "help": "结果json数组, 一个数组元素代表一行",
+        "type": "json",
+        "defaultValue": "",
+        "required": "false"
+    }]
 }

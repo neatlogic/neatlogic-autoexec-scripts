@@ -23,6 +23,7 @@ sub main {
     GetOptions(
         $opts, qw{
             OS_USER=s
+            SOCK_PATH=s
             PORT=s
             USER_NAME=s
             PASSWORD=s
@@ -51,6 +52,7 @@ sub main {
     }
 
     my $OS_USER   = $opts->{OS_USER};
+    my $SOCK_PATH = $opts->{SOCK_PATH};
     my $PORT      = $opts->{PORT};
     my $USER_NAME = $opts->{USER_NAME};
     my $PASSWORD  = $opts->{PASSWORD};
@@ -80,7 +82,7 @@ sub main {
     $sqlTxt =~ s/\\n/\n/sg;
     $sqlTxt = $sqlTxt . "\n";
 
-    my $mysql = MysqlExec->new( osUser => $OS_USER, host => '127.0.0.1', port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
+    my $mysql = MysqlExec->new( osUser => $OS_USER, socketPath => $SOCK_PATH, host => '127.0.0.1', port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
 
     my $exitCode = $mysql->do(
         sql     => $sqlTxt,

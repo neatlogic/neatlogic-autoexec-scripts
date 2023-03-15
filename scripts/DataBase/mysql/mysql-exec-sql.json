@@ -7,14 +7,22 @@
     "isLib": 0,
     "useLibName": null,
     "description": "连接到远程Mysql主机本地执行SQL",
-    "option": [
-        {
+    "option": [{
             "opt": "OS_USER",
             "name": "OS用户",
             "help": "Postgres运行OS用户",
             "type": "text",
             "defaultValue": "mysql",
             "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SOCK_PATH",
+            "name": "Sock路径",
+            "help": "Unix domain socket文件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
             "validate": ""
         },
         {
@@ -68,8 +76,7 @@
             "help": "输出明细信息, 如信息中有密码则需要主动关闭详细输出",
             "type": "select",
             "dataSource": {
-                "dataList": [
-                    {
+                "dataList": [{
                         "text": "是",
                         "value": "1"
                     },
