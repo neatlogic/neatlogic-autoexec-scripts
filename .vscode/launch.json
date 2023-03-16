@@ -279,6 +279,39 @@
             "reloadModules": true,
             "stopOnEntry": false,
             "console": "integratedTerminal"
+        },
+        {
+            "name": "mysql-gen-server-id",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/DataBase/mysql/mysql-gen-server-id",
+            "env": {
+                "RUNNER_ID": "1",
+                "TENANT": "develop",
+                "AUTOEXEC_JOBID": "0",
+                "AUTOEXEC_PHASE_NAME": "run-sql",
+                "AUTOEXEC_WORK_PATH": "${workspaceFolder}/data/job/0",
+                "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                "_DEPLOY_PATH": "mysys/mymodule/SIT",
+                "_DEPLOY_ID_PATH": "0/0/0",
+                "_DEPLOY_RUNNERGROUP": "{\"1\":\"192.168.0.26\"}",
+                "VERSION": "2.0.0",
+                "BUILD_NO": "1",
+                "IS_RELEASE": "1",
+                "AUTOEXEC_NODE": "{\"nodeName\":\"bsm\",\"protocol\":\"tagent\",\"password\":\"ts9012501\",\"resourceId\":493223793188870,\"port\":3306,\"host\":\"192.168.0.26\",\"nodeType\":\"MySQL\",\"nodeId\":608528129384494,\"protocolPort\":3939,\"username\":\"root\"}",
+                "PYTHONPATH": "${workspaceFolder}/plugins/local/lib:${workspaceFolder}/lib",
+                "OUTPUT_PATH": "/tmp/output.json"
+            },
+            "args": [
+                "--slaveinfo",
+                "[]",
+                "--slavenodes",
+                "[{\"ip\": \"192.168.0.191\", \"name\": \"dbtest02\", \"id\": 843442078670857}]",
+                "--masternode",
+                "[{\"ip\": \"192.168.0.190\", \"name\": \"dbtest01\", \"id\": 843441961230385}]"
+            ],
+
+            "console": "integratedTerminal"
         }
     ]
 }

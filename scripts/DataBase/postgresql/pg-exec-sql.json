@@ -17,12 +17,12 @@
             "validate": ""
         },
         {
-            "opt": "SOCK_DIR",
-            "name": "Socket目录",
-            "help": "用于连接Postgersql的Unix Domain Socket目录",
+            "opt": "HOST",
+            "name": "地址",
+            "help": "Mysql监听的IP地址",
             "type": "text",
-            "defaultValue": "/var/run/postgresql",
-            "required": "true",
+            "defaultValue": "127.0.0.1",
+            "required": "false",
             "validate": ""
         },
         {
@@ -31,6 +31,15 @@
             "help": "Postgesql监听的TCP端口",
             "type": "text",
             "defaultValue": "5432",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SOCK_DIR",
+            "name": "Socket目录",
+            "help": "用于连接Postgersql的Unix Domain Socket目录",
+            "type": "text",
+            "defaultValue": "/var/run/postgresql",
             "required": "true",
             "validate": ""
         },

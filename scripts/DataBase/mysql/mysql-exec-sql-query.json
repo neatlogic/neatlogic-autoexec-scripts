@@ -17,11 +17,11 @@
             "validate": ""
         },
         {
-            "opt": "SOCK_PATH",
-            "name": "Sock路径",
-            "help": "Unix domain socket文件路径",
+            "opt": "HOST",
+            "name": "地址",
+            "help": "Mysql监听的IP地址",
             "type": "text",
-            "defaultValue": "",
+            "defaultValue": "127.0.0.1",
             "required": "false",
             "validate": ""
         },
@@ -32,6 +32,15 @@
             "type": "text",
             "defaultValue": "3306",
             "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SOCK_PATH",
+            "name": "Sock路径",
+            "help": "Unix domain socket文件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
             "validate": ""
         },
         {

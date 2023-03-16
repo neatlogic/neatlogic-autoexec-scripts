@@ -47,14 +47,17 @@ if __name__ == "__main__":
 
     existsServerIds = {}
     for slaveHost in slaveInfo:
-        serverId = slaveHost.get('Server_id')
-        if serverId is not None:
-            existsServerIds[serverId] = 1
+        existServerId = slaveHost.get('Server_id')
+        if existServerId is not None and existServerId != '':
+            existsServerIds[existServerId] = 1
 
     myNode = AutoExecUtils.getMyNode()
     myIp = myNode.get('host')
+    if myIp is None:
+        myIp = myNode.get('ip')
 
-    if myServerId and myServerId not in existsServerIds:
+    serverId = None
+    if myServerId and myServerId != '0' and myServerId not in existsServerIds:
         serverId = myServerId
     else:
         allNodes = []
@@ -63,10 +66,18 @@ if __name__ == "__main__":
 
         serverId = 1
         for node in allNodes:
-            while serverId in existsServerIds:
+            if serverId in existsServerIds:
                 serverId += 1
-            if node.get('ip') == myIp:
+                continue
+
+            nodeIp = node.get('ip')
+            if nodeIp is None:
+                nodeIp = node.get('host')
+
+            if nodeIp == myIp:
                 break
+            else:
+                serverId += 1
 
     out = {}
 

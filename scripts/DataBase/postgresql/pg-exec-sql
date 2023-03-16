@@ -23,6 +23,7 @@ sub main {
     GetOptions(
         $opts, qw{
             OS_USER=s
+            HOST=s
             SOCK_DIR=s
             PORT=s
             DB_NAME=s
@@ -50,6 +51,7 @@ sub main {
     }
 
     my $OS_USER  = $opts->{OS_USER};
+    my $HOST     = $opts->{HOST};
     my $SOCK_DIR = $opts->{SOCK_DIR};
     my $PORT     = $opts->{PORT};
     my $DB_NAME  = $opts->{DB_NAME};
@@ -64,15 +66,16 @@ sub main {
         usage();
     }
 
-    if ( not defined($DB_NAME) or $DB_NAME eq '' ) {
-        $DB_NAME = 'postgres';
+    my $host = $HOST;
+    if ( defined($SOCK_DIR) and $SOCK_DIR ne '' and -e $SOCK_DIR ) {
+        $host = $SOCK_DIR;
     }
 
     $sqlTxt =~ s/^\s*|\s*$//sg;
     $sqlTxt =~ s/\\n/\n/sg;
     $sqlTxt = $sqlTxt . "\n";
 
-    my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $SOCK_DIR, port => $PORT, dbname => $DB_NAME );
+    my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $host, port => $PORT, dbname => $DB_NAME );
 
     my $exitCode = $psql->do(
         sql     => $sqlTxt,
