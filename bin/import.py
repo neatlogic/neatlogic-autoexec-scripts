@@ -154,7 +154,6 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
         else:
             jsonInfo['packageFileName'] = jsonInfo.get('name') + '.tar'
         jsonList.append(jsonInfo)
-        #------------------------------------------------
         try:
             fp = tempfile.TemporaryFile(mode='w+t')
             json.dump(jsonList, fp, ensure_ascii=False)
@@ -173,7 +172,6 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
             faultArray = result.get('faultArray')
             newScriptArray = result.get('newScriptArray')
             updatedScriptArray = result.get('updatedScriptArray')
-            #------------------------------------------------
             if faultArray != None and len(faultArray) > 0:
                 hasError = 1
                 print("ERROR: Import {} failed:".format(scriptPath))

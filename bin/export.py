@@ -57,7 +57,7 @@ def exportJsonInfo(params):
         else:
             params = {
                 'catalogName': catalogName
-                }
+            }
             postBody = json.dumps(params, ensure_ascii=False)
             signRequest(serverUser,serverPass,headers,uri,postBody=postBody)
         try:
