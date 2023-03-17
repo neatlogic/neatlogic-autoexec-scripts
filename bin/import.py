@@ -4,6 +4,7 @@ from genericpath import isdir, isfile
 import initenv
 import json
 import os
+import tempfile
 import base64
 import hmac
 from hashlib import sha256
@@ -41,6 +42,7 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
         catalogName = os.path.dirname(os.path.relpath(scriptPath, dataDir))
         catalogName = catalogName.replace('\\', '/')
         jsonList = []
+        packageFilePathInfo = {}
         jsonInfo = {}
         # 获取脚本描述.json文件
         if not os.path.exists(scriptPath + '.json'):
@@ -56,6 +58,11 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
                 return hasError
 
             enabled = data.get('enabled', 1)
+            interpreter =data.get('interpreter')
+            if interpreter == 'package' and not os.path.exists(scriptPath + '.tar'):
+                print("ERROR: interpreter is package , tar file is missing")
+                return 1
+
             if enabled == 0:
                 print("WARN: Script %s not enabled, skip." % (scriptPath))
                 return 0
@@ -129,23 +136,36 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
             jsonInfo['isLib'] = data.get('isLib', 0)
             jsonInfo['useLibName'] = data.get('useLibName', [])
             jsonInfo['description'] = data.get('description')
+            packageFilePathInfo[opName+'.tar'] = scriptPath + '.tar'
 
-        lineList = []
+        #脚本内容
+        if interpreter != 'package':
+            lineList = []
+            try:
+                with open(scriptPath, 'r', encoding='utf-8') as scriptFile:
+                    for line in scriptFile:
+                        line = re.sub('\\r?\\n$', '', line)
+                        lineList.append({'content': line})
+                    jsonInfo['lineList'] = lineList
+            except Exception as ex:
+                hasError = 1
+                print("ERROR: Open script file %s failed, error: %s" % (scriptPath, str(ex)))
+                return hasError
+        else:
+            jsonInfo['packageFileName'] = jsonInfo.get('name') + '.tar'
+        jsonList.append(jsonInfo)
+        #------------------------------------------------
         try:
-            with open(scriptPath, 'r', encoding='utf-8') as scriptFile:
-                for line in scriptFile:
-                    line = re.sub('\\r?\\n$', '', line)
-                    lineList.append({'content': line})
-                jsonInfo['lineList'] = lineList
-            jsonList.append(jsonInfo)
-        except Exception as ex:
-            hasError = 1
-            print("ERROR: Open script file %s failed, error: %s" % (scriptPath, str(ex)))
-            return hasError
-        try:
-            postBody = json.dumps(jsonList, ensure_ascii=False)
-            signRequest(serverUser, serverPass, headers, uri, postBody)
-            res = requests.post(url, headers=headers, data=postBody.encode('utf-8'))
+            fp = tempfile.TemporaryFile(mode='w+t')
+            json.dump(jsonList, fp, ensure_ascii=False)
+            fp.seek(0)
+            files = [("scriptInfo.json", fp.read())]
+            for key in packageFilePathInfo:
+                files.append((key , open(packageFilePathInfo[key], "rb").read()))
+
+            signRequest(serverUser, serverPass, headers, uri)
+            res = requests.post(url, headers=headers,files=files)
+            fp.close()
             content = res.json()
             if content.get('Status') != 'OK':
                 raise Exception("Http request faield, %s" % json.dumps(content, ensure_ascii=False))
@@ -153,6 +173,7 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
             faultArray = result.get('faultArray')
             newScriptArray = result.get('newScriptArray')
             updatedScriptArray = result.get('updatedScriptArray')
+            #------------------------------------------------
             if faultArray != None and len(faultArray) > 0:
                 hasError = 1
                 print("ERROR: Import {} failed:".format(scriptPath))
@@ -184,15 +205,14 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
 
 def importJsonInfo(params):
     hasError = 0
-    uri = '/neatlogic/api/stream/autoexec/script/import/fromjson'
+    uri = '/neatlogic/api/binary/autoexec/script/import/fromjson'
     params['uri'] = uri
     url = params.get('baseUrl') + uri
     params['url'] = url
 
     tenant = params.get('tenant')
     headers = {
-        'Tenant': tenant,
-        'Content-Type': 'application/json; charset=utf-8'
+        'Tenant': tenant
     }
     params['headers'] = headers
 
@@ -217,10 +237,14 @@ def importJsonInfo(params):
             for root, dirs, files in os.walk(subDir, topdown=False):
                 for opName in files:
                     if not opName.endswith('.json'):
-                        scriptPath = os.path.join(root, opName)
-                        hasError = hasError + importOneFile(opName, dataDir=dataDir, scriptPath=scriptPath, params=params)
-
-
+                        if not opName.endswith('.tar'):
+                            scriptPath = os.path.join(root, opName)
+                            hasError = hasError + importOneFile(opName,dataDir=dataDir, scriptPath=scriptPath,params=params)
+                        elif opName.endswith('.tar'):
+                            opName = opName[0: len(opName)-4]
+                            scriptPath = os.path.join(root, opName)
+                            hasError = hasError + importOneFile(opName,dataDir=dataDir, scriptPath=scriptPath,params=params)
+                      
 def parseArgs():
     parser = argparse.ArgumentParser(description='you should add those paramete')
     parser.add_argument("--baseurl", default='', help="Automation web console address")

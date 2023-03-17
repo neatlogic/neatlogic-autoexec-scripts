@@ -10,7 +10,9 @@ import os
 import os.path
 import ijson
 import urllib.request
+import requests
 import argparse
+from zipfile import ZipFile
 
 import Utils
 
@@ -55,22 +57,24 @@ def exportJsonInfo(params):
         else:
             params = {
                 'catalogName': catalogName
-            }
+                }
             postBody = json.dumps(params, ensure_ascii=False)
-            signRequest(serverUser, serverPass, headers, uri, postBody=postBody)
-            request = urllib.request.Request(url, headers=headers, data=postBody.encode('utf-8'))
-
+            signRequest(serverUser,serverPass,headers,uri,postBody=postBody)
         try:
-            f = urllib.request.urlopen(request)
+            res = requests.post(url,headers=headers,data=postBody.encode('utf-8'))
         except Exception as ex:
             hasError = 1
             print("ERROR: Request URL:{} failed, {}".format(url, str(ex)))
             return hasError
 
-        objects = ijson.items(f, 'item')
-        while True:
-            try:
-                data = objects.__next__()
+        if res != None:
+            scriptZipPath = os.path.join(pathStr,catalogName) + '/scriptZip.zip'
+            with open(scriptZipPath, 'wb') as fs:
+                fs.write(res.content)
+                zip = ZipFile(scriptZipPath, 'r')
+        objects = json.loads(zip.read('scriptInfo.json'))
+        try:
+            for data in objects:
                 jsonInfo = {}
                 opName = data.get('name')
                 catalogPath = data.get('catalogPath')
@@ -83,6 +87,8 @@ def exportJsonInfo(params):
                 jsonInfo['isLib'] = data.get('isLib')
                 jsonInfo['useLibName'] = data.get('useLibName')
                 jsonInfo['description'] = data.get('description')
+                if data.get('parser') == 'package':
+                    jsonInfo['packageFileName'] = data.get('packageFileName')
                 option = []
                 output = []
                 paramList = data.get('paramList')
@@ -168,28 +174,35 @@ def exportJsonInfo(params):
 
                     lineList = data.get('lineList')
                     if opName != None:
-                        scriptFilePath = None
-                        if catalogPath != None and catalogPath != '':
-                            # scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
-                            scriptFilePath = os.path.join(pathStr, catalogPath, opName)
-                        else:
-                            # scriptFilePath = pathStr + '/' + opName
-                            scriptFilePath = os.path.join(pathStr, opName)
+                        if data.get('parser') != 'package':
+                            scriptFilePath = None
+                            if catalogPath != None and catalogPath != '':
+                                # scriptFilePath = pathStr + '/' + catalogPath + '/' + opName
+                                scriptFilePath = os.path.join(pathStr, catalogPath, opName)
+                            else:
+                                # scriptFilePath = pathStr + '/' + opName
+                                scriptFilePath = os.path.join(pathStr, opName)
 
-                        try:
-                            with open(scriptFilePath, 'w', encoding='utf8') as scriptFile:
-                                print("INFO: Try to export {}".format(opName))
-                                for line in lineList:
-                                    if line.__contains__('content'):
-                                        content = line.get('content')
-                                        scriptFile.write(content)
-                                    scriptFile.write('\n')
-                                print("INFO: {} exported to {}.\n".format(opName, scriptFilePath))
-                        except Exception as reason:
-                            hasError = hasError + 1
-                            print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
-            except StopIteration as e:
-                break
+                            try:
+                                with open(scriptFilePath, 'w', encoding='utf8') as scriptFile:
+                                    print("INFO: Try to export {}".format(opName))
+                                    for line in lineList:
+                                        if line.__contains__('content'):
+                                            content = line.get('content')
+                                            scriptFile.write(content)
+                                        scriptFile.write('\n')
+                                    print("INFO: {} exported to {}.\n".format(opName, scriptFilePath))
+                            except Exception as reason:
+                                os.remove(scriptZipPath)
+                                hasError = hasError + 1
+                                print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
+                        else:
+                            # 将tar包解压到对应的目录下面
+                            zip.extract(data.get('packageFileName'),path=os.path.join(pathStr, catalogPath))
+        except StopIteration as e:
+            os.remove(scriptZipPath)
+            break
+        os.remove(scriptZipPath)
 
 
 def parseArgs():
