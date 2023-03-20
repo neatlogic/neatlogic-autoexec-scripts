@@ -7,6 +7,7 @@ use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
 package MysqlConfModifier;
 use strict;
 use Getopt::Long;
+use IO::File;
 
 use AutoExecUtils;
 use MysqlConfParser;
@@ -20,12 +21,14 @@ sub usage {
 
 sub main {
     my $filePath;
-    my $needBackup = 0;
+    my $createIfNotExist = 0;
+    my $needBackup       = 0;
     my $content;
     my $noSection = 0;
 
     GetOptions(
         'backup=i'   => \$needBackup,
+        'create=i'   => \$createIfNotExist,
         'filepath=s' => \$filePath,
         'content=s'  => \$content
     );
@@ -38,10 +41,22 @@ sub main {
     }
 
     if ( not -e $filePath ) {
-        $exitCode = 2;
-        print("ERROR: $filePath is not exists.\n");
+        if ( $createIfNotExist == 0 ) {
+            $exitCode = 2;
+            print("ERROR: $filePath is not exists.\n");
+        }
+        else {
+            my $fh = IO::File->new(">$filePath");
+            if ( defined($fh) ) {
+                $fh->close();
+            }
+            else {
+                $exitCode = 2;
+                print("ERROR: Can not create file $filePath, $!\n");
+            }
+        }
     }
-    if ( not -f $filePath ) {
+    elsif ( not -f $filePath ) {
         $exitCode = 3;
         print("ERROR: $filePath is not a file.\n");
     }
