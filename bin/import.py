@@ -59,10 +59,12 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
 
             enabled = data.get('enabled', 1)
             interpreter =data.get('interpreter')
-            if interpreter == 'package' and not os.path.exists(scriptPath + '.tar'):
-                print("ERROR: interpreter is package , tar file is missing")
-                return 1
-
+            if interpreter == 'package':
+                if os.path.exists(scriptPath + '.tar'):
+                    packageFilePathInfo[opName + '.tar'] = scriptPath + '.tar'
+                else:
+                    print("ERROR: interpreter is package , tar file is missing")
+                    return 1
             if enabled == 0:
                 print("WARN: Script %s not enabled, skip." % (scriptPath))
                 return 0
@@ -136,7 +138,6 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
             jsonInfo['isLib'] = data.get('isLib', 0)
             jsonInfo['useLibName'] = data.get('useLibName', [])
             jsonInfo['description'] = data.get('description')
-            packageFilePathInfo[opName+'.tar'] = scriptPath + '.tar'
 
         #脚本内容
         if interpreter != 'package':
@@ -163,7 +164,7 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
                 files.append((key , open(packageFilePathInfo[key], "rb").read()))
 
             signRequest(serverUser, serverPass, headers, uri)
-            res = requests.post(url, headers=headers,files=files)
+            res = requests.post(url, headers=headers, files=files)
             fp.close()
             content = res.json()
             if content.get('Status') != 'OK':
@@ -235,14 +236,11 @@ def importJsonInfo(params):
             for root, dirs, files in os.walk(subDir, topdown=False):
                 for opName in files:
                     if not opName.endswith('.json'):
-                        if not opName.endswith('.tar'):
-                            scriptPath = os.path.join(root, opName)
-                            hasError = hasError + importOneFile(opName,dataDir=dataDir, scriptPath=scriptPath,params=params)
-                        elif opName.endswith('.tar'):
+                        if opName.endswith('.tar'):
                             opName = opName[0: len(opName)-4]
-                            scriptPath = os.path.join(root, opName)
-                            hasError = hasError + importOneFile(opName,dataDir=dataDir, scriptPath=scriptPath,params=params)
-                      
+                        scriptPath = os.path.join(root, opName)
+                        hasError = hasError + importOneFile(opName,dataDir=dataDir, scriptPath=scriptPath,params=params)
+
 def parseArgs():
     parser = argparse.ArgumentParser(description='you should add those paramete')
     parser.add_argument("--baseurl", default='', help="Automation web console address")
