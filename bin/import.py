@@ -204,7 +204,7 @@ def importOneFile(opName, dataDir=None, scriptPath=None, params={}):
 
 def importJsonInfo(params):
     hasError = 0
-    uri = '/neatlogic/api/binary/autoexec/script/import/fromjson'
+    uri = '/neatlogic/api/binary/autoexec/script/import/forautoexec'
     params['uri'] = uri
     url = params.get('baseUrl') + uri
     params['url'] = url

@@ -74,7 +74,6 @@ def exportJsonInfo(params):
             scriptZipPath = catalogPathStr + '/scriptZip.zip'
             with open(scriptZipPath, 'wb') as fs:
                 fs.write(res.content)
-
             zip = ZipFile(scriptZipPath, 'r')
         objects = json.loads(zip.read('scriptInfo.json'))
         try:
