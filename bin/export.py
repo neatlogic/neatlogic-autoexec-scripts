@@ -59,16 +59,16 @@ def exportJsonInfo(params):
                 'catalogName': catalogName
             }
             postBody = json.dumps(params, ensure_ascii=False)
-            signRequest(serverUser,serverPass,headers,uri,postBody=postBody)
+            signRequest(serverUser, serverPass, headers, uri, postBody=postBody)
         try:
-            res = requests.post(url,headers=headers,data=postBody.encode('utf-8'))
+            res = requests.post(url, headers=headers, data=postBody.encode('utf-8'))
         except Exception as ex:
             hasError = 1
             print("ERROR: Request URL:{} failed, {}".format(url, str(ex)))
             return hasError
 
         if res != None:
-            scriptZipPath = os.path.join(pathStr,catalogName) + '/scriptZip.zip'
+            scriptZipPath = os.path.join(pathStr, catalogName) + '/scriptZip.zip'
             with open(scriptZipPath, 'wb') as fs:
                 fs.write(res.content)
                 zip = ZipFile(scriptZipPath, 'r')
