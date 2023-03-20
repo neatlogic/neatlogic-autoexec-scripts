@@ -68,10 +68,14 @@ def exportJsonInfo(params):
             return hasError
 
         if res != None:
-            scriptZipPath = os.path.join(pathStr, catalogName) + '/scriptZip.zip'
+            catalogPathStr = os.path.join(pathStr, catalogName)
+            if not os.path.exists(catalogPathStr):
+                os.makedirs(catalogPathStr, exist_ok=True)
+            scriptZipPath = catalogPathStr + '/scriptZip.zip'
             with open(scriptZipPath, 'wb') as fs:
                 fs.write(res.content)
-                zip = ZipFile(scriptZipPath, 'r')
+
+            zip = ZipFile(scriptZipPath, 'r')
         objects = json.loads(zip.read('scriptInfo.json'))
         try:
             for data in objects:
