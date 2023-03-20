@@ -10,7 +10,7 @@
     "option": [{
             "opt": "OS_USER",
             "name": "OS用户",
-            "help": "Postgres运行OS用户",
+            "help": "Mysql运行OS用户",
             "type": "text",
             "defaultValue": "mysql",
             "required": "true",
