@@ -197,7 +197,6 @@ def exportJsonInfo(params):
                                 hasError = hasError + 1
                                 print("ERROR: Script:%s export failed, %s" % (opName, str(reason)))
                         else:
-                            # 将tar包解压到对应的目录下面
                             zip.extract(data.get('packageFileName'),path=os.path.join(pathStr, catalogPath))
         except StopIteration as e:
             os.remove(scriptZipPath)
