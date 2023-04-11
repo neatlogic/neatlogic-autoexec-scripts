@@ -153,7 +153,7 @@
                 "--backup",
                 "1",
                 "--content",
-                "[mysqld]\ndatadir=/db/instances/mysqldemo/data\nsocket=/db/instances/mysqldemo/data/mysql.sock\n\nlog-error=/db/instances/mysqldemo/log/mysqld.log\npid-file=/db/instances/mysqldemo/log/mysqld.pid"
+                "[mysqld]\\nbind-address = 127.0.0.1\\nport = 3306\\nskip-grant-tables = on\\ndatadir=/db/instances/mysqldemo/data\\nsocket=/db/instances/mysqldemo/data/mysqld.sock\\nlog-error=/db/instances/mysqldemo/log/mysqld.log\\npid-file=/db/instances/mysqldemo/log/mysqld.pid\\n#mysql8及以上版本，关闭密码重复使用，仅用于测试###\\npassword-history=1\\npassword_reuse_interval=0\\n####################"
             ],
             "reloadModules": true,
             "stopOnEntry": false,
@@ -298,7 +298,7 @@
                 "VERSION": "2.0.0",
                 "BUILD_NO": "1",
                 "IS_RELEASE": "1",
-                "AUTOEXEC_NODE": "{\"nodeName\":\"bsm\",\"protocol\":\"tagent\",\"password\":\"ts9012501\",\"resourceId\":493223793188870,\"port\":3306,\"host\":\"192.168.0.26\",\"nodeType\":\"MySQL\",\"nodeId\":608528129384494,\"protocolPort\":3939,\"username\":\"root\"}",
+                "AUTOEXEC_NODE": "{\"nodeName\":\"bsm\",\"protocol\":\"tagent\",\"password\":\"ts9012501\",\"resourceId\":493223793188870,\"port\":3306,\"host\":\"192.168.0.192\",\"nodeType\":\"MySQL\",\"nodeId\":608528129384494,\"protocolPort\":3939,\"username\":\"root\"}",
                 "PYTHONPATH": "${workspaceFolder}/plugins/local/lib:${workspaceFolder}/lib",
                 "OUTPUT_PATH": "/tmp/output.json"
             },
@@ -306,7 +306,7 @@
                 "--slaveinfo",
                 "[]",
                 "--slavenodes",
-                "[{\"ip\": \"192.168.0.191\", \"name\": \"dbtest02\", \"id\": 843442078670857}]",
+                "[{\"ip\": \"192.168.0.191\", \"name\": \"dbtest02\", \"id\": 843442078670857},{\"ip\": \"192.168.0.192\", \"name\": \"dbtest03\", \"id\": 843442078670857}]",
                 "--masternode",
                 "[{\"ip\": \"192.168.0.190\", \"name\": \"dbtest01\", \"id\": 843441961230385}]"
             ],

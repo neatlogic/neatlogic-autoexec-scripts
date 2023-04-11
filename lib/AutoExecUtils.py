@@ -150,7 +150,7 @@ def getMyNode():
     node = None
 
     if nodeJson is not None and nodeJson != '':
-        node = json.load(nodeJson)
+        node = json.loads(nodeJson)
 
     return node
 
