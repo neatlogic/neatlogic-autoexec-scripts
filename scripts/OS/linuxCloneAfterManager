@@ -105,4 +105,4 @@ if [ -d "/etc/selinux/config" ]; then
 fi
 
 #关机重启
-shutdown -h now
+reboot
