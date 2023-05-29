@@ -1,4 +1,4 @@
-中文 / [English](README.en.md)
+[中文](README.md) / English
 <p align="left">
     <a href="https://opensource.org/licenses/Apache-2.0" alt="License">
         <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a>
@@ -8,39 +8,39 @@
 
 ---
 
-## 关于
+## About
 
-此项目用于管理所有客户化脚本，不定时更新
+This project is used to manage all customized scripts, updating irregularly.
 
-## 使用
+## Usage
 
-### python3 在Linux上的安装后，更改python3位默认的python执行程序
+### After installing python3 on Linux, change python3 to be the default python execution program
 
-执行autoscripts目录下的bin/setup.sh切换python3位默认python
+Execute the bin/setup.sh in the autoscripts directory to switch python3 to be the default python
 
 ```shell
 cd autoscripts
 ./setup.sh
 ```
 
-### 安装python3第三方库
+### Install python3 third-party libraries
 
 ```
 cd autoscripts/media
 ./ins-modules.sh
 
-###或者手工pip3安装
+###or manually install via pip3
 pip3 install requests filelock ijson
 ```
 
-### 升级python3第三方库
+### Upgrade python3 third-party libraries
 
 ```
 cd autoscripts/media
 ./upgrade-modules.sh
 ```
 
-### 重新安装单个模块例子
+### Reinstall individual module examples
 
 ```
 cd autoscripts/media
@@ -48,38 +48,38 @@ cd autoscripts/media
 ./upgrade-modules.sh requests ijson
 ```
 
-### 环境变量初始化
+### Environment variable initialization
 
 ```
 cd autoscripts
 source bin/setenv.sh
 ```
 
-### 脚本导入导出
+### Script import and export
 
 ```
-#导出脚本到scripts目录下
+#export scripts to the scripts directory
 python3 bin/export.py
 
-#导入脚本到系统
+#import scripts to the system
 python3 bin/import.py
 ```
 
-### Windows脚本
+### Windows scripts
 
-Windows脚本不同解析器对参数格式的要求不一致
-cmd.exe设置编码（UTF-8）：mode con cp select=1250
-cmd.exe设置编码（GBK）：mode con cp select=936
+Different parsers for Windows scripts have different requirements for parameter formats
+Set encoding (UTF-8) for cmd.exe: mode con cp select=1250
+Set encoding (GBK) for cmd.exe: mode con cp select=936
 
-### Windows不同类型脚本的参数格式
+### Parameter format of different types of Windows scripts
 
-Windows不同类型脚本的参数格式和处理方法不一样
+The parameter format and handling methods of different types of Windows scripts are different
 
-#### 注意：VBScript无法处理参数值中带双引号的参数，不支持复杂参数
+#### Note: VBScript cannot handle parameters with double quotes in the parameter values, and does not support complex parameters
 
-#### 注意：bat脚本无法处理有名称的参数，对于存在空格的参数会把前后的双引号带上
+#### Note: bat scripts cannot handle named parameters, and for parameters with spaces, the double quotes before and after will be carried
 
-bat脚本：
+bat script:
 
 ```
 @echo off
@@ -88,7 +88,7 @@ echo Param2 = %2
 echo Param3 = %3
 ```
 
-测试：
+Test:
 
 ```
 >ShowParams.bat "c:\test a\" "c:\test b\"
@@ -111,7 +111,7 @@ Else
 End If
 ```
 
-测试：
+Test:
 
 ```
 >ShowParams.vbs "c:\test a\" "c:\test b\"
@@ -126,11 +126,13 @@ powershell:
 write-host("There are a total of $($args.count) arguments")
 for ( $i = 0; $i -lt $args.count; $i++ ) 
 {
-    write-host("Argument  $i is $($args[$i])")
+    write-host("Argument  $i is $($args
+
+[$i])")
 } 
 ```
 
-测试：
+Test:
 
 ```
 >powershell -f ShowParams.ps1 "c:\test a\" "c:\test b\"
@@ -154,7 +156,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-测试：
+Test:
 
 ```
 >ShowParams.exe "c:\test a\" "c:\test b\"
