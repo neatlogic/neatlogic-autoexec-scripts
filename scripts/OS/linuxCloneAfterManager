@@ -104,5 +104,5 @@ if [ -d "/etc/selinux/config" ]; then
     sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config
 fi
 
-#关机重启
-reboot
+#延迟1分钟关机重启
+shutdown -r 1
