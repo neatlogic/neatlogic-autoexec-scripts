@@ -9,15 +9,15 @@
 ---
 
 ## 关于
-neatlogic-autoexec-scripts工程，管理非标准原子操作插件的客户化脚本管理工程，与<a href="../../../autoexec-backend">autoexec-backend</a>工程的主要区别在于：
-* <a href="../../../autoexec-backend">autoexec-backend</a>工程内置原子操作插件，是<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>自动化模块基础固化插件，不同的目标用户无需更改和调整插件内容。
+neatlogic-autoexec-scripts工程，管理 **自定义工具库**(非标准原子操作插件的客户化脚本) 管理工程，与[neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD)工程的主要区别在于：
+* [neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD)工程内置出厂的**工具库**，是[neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md)自动化模块基础固化出厂自带工具，目标用户无需也无法更改和调整的工具。
 
-* neatlogic-autoexec-scripts工程内的插件因管理、方案上不同，可能在实际交付过程中需要调整的插件。
+* neatlogic-autoexec-scripts工程内的自定义工具因管理、方案上不同，可能在实际交付过程中需要导入到[neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md)模块的自定义工具中修改后使用。
 
 * neatlogic-autoexec-scripts为用户提供可扩展管理边界的入口。
 
 ## 适用场景 
-目前本工程提供的开源场景和原子操作，包括：
+目前本工程提供开源场景和原子操作的自定义工具，包括：
 <ol>
   <li>Vmware虚拟机的创建、销毁、启停。</li>
   <li>新建虚拟机标准化配置。</li>
@@ -28,15 +28,15 @@ neatlogic-autoexec-scripts工程，管理非标准原子操作插件的客户化
 </ol>
 
 ⭐️说明
-* 本工程会不定期更新新的自动化场景和原子操作，请持续关注。
+* 本工程会不定期更新自动化场景自定义工具，请持续关注。
 
 ## 关键要素讲解
 原子操作插件定义的5大要素
 ### 执行方式
 * runner执行
- 在<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>所在机器上执行，简称本地执行。适用于需要安装依赖，比如vmware创建虚拟机。
+ 在[neatlogic-runner](../../../neatlogic-runner/blob/develop3.0.0/README.md)所在机器上执行，简称本地执行。适用于需要安装依赖，比如vmware创建虚拟机。
  
-* runner->target执行，在<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>所在机器上基于协议或<a href="../../../neatlogic-tagent-client">Neatlogic-tagent-client</a>连远端目标执行。适用于需要安装依赖同时需要连远端目标执行，比如snmp采集。
+* runner->target执行，在[neatlogic-runner](../../../neatlogic-runner/blob/develop3.0.0/README.md)所在机器上基于协议或[neatlogic-tagent-client](../../../neatlogic-tagent-client/blob/master/README.md)连远端目标执行。适用于需要安装依赖同时需要连远端目标执行，比如snmp采集。
 
 * target执行，远端目标执行。适用于不需要环境依赖的脚本下发，比如应用启停。
 
@@ -100,7 +100,7 @@ source bin/setenv.sh
 server.baseurl = http://192.168.0.10:8282 # neatlogic-app主机IP和服务端口
 server.username = autoexec # 导入用户
 server.password = # autoexec用户token
-password.key =  #密码加密key,需与neatlogic-autoexec的key一直
+password.key =  #密码加密key,需与neatlogic-autoexec-backend的key一直
 tenant = demo  # 租户
 catalogs.default = Database #导入启始目录，如为空导入所有
 ```

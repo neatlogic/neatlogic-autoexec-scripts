@@ -9,99 +9,86 @@
 ---
 
 
-## About
-neatlogic-autoexec-scripts project, a customized script management project for managing non-standard atomic operation plugins, and<a href="../../../autoexec-backend">autoexec-backend</a>The main differences in engineering are:
+## about
+neatlogic-autoexec-scripts project, manages **custom tool library** (customized scripts for non-standard atomic operation plug-ins) management project, and [neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD) The main differences of the project are:
+* [neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD) project built-in **tool library**, is [neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md) The automation module base solidifies the factory-built tools, which are not needed and cannot be changed and adjusted by the target users.
 
-* <a href="../../../autoexec-backend">autoexec-backend</a> project has built-in atomic operation plugins, which are<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a> automation module foundation solidification plugin, different target users do not need to change or adjust plugin content.
+* The custom tools in the neatlogic-autoexec-scripts project may need to be imported into [neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md) module's custom tool after modification.
 
+* neatlogic-autoexec-scripts provides users with an entry point for extensible management boundaries.
 
-* neatlogic-autoexec-scripts plugins within the project may need to be adjusted during actual delivery due to differences in management and solutions.
-
-* neatlogic-autoexec-scripts provide users with an entrance to scalable management boundaries.
-
-## Applicable scenarios 
-The open source scenarios and atomic operations currently provided in this project include:
+## Applicable scene 
+Currently, this project provides custom tools for open source scenarios and atomic operations, including:
 <ol>
-<li>Create, destroy, start and stop Vmware virtual machines</li>
-
-<li>Create a standardized configuration for a new virtual machine</li>
-
-<li>Nginx, Tomcat, Jdk, Weblogic, Websphere middleware software single instance, cluster installation and delivery</li>
-
-<li>Install and deliver MySQL master-slave, master-slave, and 1-master-slave clusters</li>
-
-<li>Oracle standalone, DG, ADG, RAC cluster installation and delivery</li>
-
-<li>PostgreSQL single machine, master-slave installation and delivery</li>
+   <li>Create, destroy, start and stop Vmware virtual machines. </li>
+   <li>Create a new virtual machine standardized configuration. </li>
+   <li>Nginx, Tomcat, Jdk, Weblogic, Websphere middleware software single instance, cluster installation and delivery. </li>
+   <li>MySQL master-slave, master-master, 1-master-multi-slave cluster installation and delivery. </li>
+   <li>Oracle stand-alone, DG, ADG, RAC cluster installation and delivery. </li>
+   <li>Postgresql stand-alone, master-slave installation and delivery. </li>
 </ol>
 
-⭐️notes
-* This project will periodically update new automation scenarios and atomic operations, please continue to pay attention.
+⭐️Description
+* This project will update the automation scene customization tool from time to time, please continue to pay attention.
 
 ## Explanation of key elements
-The 5 elements defined by atomic operation plugins
-### Execution method
-
-* runner execute
- in <a href="../../../neatlogic-autoexec"> neatlogic-autoexec</a>executed on the machine, abbreviated as local execution. Suitable for installing dependencies, such as creating virtual machines with vmware.
+The 5 elements defined by the atomic operation plugin
+### Implementation modalities
+* runner execution
+  Execute on the machine where [neatlogic-runner](../../../neatlogic-runner/blob/develop3.0.0/README.md) is located, referred to as local execution. Applicable to the need to install dependencies, such as vmware to create virtual machines.
  
-* runner->target execute, in<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>Based on protocol or 
-<a href="../../../neatlogic-tagent-client">Neatlogic-tagent-client</a>  connect to remote targets for execution. Suitable for installing dependencies and connecting to remote targets for execution, such as SNMP collection.
+* Runner->target execution, based on protocol or [neatlogic-tagent-client] on the machine where [neatlogic-runner](../../../neatlogic-runner/blob/develop3.0.0/README.md) is located [neatlogic-tagent-client](../../../neatlogic-tagent-client/blob/master/README.md) Even remote target execution. It is suitable for the installation of dependencies and the execution of remote targets, such as snmp collection.
 
-* target executeRemote target execution. Suitable for scripts that do not require environmental dependencies, such as application startup and shutdown.
+* target execution, remote target execution. It is suitable for delivering scripts that do not depend on the environment, such as starting and stopping applications.
 
-* Sql File execution. Suitable for database DDL, DML, and other operations, such as SQL execution during application deployment.
-
+* Sql file execution. Applicable to operations such as database DDL and DML, such as SQL execution during application deployment.
 
 ### Support script parsing development language
-
-currently, it supports custom scenarios and operation extensions for customers, and supports development languages such as:
-
+Currently, it supports customer-defined scenarios and operation extensions, and the supported development languages are:
 <ul>
-  <li>bash</li>
-  <li>ksh</li>
-  <li>csh</li>
-  <li>python</li>
-  <li>perl</li>
-  <li>ruby</li>
-  <li>Powershell</li>
-  <li>vbscript</li>
-  <li>bat</li>
-  <li>cmd</li>
-  <li>javascript</li>
-  <li>package</li>
+   <li>bash</li>
+   <li>ksh</li>
+   <li>csh</li>
+   <li>python</li>
+   <li>perl</li>
+   <li>ruby</li>
+   <li>Powershell</li>
+   <li>vbscript</li>
+   <li>bat</li>
+   <li>cmd</li>
+   <li>javascript</li>
+   <li>package</li>
 </ul>
 
-### Library File Definition
-* Support custom library files, establish public libraries, and provide references and usage for other custom atomic operation plugins.
+### Library file definition
+* Support custom library files, create public square libraries, and reference and use other custom atomic operation plug-ins.
 
-### Operating input and output parameters 
+### Operation input parameters and output parameters
 
-Support for custom input parameters, whether parameters are required, parameter validation, default values, and optional control types:
-
+Supports custom input parameters, whether parameters are required, parameter validation, default values, and optional control types:
 <ul>
-<li>Text Box</li>
-<li>Single selection dropdown box</li>
-<li>Multiple Selection Dropdown Box</li>
-<li>Radio Box</li>
-<li>Checkbox</li>
-<li>Text Field</li>
-<li>Password</li>
-<li>Date</li>
-<li>Date Time</li>
-<li>File upload</li>
-<li>File Path</li>
-<li>JSON object</li>
-<!-- Automation specific parameter control -->
-<li>Execution phase</li>
-<li>Execution node</li>
-<li>Execution account</li>
-<li>User selector</li>
+   <li>Text box</li>
+   <li>Single selection drop-down box</li>
+   <li>Multiple selection drop-down box</li>
+   <li>Radio box</li>
+   <li>Check box</li>
+   <li>Text field</li>
+   <li>Password</li>
+   <li>Date</li>
+   <li>Date time</li>
+   <li>File upload</li>
+   <li>File path</li>
+   <li>json object</li>
+   <!-- Automation-specific parameter controls -->
+   <li>Execution phase</li>
+   <li>Execution Node</li>
+   <li>Execution account</li>
+   <li>User selector</li>
 </ul>
 
-## Atomic operation plugin engineering management
+## Atomic operation plug-in project management
 
-The engineering dependency import and export tools rely on Python 3, supporting custom atomic operation plugins for version tool management, such as Gitlab, SVN, etc., while also supporting one click import/export of engineering code to the corresponding execution environment.
+Project dependency import and export tools rely on python3, support custom atomic operation plug-ins and version tool management, such as gitlab, svn, etc., and support one-click import/export of project code to the corresponding execution environment.
 
 ### Environment variable initialization
 ```
@@ -109,35 +96,30 @@ cd autoscripts
 source bin/setenv.sh
 ```
 
-### Environmental Configuration Description
-
+### Environment configuration instructions
 ```conf
-server.baseurl= http://192.168.0.10:8282 #Neatlogic app host IP and service port
-server. username=autoexec # Import Users
-server. password=# autoexec user token
-password. key=# Password encryption key, which needs to be consistent with the key of nextlogic autoexec
-tenant=demo # Tenant
-catalogs. default=Database # Import start directory, if empty, import all
+server.baseurl = http://192.168.0.10:8282 # neatlogic-app host IP and service port
+server.username = autoexec # import users
+server.password = # autoexec user token
+password.key = #Password encryption key, which needs to be consistent with the key of neatlogic-autoexec-backend
+tenant = demo # tenant
+catalogs.default = Database #Import the starting directory, if it is empty, import all
 ```
 
 ### Script import and export
 ```
-#Export backup scripts to the current directory
-python 3 autoscripts/bin/export.py
+#Export the backup script to the current directory
+python3 autoscripts/bin/export.py
 
-#Import script to system
-python 3 autoscripts/bin/import. py
+#Import the script to the system
+python3 autoscripts/bin/import.py
 ```
 
-## Introduction to Plugin Catalog Overview
-
-The following directory introduction is for reference only, and the directory name may be adjusted or changed from time to time.
+## Introduction to plugin directory
+The following directory introduction is for reference only, and the directory name will be adjusted or changed from time to time.
 <ul>
-<li>Application: Middleware related scenarios and operation directory</li>
-
-<li>DataBase: Database related scenarios and operation directory</li>
-
-<li>Demo: Provide users with a directory of custom atomic operation reference cases</li>
-
-<li>OS: Operating System Level Related Scenarios and Operation Directory</li>
+   <li>Application: middleware related scenarios and operation directory</li>
+   <li>DataBase: database related scenarios and operation directory</li>
+   <li>Demo: Provide user-defined atomic operation reference case directory</li>
+   <li>OS: operating system level related scenarios and operation directory</li>
 </ul>
