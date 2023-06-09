@@ -8,159 +8,136 @@
 
 ---
 
+
 ## About
+neatlogic-autoexec-scripts project, a customized script management project for managing non-standard atomic operation plugins, and<a href="../../../autoexec-backend">autoexec-backend</a>The main differences in engineering are:
 
-This project is used to manage all customized scripts, updating irregularly.
+* <a href="../../../autoexec-backend">autoexec-backend</a> project has built-in atomic operation plugins, which are<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a> automation module foundation solidification plugin, different target users do not need to change or adjust plugin content.
 
-## Usage
 
-### After installing python3 on Linux, change python3 to be the default python execution program
+* neatlogic-autoexec-scripts plugins within the project may need to be adjusted during actual delivery due to differences in management and solutions.
 
-Execute the bin/setup.sh in the autoscripts directory to switch python3 to be the default python
+* neatlogic-autoexec-scripts provide users with an entrance to scalable management boundaries.
 
-```shell
-cd autoscripts
-./setup.sh
-```
+## Applicable scenarios 
+The open source scenarios and atomic operations currently provided in this project include:
+<ol>
+<li>Create, destroy, start and stop Vmware virtual machines</li>
 
-### Install python3 third-party libraries
+<li>Create a standardized configuration for a new virtual machine</li>
 
-```
-cd autoscripts/media
-./ins-modules.sh
+<li>Nginx, Tomcat, Jdk, Weblogic, Websphere middleware software single instance, cluster installation and delivery</li>
 
-###or manually install via pip3
-pip3 install requests filelock ijson
-```
+<li>Install and deliver MySQL master-slave, master-slave, and 1-master-slave clusters</li>
 
-### Upgrade python3 third-party libraries
+<li>Oracle standalone, DG, ADG, RAC cluster installation and delivery</li>
 
-```
-cd autoscripts/media
-./upgrade-modules.sh
-```
+<li>PostgreSQL single machine, master-slave installation and delivery</li>
+</ol>
 
-### Reinstall individual module examples
+⭐️notes
+* This project will periodically update new automation scenarios and atomic operations, please continue to pay attention.
 
-```
-cd autoscripts/media
-./ins-modules.sh requests ijson
-./upgrade-modules.sh requests ijson
-```
+## Explanation of key elements
+The 5 elements defined by atomic operation plugins
+### Execution method
+
+* runner execute
+ in <a href="../../../neatlogic-autoexec"> neatlogic-autoexec</a>executed on the machine, abbreviated as local execution. Suitable for installing dependencies, such as creating virtual machines with vmware.
+ 
+* runner->target execute, in<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>Based on protocol or 
+<a href="../../../neatlogic-tagent-client">Neatlogic-tagent-client</a>  connect to remote targets for execution. Suitable for installing dependencies and connecting to remote targets for execution, such as SNMP collection.
+
+* target executeRemote target execution. Suitable for scripts that do not require environmental dependencies, such as application startup and shutdown.
+
+* Sql File execution. Suitable for database DDL, DML, and other operations, such as SQL execution during application deployment.
+
+
+### Support script parsing development language
+
+currently, it supports custom scenarios and operation extensions for customers, and supports development languages such as:
+
+<ul>
+  <li>bash</li>
+  <li>ksh</li>
+  <li>csh</li>
+  <li>python</li>
+  <li>perl</li>
+  <li>ruby</li>
+  <li>Powershell</li>
+  <li>vbscript</li>
+  <li>bat</li>
+  <li>cmd</li>
+  <li>javascript</li>
+  <li>package</li>
+</ul>
+
+### Library File Definition
+* Support custom library files, establish public libraries, and provide references and usage for other custom atomic operation plugins.
+
+### Operating input and output parameters 
+
+Support for custom input parameters, whether parameters are required, parameter validation, default values, and optional control types:
+
+<ul>
+<li>Text Box</li>
+<li>Single selection dropdown box</li>
+<li>Multiple Selection Dropdown Box</li>
+<li>Radio Box</li>
+<li>Checkbox</li>
+<li>Text Field</li>
+<li>Password</li>
+<li>Date</li>
+<li>Date Time</li>
+<li>File upload</li>
+<li>File Path</li>
+<li>JSON object</li>
+<!-- Automation specific parameter control -->
+<li>Execution phase</li>
+<li>Execution node</li>
+<li>Execution account</li>
+<li>User selector</li>
+</ul>
+
+## Atomic operation plugin engineering management
+
+The engineering dependency import and export tools rely on Python 3, supporting custom atomic operation plugins for version tool management, such as Gitlab, SVN, etc., while also supporting one click import/export of engineering code to the corresponding execution environment.
 
 ### Environment variable initialization
-
 ```
 cd autoscripts
 source bin/setenv.sh
 ```
 
+### Environmental Configuration Description
+
+```conf
+server.baseurl= http://192.168.0.10:8282 #Neatlogic app host IP and service port
+server. username=autoexec # Import Users
+server. password=# autoexec user token
+password. key=# Password encryption key, which needs to be consistent with the key of nextlogic autoexec
+tenant=demo # Tenant
+catalogs. default=Database # Import start directory, if empty, import all
+```
+
 ### Script import and export
-
 ```
-#export scripts to the scripts directory
-python3 bin/export.py
+#Export backup scripts to the current directory
+python 3 autoscripts/bin/export.py
 
-#import scripts to the system
-python3 bin/import.py
-```
-
-### Windows scripts
-
-Different parsers for Windows scripts have different requirements for parameter formats
-Set encoding (UTF-8) for cmd.exe: mode con cp select=1250
-Set encoding (GBK) for cmd.exe: mode con cp select=936
-
-### Parameter format of different types of Windows scripts
-
-The parameter format and handling methods of different types of Windows scripts are different
-
-#### Note: VBScript cannot handle parameters with double quotes in the parameter values, and does not support complex parameters
-
-#### Note: bat scripts cannot handle named parameters, and for parameters with spaces, the double quotes before and after will be carried
-
-bat script:
-
-```
-@echo off
-echo Param1 = %1
-echo Param2 = %2
-echo Param3 = %3
+#Import script to system
+python 3 autoscripts/bin/import. py
 ```
 
-Test:
+## Introduction to Plugin Catalog Overview
 
-```
->ShowParams.bat "c:\test a\" "c:\test b\"
-param 1 = "c:\test a\"
-param 2 = "c:\test b\"
-```
+The following directory introduction is for reference only, and the directory name may be adjusted or changed from time to time.
+<ul>
+<li>Application: Middleware related scenarios and operation directory</li>
 
-vbscript:
+<li>DataBase: Database related scenarios and operation directory</li>
 
-```vbscript
-If Wscript.Arguments.Count = 0 Then
-        Wscript.echo "No parameters found"
-Else
-    i=0
-        Do until i = Wscript.Arguments.Count
-        Parms = Parms & "Param " & i & " = " & Wscript.Arguments(i) & " " & vbcr
-        i = i+1
-        loop
-        Wscript.echo parms
-End If
-```
+<li>Demo: Provide users with a directory of custom atomic operation reference cases</li>
 
-Test:
-
-```
->ShowParams.vbs "c:\test a\" "c:\test b\"
-param 0 = c:\test a\
-param 1 = c:\test b\
-```
-
-powershell:
-
-```powershell
-#Get arguments by array $args, $args[0], $args[1]
-write-host("There are a total of $($args.count) arguments")
-for ( $i = 0; $i -lt $args.count; $i++ ) 
-{
-    write-host("Argument  $i is $($args
-
-[$i])")
-} 
-```
-
-Test:
-
-```
->powershell -f ShowParams.ps1 "c:\test a\" "c:\test b\"
-param 0 = c:\test a" c:\test
-param 1 = b"
-```
-
-VC
-
-```c
-#include "stdafx.h"
-int main(int argc, char* argv[])
-{
-  for (int i = 0; i < argc; ++i)
-  {
-    printf("param %d = ",i);
-    puts(argv[i]);
-    printf("\n");
-  }
-  return 0;
-}
-```
-
-Test:
-
-```
->ShowParams.exe "c:\test a\" "c:\test b\"
-param 0 = ShowParams.exe
-param 1 = c:\test a" c:\test
-param 2 = b"
-```
+<li>OS: Operating System Level Related Scenarios and Operation Directory</li>
+</ul>

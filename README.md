@@ -9,156 +9,116 @@
 ---
 
 ## 关于
+neatlogic-autoexec-scripts工程，管理非标准原子操作插件的客户化脚本管理工程，与<a href="../../../autoexec-backend">autoexec-backend</a>工程的主要区别在于：
+* <a href="../../../autoexec-backend">autoexec-backend</a>工程内置原子操作插件，是<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>自动化模块基础固化插件，不同的目标用户无需更改和调整插件内容。
 
-此项目用于管理所有客户化脚本，不定时更新
+* neatlogic-autoexec-scripts工程内的插件因管理、方案上不同，可能在实际交付过程中需要调整的插件。
 
-## 使用
+* neatlogic-autoexec-scripts为用户提供可扩展管理边界的入口。
 
-### python3 在Linux上的安装后，更改python3位默认的python执行程序
+## 适用场景 
+目前本工程提供的开源场景和原子操作，包括：
+<ol>
+  <li>Vmware虚拟机的创建、销毁、启停。</li>
+  <li>新建虚拟机标准化配置。</li>
+  <li>Nginx、Tomcat、Jdk、Weblogic、Websphere中间件软件单实例、集群安装交付。</li>
+  <li>MySQL主从、主主、1主多从集群安装交付。</li>
+  <li>Oracle 单机、DG、ADG、RAC集群安装交付。</li>
+  <li>Postgresql单机、主从安装交付。</li>
+</ol>
 
-执行autoscripts目录下的bin/setup.sh切换python3位默认python
+⭐️说明
+* 本工程会不定期更新新的自动化场景和原子操作，请持续关注。
 
-```shell
-cd autoscripts
-./setup.sh
-```
+## 关键要素讲解
+原子操作插件定义的5大要素
+### 执行方式
+* runner执行
+ 在<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>所在机器上执行，简称本地执行。适用于需要安装依赖，比如vmware创建虚拟机。
+ 
+* runner->target执行，在<a href="../../../neatlogic-autoexec">neatlogic-autoexec</a>所在机器上基于协议或<a href="../../../neatlogic-tagent-client">Neatlogic-tagent-client</a>连远端目标执行。适用于需要安装依赖同时需要连远端目标执行，比如snmp采集。
 
-### 安装python3第三方库
+* target执行，远端目标执行。适用于不需要环境依赖的脚本下发，比如应用启停。
 
-```
-cd autoscripts/media
-./ins-modules.sh
+* Sql文件执行。适用于数据库类DDL、DML等操作，比如应用部署过程中SQL执行。
 
-###或者手工pip3安装
-pip3 install requests filelock ijson
-```
+### 支持脚本解析开发语言
+目前支持客户自定义场景和操作扩展，支持开发语言有：
+<ul>
+  <li>bash</li>
+  <li>ksh</li>
+  <li>csh</li>
+  <li>python</li>
+  <li>perl</li>
+  <li>ruby</li>
+  <li>Powershell</li>
+  <li>vbscript</li>
+  <li>bat</li>
+  <li>cmd</li>
+  <li>javascript</li>
+  <li>package</li>
+</ul>
 
-### 升级python3第三方库
+### 库文件定义
+* 支持自定义库文件，建立公共的方库，给其它自定义原子操作插件引用和使用。
 
-```
-cd autoscripts/media
-./upgrade-modules.sh
-```
+### 操作输入参数和输出参数 
 
-### 重新安装单个模块例子
+支持自定义入参参数、参数是否必填、参数校验、默认值、以及可选控件类型：
+<ul>
+  <li>文本框</li>
+  <li>单选下拉框</li>
+  <li>多选下拉框</li>
+  <li>单选框</li>
+  <li>复选框</li>
+  <li>文本域</li>
+  <li>密码</li>
+  <li>日期</li>
+  <li>日期时间</li>
+  <li>文件上传</li>
+  <li>文件路径</li>
+  <li>json对象</li>
+  <!-- 自动化特有参数控件 -->
+  <li>执行阶段</li>
+  <li>执行节点</li>
+  <li>执行账号</li>
+  <li>用户选择器</li>
+</ul>
 
-```
-cd autoscripts/media
-./ins-modules.sh requests ijson
-./upgrade-modules.sh requests ijson
-```
+## 原子操作插件工程管理
+
+工程依赖导入和导出工具依赖python3，支持自定义原子操作插件以版本工具管理，如gitlab、svn等，同时支持工程代码一键导入/出到对应的执行环境。
 
 ### 环境变量初始化
-
 ```
 cd autoscripts
 source bin/setenv.sh
 ```
 
-### 脚本导入导出
-
+### 环境配置说明
+```conf
+server.baseurl = http://192.168.0.10:8282 # neatlogic-app主机IP和服务端口
+server.username = autoexec # 导入用户
+server.password = # autoexec用户token
+password.key =  #密码加密key,需与neatlogic-autoexec的key一直
+tenant = demo  # 租户
+catalogs.default = Database #导入启始目录，如为空导入所有
 ```
-#导出脚本到scripts目录下
-python3 bin/export.py
+
+### 脚本导入导出
+```
+#导出备份脚本到当前目录
+python3 autoscripts/bin/export.py
 
 #导入脚本到系统
-python3 bin/import.py
+python3 autoscripts/bin/import.py
 ```
 
-### Windows脚本
-
-Windows脚本不同解析器对参数格式的要求不一致
-cmd.exe设置编码（UTF-8）：mode con cp select=1250
-cmd.exe设置编码（GBK）：mode con cp select=936
-
-### Windows不同类型脚本的参数格式
-
-Windows不同类型脚本的参数格式和处理方法不一样
-
-#### 注意：VBScript无法处理参数值中带双引号的参数，不支持复杂参数
-
-#### 注意：bat脚本无法处理有名称的参数，对于存在空格的参数会把前后的双引号带上
-
-bat脚本：
-
-```
-@echo off
-echo Param1 = %1
-echo Param2 = %2
-echo Param3 = %3
-```
-
-测试：
-
-```
->ShowParams.bat "c:\test a\" "c:\test b\"
-param 1 = "c:\test a\"
-param 2 = "c:\test b\"
-```
-
-vbscript:
-
-```vbscript
-If Wscript.Arguments.Count = 0 Then
-        Wscript.echo "No parameters found"
-Else
-    i=0
-        Do until i = Wscript.Arguments.Count
-        Parms = Parms & "Param " & i & " = " & Wscript.Arguments(i) & " " & vbcr
-        i = i+1
-        loop
-        Wscript.echo parms
-End If
-```
-
-测试：
-
-```
->ShowParams.vbs "c:\test a\" "c:\test b\"
-param 0 = c:\test a\
-param 1 = c:\test b\
-```
-
-powershell:
-
-```powershell
-#Get arguments by array $args, $args[0], $args[1]
-write-host("There are a total of $($args.count) arguments")
-for ( $i = 0; $i -lt $args.count; $i++ ) 
-{
-    write-host("Argument  $i is $($args[$i])")
-} 
-```
-
-测试：
-
-```
->powershell -f ShowParams.ps1 "c:\test a\" "c:\test b\"
-param 0 = c:\test a" c:\test
-param 1 = b"
-```
-
-VC
-
-```c
-#include "stdafx.h"
-int main(int argc, char* argv[])
-{
-  for (int i = 0; i < argc; ++i)
-  {
-    printf("param %d = ",i);
-    puts(argv[i]);
-    printf("\n");
-  }
-  return 0;
-}
-```
-
-测试：
-
-```
->ShowParams.exe "c:\test a\" "c:\test b\"
-param 0 = ShowParams.exe
-param 1 = c:\test a" c:\test
-param 2 = b"
-```
+## 插件目录概要简介
+以下目录简介仅供参考，实际会不定期调整或更改目录名称。
+<ul>
+  <li>Application:中间件相关场景和操作目录</li>
+  <li>DataBase：数据库相关场景和操作目录</li>
+  <li>Demo：提供给用户自定义原子操作参考案例目录</li>
+  <li>OS：操作系统层面相关场景和操作目录</li>
+</ul>
