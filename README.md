@@ -9,12 +9,12 @@
 ---
 
 ## 关于
-neatlogic-autoexec-scripts工程，管理 **自定义工具库**(非标准原子操作插件的客户化脚本) 管理工程，与[neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD)工程的主要区别在于：
-* [neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD)工程内置出厂的**工具库**，是[neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md)自动化模块基础固化出厂自带工具，目标用户无需也无法更改和调整的工具。
+neatlogic-autoexec-scripts工程，管理 **自定义工具库**(非标准工具库客户化脚本) 管理工程，与[neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD)工程的主要区别在于：
+* [neatlogic-autoexec-backend](../../../neatlogic-autoexec-backend/blob/master/README.MD)工程出厂内置的**工具库**，是[neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md)自动化模块基础固化出厂自带工具，用户无需也无法更改的工具库。
 
-* neatlogic-autoexec-scripts工程内的自定义工具因管理、方案上不同，可能在实际交付过程中需要导入到[neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md)模块的自定义工具中修改后使用。
+* neatlogic-autoexec-scripts工程内自定义工具，因管理上、技术方案、架构设计上不同，可能在实际交付过程中需要导入到[neatlogic-autoexec](../../../neatlogic-autoexec/blob/develop3.0.0/README.md)模块的自定义工具中修改后使用。
 
-* neatlogic-autoexec-scripts为用户提供可扩展管理边界的入口。
+* neatlogic-autoexec-scripts为用户提供可扩展工具库管理边界的入口。
 
 ## 适用场景 
 目前本工程提供开源场景和原子操作的自定义工具，包括：
