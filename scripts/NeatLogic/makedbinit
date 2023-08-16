@@ -49,7 +49,7 @@ class mysqlManager:
 
 class mysqlLocal:
 
-    def __init__(self, techsure_home, ip , port , user , password, tenant_name, license , modules ):
+    def __init__(self, neatlogic_home, ip , port , user , password, tenant_name, license , modules ):
         self.ip = ip 
         self.port = port 
         self.user = user 
@@ -62,7 +62,7 @@ class mysqlLocal:
         filepath = os.path.realpath(filepath)
         self.filepath = filepath
 
-        self.bin = techsure_home + '/serverware/mysql/bin'
+        self.bin = neatlogic_home + '/serverware/mysql/bin'
         self.mysqlExec = self.bin + '/mysql'
         self.mysqldumpExec = self.bin + '/mysqldump'
     
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('--port', default=3306, help='mysql db port')
     parser.add_argument('--user', default='root', help='mysql db user')
     parser.add_argument('--password', default='', help='mysql db user password')
-    parser.add_argument('--techsure_home', default='/app', help='install root path,default:/app')
+    parser.add_argument('--neatlogic_home', default='/app', help='install root path,default:/app')
     parser.add_argument('--tenant_name', default='', help='tenant name')
     parser.add_argument('--license', default='', help='legal valid license')
     parser.add_argument('--modules', default=[],type=json.loads, help='values:all or autoexec,cmdb,dashboard,deploy,inspect,knowledge,pbc,process,report')
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     port = args.port
     user = args.user
     password = args.password
-    techsure_home = args.techsure_home
+    neatlogic_home = args.neatlogic_home
     tenant_name = args.tenant_name
     license = args.license
     modules =args.modules 
@@ -296,8 +296,8 @@ if __name__ == "__main__":
         user = 'root' 
     if password is None or password == '' :
         password = 'zanyue$2012'
-    if techsure_home is None or techsure_home == '' :
-        techsure_home = '/app'
+    if neatlogic_home is None or neatlogic_home == '' :
+        neatlogic_home = '/app'
     
     if tenant_name is None or tenant_name == '' :
         print("ERROR:: Must defind option --tenant_name")
@@ -311,7 +311,7 @@ if __name__ == "__main__":
     if os.path.exists('db_init'):
         shutil.rmtree('db_init')
     
-    local = mysqlLocal(techsure_home, ip , port , user , password, tenant_name, license , modules)
+    local = mysqlLocal(neatlogic_home, ip , port , user , password, tenant_name, license , modules)
     dbname_list = [ "neatlogic" , "neatlogic_demo" ,"neatlogic_demo_data" ]
     if type is None or type == '' or type == 'patch' :
         mysql = mysqlManager(ip ,port ,user , password)

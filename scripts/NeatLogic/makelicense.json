@@ -29,7 +29,7 @@
         {
             "opt": "tenant_name",
             "name": "租户名称",
-            "help": "租户名称，如：techsure",
+            "help": "租户名称，如：demo",
             "type": "text",
             "required": "true",
             "validate": "",
@@ -88,7 +88,9 @@
             "help": "license到期后还能使用天数",
             "type": "text",
             "required": "false",
-            "validate": ["integer_p"],
+            "validate": [
+                "integer_p"
+            ],
             "defaultValue": "30"
         },
         {
@@ -97,7 +99,9 @@
             "help": "license即将到截止日期前提醒天数",
             "type": "text",
             "required": "false",
-            "validate": ["integer_p"],
+            "validate": [
+                "integer_p"
+            ],
             "defaultValue": "30"
         }
     ],
