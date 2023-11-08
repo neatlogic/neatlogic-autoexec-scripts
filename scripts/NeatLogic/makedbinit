@@ -1,0 +1,352 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import os
+import argparse
+import pymysql
+import subprocess
+import shutil
+import json
+
+
+class mysqlManager:
+    def __init__(self, ip ,port ,user , password):
+        self.ip = ip 
+        self.port = port 
+        self.user = user 
+        self.password = password 
+        self.authdb = 'INFORMATION_SCHEMA'
+        self.charset = 'utf8mb4'
+
+    #连接mysql
+    def getConnect(self):
+        db = pymysql.connect(
+            host=self.ip,
+            db=self.authdb,
+            user=self.user,
+            passwd=self.password,
+            port=self.port,
+            charset=self.charset,
+            use_unicode=True)
+        cursor = db.cursor()
+        return (db , cursor)
+
+    #获取数据库表名
+    def getDBtables(self , cursor , db_name) :
+        tables_sql = "SELECT table_name , table_comment FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = '{}' ".format(db_name)
+        cursor.execute(tables_sql)
+        results = cursor.fetchall()
+        tables = []
+        for row in results :
+            table_name = row[0]
+            tables.append(table_name)
+        return tables
+
+    #关闭连接
+    def close(self , db , cursor):
+        cursor.close()
+        db.close()
+
+class mysqlLocal:
+
+    def __init__(self, neatlogic_home, ip , port , user , password, tenant_name, license , modules ):
+        self.ip = ip 
+        self.port = port 
+        self.user = user 
+        self.password = password 
+        self.tenant_name = tenant_name
+        self.license = license
+        self.modules = modules
+
+        filepath = os.path.split(os.path.realpath(__file__))[0]
+        filepath = os.path.realpath(filepath)
+        self.filepath = filepath
+
+        self.bin = neatlogic_home + '/serverware/mysql/bin'
+        self.mysqlExec = self.bin + '/mysql'
+        self.mysqldumpExec = self.bin + '/mysqldump'
+    
+    def runCmd(self, runCmd , viewCmd):
+        #print("INFO:: Exec command :", viewCmd)
+        child = subprocess.Popen(runCmd, shell=True, close_fds=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = None
+        while True:
+            line = child.stdout.readline(4096)
+            if not line:
+                break
+
+            line = line.strip()
+            line = line.decode('utf-8')
+            if result is None:
+                result = line
+            else:
+                result = result + "\n" + line
+
+        # 把error错误，追加到cmd最后
+        count = 0
+        while True:
+            if child.stderr is None:
+                break
+
+            line = child.stderr.readline(4096)
+            if not line:
+                break
+
+            line = line.strip()
+            line = line.decode('utf-8')
+            if result is None:
+                result = line
+            elif count == 0:
+                result = result + line
+            else:
+                result = result + "\n" + line
+            count = count+1
+        
+        if(result is not None and 'ERROR' in result ) :
+            print("ERROR:: Exec command failed. ", viewCmd)
+            exit(1)
+        return result
+    
+    #生成文件
+    def writeFile(self , filepath , content):
+        if os.path.exists(filepath):
+            os.unlink(filepath)
+
+        fileTmp = open(filepath, 'w')
+        fileTmp.write(content)
+        fileTmp.close()
+    
+    #读取文件内容
+    def readFile(self , filepath ):
+        fileTmp = open(filepath, 'r')
+        content = fileTmp.readlines()
+        fileTmp.close()
+        return content
+
+    #需要清理的数据表
+    def getCleanTable(self , database) :
+        filepath = "db_clean/{}/{}.sql".format(database,database)
+        tableMap = {}
+        if os.path.exists(filepath):
+            content = self.readFile(filepath)
+            for line in content:
+                if line is None or line.strip() == '' :
+                    continue 
+                info = line.split()
+                table_name = info[2].replace('`','').replace(';','').replace('\n','')
+                table_name = table_name[len(database)+1:]
+                tableMap[table_name]=1
+        return tableMap
+
+    #清理定义的表数据
+    def clean_processdata(self , database):
+        cleanfile = self.filepath + '/db_clean/{}/{}.sql'.format(database,database)
+        runCmd ="{} -u{} -p'{}' -h {} < {} ".format(self.mysqlExec , self.user , self.password , self.ip , cleanfile )
+        viewCmd ="{} -u{} -p'{}' -h {} < {} ".format(self.mysqlExec , self.user , "******" , self.ip , cleanfile )
+        result= self.runCmd(runCmd , viewCmd)
+        print(result)
+    
+    #全库备份
+    def dumpAll(self , database):
+        savepath = "db_base/{}/{}.sql".format(database,database)
+        runCmd ="{} -u{} -p'{}' -h {} -E -R --routines {} > {} ".format(self.mysqlExec , self.user , self.password , self.ip , database , savepath)
+        viewCmd ="{} -u{} -p'{}' -h {} -E -R --routines {} > {} ".format(self.mysqlExec , self.user , "******" , self.ip , database , savepath )
+        result= self.runCmd(runCmd , viewCmd)
+        print(result)
+
+    #不需要清理源表数据，需清理数据的表只备份表结构
+    def dumpTable(self , database, table , type ):
+        savepath = "db_base/{}/{}.sql".format(database,table)
+        runCmd = None 
+        viewCmd = None 
+        if type == 'all' :
+            runCmd ="{} -u{} -p'{}' -h {} -E -R --triggers {} {} > {} ".format(self.mysqldumpExec , self.user , self.password , self.ip , database ,table, savepath )
+            viewCmd ="{} -u{} -p'{}' -h {} -E -R --triggers {} {} > {} ".format(self.mysqldumpExec , self.user , "******" , self.ip  , database, table, savepath )
+        else :
+            runCmd ="{} -u{} -p'{}' -h {} -E -R --triggers -d {} {}> {} ".format(self.mysqldumpExec , self.user , self.password , self.ip , database, table, savepath )
+            viewCmd ="{} -u{} -p'{}' -h {} -E -R --triggers -d {} {}> {} ".format(self.mysqldumpExec , self.user , "******" , self.ip , database , table, savepath )
+        self.runCmd(runCmd , viewCmd)
+
+    #生成租户基础数据
+    def initTenantDefine(self):
+        jdbc = "jdbc:mysql://{host}:{port}/{dbname}?characterEncoding=UTF-8&jdbcCompliantTruncation=false&allowMultiQueries=true&useSSL=false&&serverTimeZone=Asia/Shanghai"
+        sql="use neatlogic;\n"
+        sql = sql + '\n' + "insert  into `datasource`(`tenant_id`,`tenant_uuid`,`url`,`username`,`password`,`driver`,`host`,`port`) values (1,'{}','{}','root','zanyue$2012','com.mysql.cj.jdbc.Driver','127.0.0.1',3306);".format(self.tenant_name,jdbc)
+        sql = sql + '\n' + "insert  into `mongodb`(`tenant_id`,`tenant_uuid`,`database`,`username`,`password`,`host`,`option`) values (1,'{}','autoexec','autoexec','u1OPgeInMhxsNkNl','127.0.0.1:27017','authSource=autoexec');".format(self.tenant_name)
+        sql = sql + '\n' + "insert  into `tenant`(`id`,`uuid`,`name`,`is_active`,`status`,`expire_date`,`description`) values (1,'{}','{}',1,NULL,NULL,NULL);".format(self.tenant_name,self.tenant_name)
+        if self.license != '':
+            sql = sql + '\n' +"insert  into `tenant_license`(`tenant_id`,`tenant_uuid`,`license`) values (1,'{}','{}');".format(self.tenant_name,self.license)
+        for module in self.modules:
+            sql = sql + '\n' + "insert  into `tenant_modulegroup`(`tenant_id`,`tenant_uuid`,`module_group`) values (1,'{}','{}');".format(self.tenant_name , module)
+
+        savepath = "db_init/neatlogic/"
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
+
+        filepath="db_init/neatlogic/neatlogic.sql"
+        if os.path.exists(filepath):
+            os.unlink(filepath)
+        
+        self.writeFile(filepath , sql)
+        print("INFO:: Make tenant {} data success.".format(self.tenant_name ))
+    
+    #更改租户初始化数据
+    def changeTenantData(self):
+        path = "db_base/"
+        for databse in os.listdir(path):
+            databasepath = os.path.join(path, databse)
+            use = ''
+            src = None 
+            dst = None
+            if databse == 'neatlogic_demo' :
+                use = "use neatlogic_{} ;".format(self.tenant_name)
+                src = os.path.join(path, 'neatlogic_demo')
+                dst = "db_base/neatlogic_{}/".format(self.tenant_name)
+            elif databse == 'neatlogic_demo_data':
+                use = "use neatlogic_{}_data ;".format(self.tenant_name)
+                src = os.path.join(path, 'neatlogic_demo_data')
+                dst = "db_base/neatlogic_{}_data/".format(self.tenant_name)
+            else :
+                use = "use neatlogic ;"
+
+            for table in os.listdir(databasepath):
+                newContent = use
+                filepath = os.path.join(databasepath, table)
+                content = self.readFile(filepath)
+                for line in content : 
+                    if line is None or line.strip() == '' :
+                        newContent = newContent + line
+                        continue 
+                    
+                    line = line.replace('neatlogic_demo' , "neatlogic_{}".format(self.tenant_name))
+                    newContent = newContent +  line
+
+                self.writeFile(filepath ,newContent)
+        
+            if src is not None and  dst is not None :
+                os.rename(src, dst)
+                if os.path.exists(src):
+                    shutil.rmtree(src)
+        print("INFO:: Change tenant neatlogic_demo to neatlogic_{} success.".format(self.tenant_name))
+
+    #初始化租户data数据
+    def initTenantData(self):
+        path = "db_template/"
+        targetpath = "db_init/"
+        for databse in os.listdir(path):
+            databasepath = os.path.join(path, databse)
+            use = ''
+            if databse == 'neatlogic_demo' :
+                use = "use neatlogic_{} ;".format(self.tenant_name)
+            else :
+                use = "use neatlogic ;"
+
+            savepath = "db_init/neatlogic_{}_data/".format(self.tenant_name)
+            if not os.path.exists(savepath):
+                os.makedirs(savepath)
+
+            for table in os.listdir(databasepath):
+                newContent = use
+                filepath = os.path.join(databasepath, table)
+                
+                content = self.readFile(filepath)
+                for line in content : 
+                    if line is None or line.strip() == '' :
+                        newContent = newContent + line
+                        continue 
+                    
+                    line = line.replace('neatlogic_demo' , "neatlogic_{}".format(self.tenant_name))
+                    newContent = newContent +  line
+
+                savefile = savepath + '/'+ "neatlogic_{}_data.sql".format(self.tenant_name)
+                self.writeFile(savefile ,newContent)
+        print("INFO:: Init tenant neatlogic_{}_data success.".format(self.tenant_name))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ip', default='127.0.0.1', help='mysql db ip')
+    parser.add_argument('--port', default=3306, help='mysql db port')
+    parser.add_argument('--user', default='root', help='mysql db user')
+    parser.add_argument('--password', default='', help='mysql db user password')
+    parser.add_argument('--neatlogic_home', default='/app', help='install root path,default:/app')
+    parser.add_argument('--tenant_name', default='', help='tenant name')
+    parser.add_argument('--license', default='', help='legal valid license')
+    parser.add_argument('--modules', default=[],type=json.loads, help='values:all or autoexec,cmdb,dashboard,deploy,inspect,knowledge,pbc,process,report')
+    parser.add_argument('--type', default='patch', help='all,patch')
+
+    args = parser.parse_args()
+    ip = args.ip
+    port = args.port
+    user = args.user
+    password = args.password
+    neatlogic_home = args.neatlogic_home
+    tenant_name = args.tenant_name
+    license = args.license
+    modules =args.modules 
+    type = args.type
+
+    if modules is None or len(modules) == 0 :
+        modules = ["autoexec","cmdb","dashboard","deploy","inspect","knowledge","pbc","process","report"]
+
+    if ip is None  or ip == '':
+        ip = '127.0.0.1'
+    if port is None or port == '' :
+        port = 3306 
+    if user is None or user == '' :
+        user = 'root' 
+    if password is None or password == '' :
+        password = 'zanyue$2012'
+    if neatlogic_home is None or neatlogic_home == '' :
+        neatlogic_home = '/app'
+    
+    if tenant_name is None or tenant_name == '' :
+        print("ERROR:: Must defind option --tenant_name")
+        exit(1)
+
+    os.chdir('/workspace/databases/')
+    
+    if os.path.exists('db_base'):
+        shutil.rmtree('db_base')
+    
+    if os.path.exists('db_init'):
+        shutil.rmtree('db_init')
+    
+    local = mysqlLocal(neatlogic_home, ip , port , user , password, tenant_name, license , modules)
+    dbname_list = [ "neatlogic" , "neatlogic_demo" ,"neatlogic_demo_data" ]
+    if type is None or type == '' or type == 'patch' :
+        mysql = mysqlManager(ip ,port ,user , password)
+        ( db , cursor ) = mysql.getConnect()
+        for db_name in dbname_list : 
+            if not os.path.exists('db_base/{}'.format(db_name)):
+                os.makedirs('db_base/{}'.format(db_name))
+
+            #导出表结构和数据
+            print("INFO:: Patch dump databases {} start.".format(db_name))
+            cleanTableMap = local.getCleanTable(db_name)
+            tables = mysql.getDBtables(cursor , db_name)
+            for table in tables :
+                if table in cleanTableMap  or db_name == 'neatlogic_demo_data':
+                    local.dumpTable(db_name, table , 'nodata')
+                else:
+                    local.dumpTable(db_name, table , 'all')
+            print("INFO:: Patch dump databases {} end.".format(db_name))
+
+        #初始化租户定义数据
+        local.initTenantDefine()
+            
+        #更改租户数据
+        local.changeTenantData()
+
+        #初始化租户data数据
+        local.initTenantData()
+
+        mysql.close(db , cursor )
+    else:
+        for db_name in dbname_list : 
+            if not os.path.exists('db_base/{}'.format(db_name)):
+                os.makedirs('db_base/{}'.format(db_name))
+
+            print("INFO:: All dump databases {} start.".format(db_name))
+            local.dumpAll(db_name)
+            print("INFO:: All dump databases {} end.".format(db_name))
+

@@ -1,0 +1,183 @@
+#!/bin/bash
+#使用DBCA工具缩减某个实例，减少一个实例执行指定DB，一次执行只能减少一个实例
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All operations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYSDBA_USER)
+                SYSDBA_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYSDBA_PWD)
+                SYSDBA_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$ORACLE_USER" ]; then
+    ORACLE_USER=oracle
+fi
+
+ORACLE_UID=$(id -u $ORACLE_USER 2>/dev/null)
+if [ -z "$ORACLE_UID" ]; then
+    echo "WARN: User $ORACLE_USER not exists, maybe already uninstalled."
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
+echo "$oraEnv"
+eval "$oraEnv"
+
+if [ -z "$DB_UNIQUE_NAME" ]; then
+    DB_UNIQUE_NAME=$DB_NAME
+fi
+
+#========开始执行删除操作==============================
+# 需要修改，参数--nodeList接收逗号相隔的多个节点
+# 其他进行循环处理
+POLICY_MANAGED=$(su - $ORACLE_USER -c "$ORACLE_HOME/bin/srvctl config database -d $DB_UNIQUE_NAME" | grep 'policy managed')
+
+if [ ! -f "$ORACLE_HOME/bin/srvctl" ]; then
+    echo "WARN: $ORACLE_HOME/bin/srvctl not exists, maybe already uninstalled."
+    exit -1
+fi
+
+echo "Try to get database $DB_NAME status..."
+SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl status database -d $DB_UNIQUE_NAME
+
+echo "Try to execute dbca command on one of the other node to remove database instance from cluster..."
+
+echo "Try to remove db $DB_NAME from nodes:$REMOVE_NODES..."
+for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+    if [ -n "$POLICY_MANAGED" ]; then
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -force -d $DB_UNIQUE_NAME -n $NODE
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl relocate server -force -n $NODE -g Free
+    else
+        echo "DB $DB_NAME is administrator managed.\n"
+        SUDO_ORA_CMD $ORACLE_USER $ORACLE_HOME/bin/srvctl stop instance -force -d $DB_UNIQUE_NAME -n $NODE
+
+        if [ ! -f "$ORACLE_HOME/bin/dbca" ]; then
+            echo "WARN: Deinstall script $ORACLE_HOME/bin/dbca not exists."
+        fi
+
+        SEQNO=$(echo $NODE | perl -pe 's/.*?(\d+)/$1/')
+        echo "Try to remove instance ${DB_NAME}${SEQNO}..."
+        SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent -deleteInstance \
+            -gdbName "$DB_UNIQUE_NAME" \
+            -instanceName "${DB_NAME}${SEQNO}"
+        #-sysDBAUserName "$SYSDBA_USER" \
+        #-sysDBAPassword "$SYSDBA_PWD"
+
+        #srvctl remove instance -d sample3 -i sample31
+        echo "Try to ensure unregister database instance for $NODE..."
+        SUDO_CMD_CONT $GRID_USER srvctl remove instance -force -noprompt -d $DB_UNIQUE_NAME -i "${DB_NAME}${SEQNO}"
+    fi
+
+    echo "Try to disable listener for $NODE..."
+    SUDO_ORA_CMD $GRID_USER srvctl disable listener -listener LISTENER -node "$NODE"
+
+    echo "Try to stop listener for $NODE..."
+    SUDO_ORA_CMD $GRID_USER srvctl stop listener -listener LISTENER -node "$NODE"
+done
+
+exit $HAS_ERROR

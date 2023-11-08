@@ -1,0 +1,233 @@
+#!/bin/bash
+#GRID_USER=${GRID_USER}
+#UNIX_GROUP_NAME=${UNIX_GROUP_NAME}
+#INVENTORY_LOCATION=${INVENTORY_LOCATION}
+#GRID_BASE=${GRID_BASE}
+#GRID_HOME=${GRID_HOME}
+#OSDBA_GROUP=${OSDBA_GROUP}
+#OSASM_GROUP=${OSASM_GROUP}
+#OSOPER_GROUP=${OSOPER_GROUP}
+#OSBACKUPDBA_GROUP=${OSBACKUPDBA_GROUP}
+#OSDGDBA_GROUP=${OSDGDBA_GROUP}
+#OSKMDBA_GROUP=${OSKMDBA_GROUP}
+#OSRACDBA_GROUP=${OSRACDBA_GROUP}
+#CLUSTER_NAME=${CLUSTER_NAME}
+#SCAN_NAME=${SCAN_NAME}
+#SCAN_PORT=${SAN_PORT}
+
+#vote disks
+#DISKS=/dev/oracleasm/asmdisk0b,/dev/oracleasm/crs-disk1,/dev/oracleasm/crs-disk2,/dev/oracleasm/crs-disk3
+#DISKS_WITH_FAILGROUPS=/dev/oracleasm/crs-disk1,CRSFG1,/dev/oracleasm/crs-disk2,CRSFG2,/dev/oracleasm/crs-disk3,CRSFG3
+#diskDiscoveryString
+#DISK_DISCOVERY_STRING=/dev/oracleasm/*
+#CLUSTER_NODES_DEF=myrac01:myrac01-vip:HUB,myrac02:myrac02-vip:HUB
+#NETWORK_INTERFACE_LIST=ens160:172.16.200.0:1,ens192:192.168.0.0:5
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    #echo命令行隐藏密码
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function setInstallEnv() {
+    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
+    #然后eval为shell的变量
+    EXEC_ENV_TXT=$(echo "$EXEC_ENV" | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ -n "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            RESPONSE_FILE)
+                RESPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ASM_PWD)
+                ASM_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CLUSTER_NODES_DEF)
+                CLUSTER_NODES_DEF="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            NETWORK_INTERFACE_LIST)
+                NETWORK_INTERFACE_LIST="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYS_DISKS)
+                SYS_DISKS="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SYS_DISKS_FAILGROUP)
+                SYS_DISKS_FAILGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DISK_DISCOVERY_STRING)
+                DISK_DISCOVERY_STRING="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+setInstallEnv
+
+#把参数里的响应文件拷贝到reponse目录，作为静默安装响应文件的基础响应，参数定义部分属性会覆盖此响应文件
+if [ -n "$RESPONSE_FILE" ]; then
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/install/response/grid_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $GRID_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+else
+    echo "ERROR: Must defined response file with option --RESPONSE_FILE."
+    exit 5
+fi
+
+SYS_DISKS=$(echo "$SYS_DISKS" | perl -pe 's/\\n/,/g' | perl -pe 's/,+$//')
+
+#SYS_DISK是textarea格式，换行符号变成了符号'\n',要替换为逗号
+#根据SYS_DISK和FAILGROUP名称拼接配置DISKS_WITH_FAILGROUPS
+if [ -n "$SYS_DISKS_FAILGROUP" ]; then
+    DISK_IDX=1
+    for ASM_DISK in ${SYS_DISKS//,/ }; do
+        DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS},${ASM_DISK},${SYS_DISKS_FAILGROUP}${DISK_IDX}
+        DISK_IDX=$(($DISK_IDX + 1))
+    done
+else
+    for ASM_DISK in ${SYS_DISKS//,/ }; do
+        DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS},${ASM_DISK},
+        DISK_IDX=$(($DISK_IDX + 1))
+    done
+fi
+DISKS_WITH_FAILGROUPS=${DISKS_WITH_FAILGROUPS#,}
+
+#把CLUSTER_NODES_DEF格式;myrac1:myrac1-vip:HUB,myrac2:myrac2-vip:HUB
+#转换为：myrac1,myrac2
+DB_NODES=''
+for NODE_DEF in ${CLUSTER_NODES_DEF//,/ }; do
+    DB_NODES=$DB_NODES,${NODE_DEF%%:*}
+done
+DB_NODES=${DB_NODES#,}
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+#Truncate inventory_location dir
+if [ -n "$INVENTORY_LOCATION" ]; then
+    rm -rf $INVENTORY_LOCATION/*
+fi
+
+#安装前检查
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/runcluvfy.sh" stage -pre crsinst -n "$DB_NODES" -verbose -orainv $UNIX_GROUP_NAME
+
+#执行安装
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID "$ORACLE_HOME/gridSetup.sh" -ignorePrereq -waitforcompletion -silent \
+    -responseFile $REAL_RESPONSE_FILE \
+    INVENTORY_LOCATION=$INVENTORY_LOCATION \
+    oracle.install.option=CRS_CONFIG \
+    ORACLE_BASE=$ORACLE_BASE \
+    oracle.install.asm.OSDBA=$OSDBA_GROUP \
+    oracle.install.asm.OSASM=$OSASM_GROUP \
+    oracle.install.asm.OSOPER=$OSOPER_GROUP \
+    oracle.install.crs.config.clusterName=$CLUSTER_NAME \
+    oracle.install.crs.config.gpnp.scanName=$SCAN_NAME \
+    oracle.install.crs.config.gpnp.scanPort=$SCAN_PORT \
+    oracle.install.crs.config.clusterNodes=$CLUSTER_NODES_DEF \
+    oracle.install.crs.config.networkInterfaceList=$NETWORK_INTERFACE_LIST \
+    oracle.install.crs.config.storageOption=FLEX_ASM_STORAGE \
+    oracle.install.asm.diskGroup.disksWithFailureGroupNames=$DISKS_WITH_FAILGROUPS \
+    oracle.install.asm.diskGroup.disks=$SYS_DISKS \
+    oracle.install.asm.diskGroup.diskDiscoveryString=$DISK_DISCOVERY_STRING \
+    oracle.install.crs.rootconfig.executeRootScript=false \
+    oracle.install.asm.monitorPassword=$ASM_PWD \
+    oracle.install.asm.SYSASMPassword=$ASM_PWD \
+    oracle.install.asm.monitorPassword=$ASM_PWD \
+    oracle.install.asm.configureAFD=false
+
+exit $HAS_ERROR

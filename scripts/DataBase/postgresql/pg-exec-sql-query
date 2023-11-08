@@ -1,0 +1,172 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use JSON;
+
+use PostgresqlExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --OS_USER <OS_USER> --DB_NAME <DB_NAME> --SQL <SQL Text>\n");
+    exit(1);
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            OS_USER=s
+            HOST=s
+            SOCK_DIR=s
+            PORT=s
+            DB_NAME=s
+            SQL=s
+            emptyisgood=i
+            filter=s
+            chkdsl=s
+            message=s
+            retrycount=i
+            retryinterval=i
+        }
+    );
+
+    my $hasOptErr = 0;
+
+    my $OS_USER       = $opts->{OS_USER};
+    my $HOST          = $opts->{HOST};
+    my $SOCK_DIR      = $opts->{SOCK_DIR};
+    my $PORT          = $opts->{PORT};
+    my $DB_NAME       = $opts->{DB_NAME};
+    my $sqlTxt        = $opts->{SQL};
+    my $emptyIsGood   = $opts->{emptyisgood};
+    my $filter        = $opts->{filter};
+    my $chkDsl        = $opts->{chkdsl};
+    my $message       = $opts->{message};
+    my $retryCount    = $opts->{retrycount};
+    my $retryInterval = $opts->{retryinterval};
+
+    if ( not defined($OS_USER) or $OS_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined OS_USER by option --OS_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/sg;
+
+    if ( $chkDsl eq '' ) {
+        undef($chkDsl);
+    }
+    if ( $filter eq '' ) {
+        undef($filter);
+    }
+
+    if ( defined($filter) ) {
+        $filter =~ s/\\n/\n/g;
+    }
+    if ( defined($chkDsl) ) {
+        $chkDsl =~ s/\\n/\n/g;
+    }
+
+    if ( not defined($emptyIsGood) ) {
+        $emptyIsGood = 1;
+    }
+
+    if ( not defined($retryCount) ) {
+        $retryCount = 0;
+    }
+    if ( not defined($retryInterval) ) {
+        $retryInterval = 5;
+    }
+
+    my $host = $HOST;
+    if ( defined($SOCK_DIR) and $SOCK_DIR ne '' and -e $SOCK_DIR ) {
+        $host = $SOCK_DIR;
+    }
+
+    my ( $exitCode, $rows );
+    my $psql = PostgresqlExec->new( osUser => $OS_USER, host => $host, port => $PORT, dbname => $DB_NAME );
+
+    my $hasError = 1;
+    my $tryCount = 0;
+    while ( $tryCount <= $retryCount ) {
+        ( $exitCode, $rows ) = $psql->query(
+            sql     => $sqlTxt,
+            verbose => 1
+        );
+        $tryCount = $tryCount + 1;
+
+        if ( $exitCode != 0 ) {
+            print("ERROR: Errors occur while executing sql.\n");
+        }
+        else {
+            print("INFO: Execute sql scripts success.\n");
+
+            if ( not defined($rows) or scalar(@$rows) == 0 ) {
+                if ( $emptyIsGood == 1 ) {
+                    $hasError = 0;
+                }
+                else {
+                    print("ERROR: Query result is empty.\n");
+                }
+            }
+            else {
+                if ( defined($chkDsl) ) {
+                    if ( defined($filter) ) {
+                        print("INFO: Dsl check filter:$filter.\n");
+                    }
+
+                    print("INFO: Dsl:$chkDsl.\n");
+
+                    my $errorCode = AutoExecUtils::JsonToTableCheck( $rows, undef, $filter, $chkDsl );
+
+                    if ( $errorCode == 0 ) {
+                        $hasError = 0;
+                        if ( defined($message) ) {
+                            print("FINE: Check passed:$message\n");
+                        }
+                        print("FINE: Query result full fill the dsl.\n");
+                    }
+                    else {
+                        if ( $tryCount >= $retryCount ) {
+                            if ( defined($message) ) {
+                                print("ERROR: Check failed:$message\n");
+                            }
+                            print("ERROR: Query result not full fill the dsl.\n");
+                        }
+                    }
+                }
+                else {
+                    $hasError = 0;
+                }
+            }
+        }
+
+        if ( $hasError == 0 ) {
+            last;
+        }
+        elsif ( $tryCount < $retryCount ) {
+            print("WARN: Check failed, wait $retryInterval seconds and retry again...\n");
+            sleep($retryInterval);
+            print("INFO: Do another try...\n");
+        }
+    }
+
+    my $out = { queryResult => $rows };
+    AutoExecUtils::saveOutput($out);
+
+    return $hasError;
+}
+
+exit( main() );

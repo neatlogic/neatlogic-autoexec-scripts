@@ -1,0 +1,92 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "ASM磁盘组创建(redundancy=external, 会su到grid用户执行)",
+    "option": [
+        {
+            "opt": "name",
+            "name": "磁盘组名",
+            "help": "磁盘组名",
+            "type": "text",
+            "defaultValue": "DATA",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "compatible",
+            "name": "磁盘组兼容版本",
+            "help": "与Oracle版本对应, 兼容版本",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "11.1",
+                        "value": "11.1"
+                    },
+                    {
+                        "text": "11.2",
+                        "value": "11.2"
+                    },
+                    {
+                        "text": "12.0",
+                        "value": "12.0"
+                    },
+                    {
+                        "text": "19.0",
+                        "value": "19.0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "12.0",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "recreate",
+            "name": "是否重建",
+            "help": "如果磁盘组已经存在, 是否删除磁盘组",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "否",
+                        "value": "0"
+                    },
+                    {
+                        "text": "是",
+                        "value": "1"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "disks",
+            "name": "磁盘列表",
+            "help": "磁盘路径列表",
+            "type": "textarea",
+            "defaultValue": "/dev/oracleasm/data-disk1\n/dev/oracleasm/data-disk2",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "diskGroupName",
+            "name": "磁盘组名称",
+            "help": "创建的磁盘组名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

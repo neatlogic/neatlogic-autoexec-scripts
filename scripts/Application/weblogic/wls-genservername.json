@@ -1,0 +1,49 @@
+{
+    "opType": "runner",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "根据节点自动和服务名前缀生成weblogic服务名",
+    "option": [
+        {
+            "opt": "master_node",
+            "name": "主节点",
+            "help": "weblogic集群adminserver节点",
+            "type": "node",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "slave_node",
+            "name": "受管节点",
+            "help": "weblogic集群managerserver节点",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "server_prefix",
+            "name": "服务名前缀",
+            "help": "服务名前缀,如：server",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "serverNames",
+            "name": "服务器名称",
+            "help": "服务器名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

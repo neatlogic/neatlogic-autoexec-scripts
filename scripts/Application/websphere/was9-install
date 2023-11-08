@@ -1,0 +1,168 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --file_path <file path> --ims_home <ims file home> --run_user <run user> --run_group <run user group> --install_path <install path> --jdk_path <jdk home>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            file_path)
+                file_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ims_home)
+                ims_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;; 
+            install_path)
+                install_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            jdk_path)
+                jdk_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$ims_home" ]] ; then
+    echo "ERROR:: Must defined ims_home."
+    usage
+fi 
+
+if [ ! -d $ims_home ]; then
+    echo "ERROR:: $ims_home dir not found."
+    exit 1
+fi
+
+if [[  ! -n "$file_path" ]] ; then
+    echo "ERROR:: Must defined file_path."
+    usage
+fi 
+
+if [[  ! -n "$install_path" ]] ; then
+    echo "ERROR:: Must defined install_path."
+    usage
+fi 
+
+if [[  ! -n "$jdk_path" ]] ; then
+    echo "ERROR:: Must defined jdk_path."
+    usage
+fi 
+
+if [ ! -d $jdk_path ]; then
+    echo "ERROR:: $jdk_path dir not found."
+    exit 1
+fi
+
+if [[  ! -d "$install_path" ]] ; then
+    mkdir -p $install_path
+fi 
+
+if [[  ! -n "$run_user"  && ! -n "$run_group"  ]] ; then
+    echo "ERROR:: Must defined run user  and group."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+if [[ -d "$install_path/bin" && -d "$install_path/lib" ]] ; then 
+    echo "FINE:: WebSphere directory already exists."
+    exit 0
+fi
+
+#IMShared目录
+echo "INFO:: Create IMSShare dir."
+imsshared=$(dirname "$install_path")/IMShared
+mkdir -p imsshared
+chown -R $run_user:$run_group $(dirname "$install_path")
+
+#获取was9小版本号
+was_ver=`su - "$run_user"  -c "$ims_home/tools/imcl listAvailablePackages -repositories $file_path -silent"`
+if [ $? != 0 ]
+then
+    echo "ERROR:: Get webSphere detail version failed."
+    exit 1
+fi
+
+if [[ -n "$was_ver" ]] ; then 
+    echo "INFO:: Get webSphere detail version : $was_ver"
+else 
+    echo "ERROR:: Get webSphere detail version empty."
+    exit 1
+fi
+
+#获取jdk小版本号
+jdk_ver=`su - "$run_user"  -c "$ims_home/tools/imcl listAvailablePackages -repositories $jdk_path -silent"`
+if [ $? != 0 ]
+then
+    echo "ERROR:: Get webSphere detail version failed."
+    exit 1
+fi
+
+if [[ -n "$jdk_ver" ]] ; then 
+    echo "INFO:: Get IBM JDK detail version : $jdk_ver"
+else 
+    echo "ERROR:: Get IBM JDK  detail version empty."
+    exit 1
+fi
+
+#安装WAS9
+is_success=0
+temp_file="/tmp/was.out"
+echo "INFO:: WebSphere silent install start."
+su - "$run_user" -c "$ims_home/tools/imcl install $was_ver $jdk_ver -repositories $file_path/repository.config,$jdk_path/repository.config -installationDirectory $install_path -sharedResourcesDirectory $imsshared -properties cic.selector.nl=zh -acceptLicense -silent -showVerboseProgress -log $temp_file" 
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebSphere silent install failed."
+    is_success=1
+else
+    echo "FINE:: WebSphere silent install success."
+    rm -f $temp_file
+fi
+
+#输出安装路径
+cat <<EOF > "output.json"
+{ 
+    "websphere_home":"$install_path" 
+}
+EOF
+
+exit $is_success

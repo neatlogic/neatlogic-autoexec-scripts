@@ -1,0 +1,142 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use File::Temp;
+use POSIX qw(uname);
+use IO::File;
+use Getopt::Long;
+use AutoExecUtils;
+
+#Rman备份或恢复
+#如果直接两库对拷，需要使用SID连接目标库单个实例，所以使用的tns需要配置如下形式，只能配置一个节点
+# mydb_standby_rman=(DESCRIPTION =
+#     (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.0.115)(PORT = 1521))
+#   (CONNECT_DATA = (SERVER = DEDICATED) (SID = mydb1))
+# )
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_SID <ORACLE_SID>\n");
+    exit(1);
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            TARGET_TNS_NAME=s
+            AUXILIARY_TNS_NAME=s
+            SYS_PASSWORD=s
+            CATALOG_DB=s
+            CATALOG_USER=s
+            CATALOG_PASSWORD=s
+            SCRIPT=s
+        }
+    );
+
+    my $hasOptErr          = 0;
+    my $ORACLE_USER        = $opts->{ORACLE_USER};
+    my $TARGET_TNS_NAME    = $opts->{TARGET_TNS_NAME};
+    my $AUXILIARY_TNS_NAME = $opts->{AUXILIARY_TNS_NAME};
+    my $SYS_PASSWORD       = $opts->{SYS_PASSWORD};
+    my $CATALOG_DB         = $opts->{CATALOG_DB};
+    my $CATALOG_USER       = $opts->{CATALOG_USER};
+    my $CATALOG_PASSWORD   = $opts->{CATALOG_PASSWORD};
+
+    my $sqlTxt = $opts->{SCRIPT};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($TARGET_TNS_NAME) or $TARGET_TNS_NAME eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined TARGET_TNS_NAME by option --TARGET_TNS_NAME.\n");
+    }
+
+    if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
+        if ( not defined($CATALOG_USER) or $CATALOG_USER eq '' ) {
+            $hasOptErr = 1;
+            print("ERROR: Must defined CATALOG_USER by option --CATALOG_USER.\n");
+        }
+        if ( not defined($CATALOG_PASSWORD) or $CATALOG_PASSWORD eq '' ) {
+            $hasOptErr = 1;
+            print("ERROR: Must defined CATALOG_PASSWORD by option --CATALOG_PASSWORD.\n");
+        }
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    my @uname  = uname();
+    my $osType = $uname[0];
+    $osType =~ s/\s.*$//;
+
+    my $uid        = $<;
+    my $targetDesc = qq{sys/${SYS_PASSWORD}\@${TARGET_TNS_NAME}};
+
+    my $rmanCmd = qq{rman TARGET $targetDesc};
+    if ( defined($AUXILIARY_TNS_NAME) and $AUXILIARY_TNS_NAME ne '' ) {
+        my $auxiliaryDesc = qq{sys/${SYS_PASSWORD}\@${AUXILIARY_TNS_NAME}};
+        $rmanCmd = $rmanCmd . qq{ AUXILIARY $auxiliaryDesc};
+    }
+    if ( defined($CATALOG_DB) and $CATALOG_DB ne '' ) {
+        $rmanCmd = $rmanCmd . qq{ CATALOG ${CATALOG_USER}/${CATALOG_PASSWORD}\@${CATALOG_DB}};
+    }
+    else {
+        $rmanCmd = $rmanCmd . ' NOCATALOG';
+    }
+
+    if ( $osType ne 'Windows' and $uid == 0 and $ORACLE_USER ne 'root' ) {
+        $rmanCmd = qq(su - $ORACLE_USER -c 'LANG=en_US.UTF-8 NLS_LANG=AMERICAN_AMERICA.AL32UTF8 $rmanCmd');
+    }
+
+    $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/g;
+
+    my $cmd;
+    if ( $osType ne 'Windows' ) {
+        $cmd = qq{$rmanCmd << "EOF"
+               $sqlTxt
+               exit;
+               EOF
+              };
+        $cmd =~ s/^\s*//mg;
+    }
+    else {
+        my $sqlFH = File::Temp->new( UNLINK => 1, SUFFIX => '.rmn' );
+        my $fname = $sqlFH->filename;
+        print $sqlFH ( "run {\n", $sqlTxt, "\n\}]\n" );
+        $sqlFH->close();
+
+        $cmd = qq{$rmanCmd @"$fname"};
+    }
+
+    print("Execute RMAN: -----------------------------------------\n");
+    my $printCmd = $cmd;
+    $printCmd =~ s/\/.*?\@/\/\*\*\*\*\*\*\@/g;
+    print($printCmd);
+    print("-------------------------------------------------------\n");
+
+    my $exitCode = system($cmd);
+
+    if ( $exitCode != 0 ) {
+        $hasError = 1;
+        print("ERROR: Errors occur while executing rman scripts.\n");
+    }
+
+    if ( $hasError == 0 ) {
+        print("FINE: Execute rman scripts success.\n");
+    }
+
+    return $hasError;
+}
+
+exit( main() );

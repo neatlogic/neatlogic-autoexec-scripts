@@ -1,0 +1,51 @@
+{
+    "opType": "target",
+    "typeName": "BASIC",
+    "riskName": "LOW",
+    "interpreter": "powershell",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "在远程target OS执行工具的Demo",
+    "argument": {
+        "name": "自由参数",
+        "type": "text",
+        "defaultValue": "100",
+        "help": "自由参数测试",
+        "count": 1,
+        "validate": "",
+        "required": "false"
+    },
+    "option": [
+        {
+            "opt": "tinput",
+            "name": "普通输入",
+            "help": "普通输入测试",
+            "type": "text",
+            "defaultValue": "测试1",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "tjson",
+            "name": "json输入",
+            "help": "json输入测试",
+            "type": "json",
+            "defaultValue": {
+                "name": "Remote"
+            },
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "outtext",
+            "name": "普通输出",
+            "help": "普通输出测试",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

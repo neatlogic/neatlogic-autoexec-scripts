@@ -1,0 +1,139 @@
+#!/usr/bin/perl
+#修改tnsnames.ora或者listener.ora文件
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --action <modify|replace> --filepath <tnsnames.ora or listener.ora file path> --confitems <config items text>\n");
+    exit(1);
+}
+
+sub main {
+    my ( $isHelp, $action, $filePath, $configItemsTxt );
+    my $gridUser = 'grid';
+    GetOptions(
+        'h|help'      => \$isHelp,
+        'action=s'    => \$action,
+        'filepath=s'  => \$filePath,
+        'confitems=s' => \$configItemsTxt
+    );
+
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($action) or $action eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined action by option --action <recreate|modify>.\n");
+    }
+    if ( not defined($filePath) or $filePath eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined tnsnames.ora or listener.ora file path by option --filepath.\n");
+    }
+    if ( not defined($configItemsTxt) or $configItemsTxt eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined config items by option --confitems.\n");
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $exitCode = 0;
+
+    $configItemsTxt =~ s/\\n/\n/g;
+
+    my $descRe;
+    $descRe = qr/\((?:(?>[^()]+)|(??{$descRe}))*\)|[\w\d]+/x;
+
+    #分析输入
+    my @newItems    = ();
+    my $newItemsMap = {};
+    while ( $configItemsTxt =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg ) {
+        my $name = $1;
+        my $desc = $2;
+        $newItemsMap->{$name} = $desc;
+        push( @newItems, { name => $name, desc => $desc } );
+    }
+
+    my $content;
+
+    if ( $action eq 'modify' ) {
+        my @oldItems    = ();
+        my $oldItemsMap = {};
+
+        #读取文件内容
+        if ( -f $filePath ) {
+            my $fh = IO::File->new("<$filePath");
+            if ( defined($fh) ) {
+                my $fSize = -s $filePath;
+                $fh->read( $content, $fSize );
+                $fh->close();
+            }
+            else {
+                print("ERROR: Can not open file:$filePath, $!\n");
+                $exitCode = 1;
+            }
+
+            while ( $content =~ /([^\s\(\)]+)\s*=\s*($descRe)/sg ) {
+                my $name = $1;
+                my $desc = $2;
+                $oldItemsMap->{$name} = $desc;
+                push( @oldItems, { name => $name, desc => $desc } );
+            }
+
+            #更新content
+            foreach my $item (@oldItems) {
+                my $newDesc = $newItemsMap->{ $item->{name} };
+                if ( defined($newDesc) ) {
+                    $item->{desc} = $newDesc;
+                }
+            }
+        }
+
+        foreach my $item (@newItems) {
+            my $oldDesc = $oldItemsMap->{ $item->{name} };
+            if ( not defined($oldDesc) ) {
+                push( @oldItems, { name => $item->{name}, desc => $item->{desc} } );
+            }
+        }
+
+        $content = '';
+        foreach my $item (@oldItems) {
+            $content = $content . $item->{name} . '=' . $item->{desc} . "\n";
+        }
+    }
+    else {
+        $content = $configItemsTxt;
+    }
+
+    my $out = { newFileContent => $content };
+    AutoExecUtils::saveOutput($out);
+
+    my $fh = IO::File->new(">$filePath");
+    if ( defined($fh) ) {
+        print $fh ($content);
+        $fh->close();
+    }
+    else {
+        print("ERROR: Can not modify file:$filePath, $!\n");
+        $exitCode = 1;
+    }
+
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
+
+    return $exitCode;
+}
+
+exit( main() )

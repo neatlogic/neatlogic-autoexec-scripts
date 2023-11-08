@@ -1,0 +1,31 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "Unix安装vmtools",
+    "option": [
+        {
+            "opt": "file_path",
+            "name": "安装文件路径",
+            "help": "存放jdk安装tar.gz包路径，如：/tmp/VMwareTools-10.3.22-15902021.tar.gz",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "file",
+            "name": "安装包文件",
+            "help": "jdk安装tar.gz包，如：VMwareTools-10.3.22-15902021.tar.gz",
+            "type": "file",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

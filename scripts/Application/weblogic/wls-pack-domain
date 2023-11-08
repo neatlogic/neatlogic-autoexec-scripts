@@ -1,0 +1,109 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --run_user <run user> --weblogic_home <weblogic home> --domain_path <domain home> --storage_path <file storage path> --file_name <pack filename>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;            
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            weblogic_home)
+                weblogic_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            storage_path)
+                storage_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            file_name)
+                file_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$weblogic_home" ]] ; then
+    echo "ERROR:: Must defined weblogic_home."
+    usage
+fi
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi
+
+if [[  ! -n "$file_name" ]] ; then
+    echo "ERROR:: Must defined file_name."
+    usage
+fi 
+
+if [[  ! -n "$storage_path" ]] ; then
+    storage_path="/tmp/"
+fi 
+
+if [[ ! -d "$storage_path" ]] ; then 
+    echo "ERROR:: $storage_path dir not found."
+    exit 1
+fi
+
+template_jar="$storage_path/$file_name.jar"
+if [[ -f "$template_jar" ]] ; then 
+    rm -f $template_jar
+fi 
+wlsserver_bin="$weblogic_home/wlserver/common/bin/"
+
+su - "$run_user" -c "sh $wlsserver_bin/pack.sh -domain=$domain_path -template=$template_jar -template_name=$file_name -managed=true"
+if [ $? != 0 ]
+then
+    echo "ERROR:: Weblogic pack domain failed.$@"
+    exit 1
+else
+    echo "INFO:: Weblogic pack domain succeed."
+fi
+
+#受管机器unpakc产生的domain目录下的security与adminserver不一致需要同步拷贝，不然启动受管机器的managerserver报错
+systemini_dat="$storage_path/SerializedSystemIni.dat"
+if [[ -f "$systemini_dat" ]] ; then 
+    rm -f $systemini_dat
+fi 
+cp $domain_path/security/SerializedSystemIni.dat $systemini_dat
+
+#输出安装路径
+cat <<EOF > "output.json"
+{ 
+    "template_jar":"$template_jar" ,
+    "systemini_dat":"$systemini_dat"
+}
+EOF

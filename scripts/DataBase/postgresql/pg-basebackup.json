@@ -1,0 +1,78 @@
+{
+    "opType": "target",
+    "typeName": "BASIC",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "备份某个PG库到指定目录，避免密码交互",
+    "option": [{
+            "opt": "host",
+            "name": "库IP地址",
+            "help": "访问目标的地址，可以是IP或域名",
+            "type": "text",
+            "defaultValue": "127.0.0.1",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "port",
+            "name": "监听端口",
+            "help": "访问目标的TCP端口",
+            "type": "text",
+            "defaultValue": "5432",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "user",
+            "name": "用户名",
+            "help": "验证用户",
+            "type": "text",
+            "defaultValue": "replica",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "password",
+            "name": "密码",
+            "help": "用户的密码，如果是信任，则留空",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "datadir",
+            "name": "存放目录",
+            "help": "存放数据的目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "cleandir",
+            "name": "清空目录",
+            "help": "是否主动清空目标数据目录",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "否",
+                        "value": "0"
+                    },
+                    {
+                        "text": "是",
+                        "value": "1"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

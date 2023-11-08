@@ -1,0 +1,21 @@
+{
+    "opType": "target",
+    "typeName": "TEMP",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "Perl simple script",
+    "argument": {
+        "name": "参数",
+        "type": "text",
+        "defaultValue": "2022-01-01",
+        "help": "日期  数量",
+        "count": 2,
+        "validate": "",
+        "required": "true"
+    },
+    "option": [],
+    "output": []
+}

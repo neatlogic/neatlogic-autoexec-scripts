@@ -1,0 +1,116 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --operat <operat> --appsvr_home <appsvr install path> --server_name <server name> --run_user <run user> --timeout <timeout>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            appsvr_home)
+                appsvr_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_name)
+                server_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            operat)
+                operat="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            timeout)
+                timeout="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$appsvr_home" ]] ; then
+    echo "ERROR:: Must defined appsvr_home."
+    usage
+fi 
+
+if [[ ! -d "$appsvr_home" ]] ; then 
+    echo "ERROR:: Not found websphere install home : $appsvr_home."
+    exit 1
+fi 
+
+if [[  ! -n "$server_name" ]] ; then
+    echo "ERROR:: Must defined server_name."
+    usage
+fi 
+
+if [[  ! -n "$timeout" ]] ; then
+    timeout=120
+fi
+
+if [[  ! -n "$operat" ]] ; then
+    operat="start"
+fi
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user ."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+pid=`ps -ef |grep websphere |grep $server_name |awk '{print $2}'`
+if [[ "$operat" == "start" ]] ; then 
+    cmd="sh $appsvr_home/bin/startServer.sh $server_name -trace  -timeout $timeout"
+    if [[ -n "$pid" ]] ; then 
+        echo "FINE:: WebSphere Server $server_name already $operat."
+        exit 0 
+    fi 
+else
+    cmd="sh $appsvr_home/bin/stopServer.sh $server_name -trace  -timeout $timeout"
+    if [[ ! -n "$pid" ]] ; then 
+        echo "FINE:: WebSphere Server $server_name already $operat."
+        exit 0 
+    fi 
+fi 
+
+su - "$run_user" -c "$cmd"
+is_success=0
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebSphere Server $server_name $operat failed."
+    is_success=1
+else
+    echo "FINE:: WebSphere Server $server_name $operat success."
+fi
+exit $is_success

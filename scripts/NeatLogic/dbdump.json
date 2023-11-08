@@ -1,0 +1,76 @@
+{
+    "opDesc": "指定数据Dump备份",
+    "opType": "runner",
+    "typeName": "BASIC",
+    "riskName": "LOW",
+    "interpreter": "python",
+    "defaultProfile": null,
+    "enabled": 0,
+    "description": "指定数据Dump备份，备份内容包括：表结构、数据、视图、存储过程、函数。",
+    "option": [
+        {
+            "opt": "backup_dir",
+            "name": "备份目录",
+            "help": "备份目录，如：/workspace/",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "mysql_home",
+            "name": "mysql安装目录",
+            "help": "mysql安装目录，如：/opt/mysql/",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "ip",
+            "name": "数据库IP",
+            "help": "数据库IP",
+            "type": "text",
+            "required": "false",
+            "validate": "",
+            "defaultValue": "127.0.0.1"
+        },
+        {
+            "opt": "port",
+            "name": "数据库端口",
+            "help": "数据库端口",
+            "type": "text",
+            "required": "false",
+            "validate": "",
+            "defaultValue": "3306"
+        },
+        {
+            "opt": "database_names",
+            "name": "数据库名称",
+            "help": "指定数据库，多个逗号分隔，如：asm,bsm",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "user",
+            "name": "数据库用户",
+            "help": "数据库用户",
+            "type": "text",
+            "required": "false",
+            "validate": "",
+            "defaultValue": "root"
+        },
+        {
+            "opt": "password",
+            "name": "用户密码",
+            "help": "数据库用户密码",
+            "type": "password",
+            "required": "false",
+            "validate": "",
+            "defaultValue": "zanyue$2012"
+        }
+    ],
+    "output": []
+}

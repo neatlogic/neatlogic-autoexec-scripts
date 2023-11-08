@@ -1,0 +1,76 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "Was9安装websphere软件(需要与JDK一块安装)",
+    "option": [
+        {
+            "opt": "file_path",
+            "name": "安装文件路径",
+            "help": "存放websphere安装包路径，如：/mnt/nas/was8.5/",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ims_home",
+            "name": "IMS安装管理软件路径",
+            "help": "IMS安装管理软件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "jdk_path",
+            "name": "JDK文件路径",
+            "help": "JDK安装包文件路径，如：/mnt/nas/websphere/ibm_jdk/r",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "install_path",
+            "name": "软件安装路径",
+            "help": "软件安装路径，如：/opt/IBM/WebSphere/AppServer",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "websphere_home",
+            "name": "websphere安装路径",
+            "help": "websphere安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

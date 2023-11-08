@@ -1,0 +1,233 @@
+#!/bin/bash
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All operations were successful."
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            SID)
+                SID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+oraEnv=$(SUDO_ORA_CMD $ORACLE_USER env | grep ORACLE_)
+echo "$oraEnv"
+eval "$oraEnv"
+
+USER_HOME=$(eval echo ~$ORACLE_HOME)
+if [ not -e "$ORACLE_HOME/scripts" ]; then
+    mkdir "$ORACLE_HOME/scripts"
+fi
+
+cat >"$ORACLE_HOME/scripts/start_all.sh" <<EOF
+#!/bin/bash
+. /home/oracle/.bash_profile
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbstart \$ORACLE_HOME
+EOF
+
+cat >"$ORACLE_HOME/scripts/stop_all.sh" <<EOF
+#!/bin/bash
+. /home/oracle/.bash_profile
+export ORAENV_ASK=NO
+. oraenv
+export ORAENV_ASK=YES
+
+dbshut \$ORACLE_HOME
+EOF
+
+chown -R $ORACLE_USER "$ORACLE_HOME/scripts"
+chmod u+x "$ORACLE_HOME/scripts"/*.sh
+
+ps -p1 | grep systemd >/dev/null && initType="systemd" || initType="sysvinit"
+if [ "$initType" == "systemd" ]; then
+    cat >/lib/systemd/system/dbora.service <<EOF
+[Unit]
+Description=The Oracle Database Service
+After=syslog.target network.target
+
+[Service]
+# systemd ignores PAM limits, so set any necessary limits in the service.
+# Not really a bug, but a feature.
+# https://bugzilla.redhat.com/show_bug.cgi?id=754285
+LimitMEMLOCK=infinity
+LimitNOFILE=65535
+
+#Type=simple
+# idle: similar to simple, the actual execution of the service binary is delayed
+#       until all jobs are finished, which avoids mixing the status output with shell output of services.
+RemainAfterExit=yes
+User=oracle
+Group=oinstall
+Restart=no
+ExecStart=$ORACLE_HOME/scripts/start_all.sh
+ExecStop=$ORACLE_HOME/scripts/stop_all.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    systemctl start dbora.service
+    systemctl enable dbora.service 2>&1 >/dev/null
+else
+    OS_TYPE=$(uname -s 2>&1)
+    echo "OS type is :$OS_TYPE"
+
+    case "$OS_TYPE" in
+    Linux)
+        INIT_FILE=/etc/init.d/dbora
+        ;;
+    FreeBSD)
+        INIT_FILE=/etc/init.d/dbora
+        ;;
+    AIX)
+        INIT_FILE=/etc/dbora
+        ;;
+    SunOs)
+        INIT_FILE=/etc/init.d/dbora
+        ;;
+    *)
+        echo $"ERROR: OS type $OS_TYPE not support yet."
+        exit 2
+        ;;
+    esac
+
+    cat >$INIT_FILE <<EOF
+#! /bin/sh 
+# description: Oracle auto start-stop script.
+#
+# Set ORACLE_HOME to be equivalent to the $ORACLE_HOME
+# from which you wish to execute dbstart and dbshut;
+#
+# Set ORA_OWNER to the user id of the owner of the
+# Oracle database in ORACLE_HOME.
+
+ORA_HOME=<Type your ORACLE_HOME in full path here>
+ORA_OWNER=<Type your Oracle account name here>
+
+case "$1" in
+'start')
+    # Start the Oracle databases:
+    # The following command assumes that the oracle login
+    # will not prompt the user for any values
+    # Remove "&" if you don't want startup as a background process.
+    su - $ORACLE_USER -c "$ORACLE_HOME/bin/dbstart $ORACLE_HOME" &
+    touch /var/lock/subsys/dbora
+    ;;
+
+'stop')
+    # Stop the Oracle databases:
+    # The following command assumes that the oracle login
+    # will not prompt the user for any values
+    su - $ORACLE_USER -c "$ORACLE_HOME/bin/dbshut $ORACLE_HOME" &
+    rm -f /var/lock/subsys/dbora
+    ;;
+esac
+
+EOF
+
+    chgrp $OSDBA_GROUP $INIT_FILE
+    chmod 750 $INIT_FILE
+
+    case "$OS_TYPE" in
+    Linux)
+        ln -s $INIT_FILE /etc/rc.d/rc0.d/K01dbora
+        ln -s $INIT_FILE /etc/rc.d/rc3.d/S99dbora
+        ln -s $INIT_FILE /etc/rc.d/rc5.d/S99dbora
+        ;;
+    FreeBSD)
+        ln -s $INIT_FILE /etc/rc.d/rc0.d/K01dbora
+        ln -s $INIT_FILE /etc/rc.d/rc3.d/S99dbora
+        ln -s $INIT_FILE /etc/rc.d/rc5.d/S99dbora
+        ;;
+    AIX)
+        ln -s $INIT_FILE /etc/rc.d/rc2.d/S99dbora
+        ln -s $INIT_FILE /etc/rc.d/rc0.d/K01dbora
+        ;;
+    SunOs)
+        ln -s $INIT_FILE /etc/rc0.d/K01dbora
+        ln -s $INIT_FILE /etc/rc3.d/S99dbora
+        ;;
+    *)
+        echo $"ERROR: OS type $OS_TYPE not support yet."
+        exit 2
+        ;;
+    esac
+fi
+
+if [ -z "$SID" ]; then
+    SID=$ORACLE_SID
+fi
+
+if [ -z "$SID" ]; then
+    echo "ERROR: Can not determinate the oracle instance sid."
+    exit 3
+fi
+
+#修改/etc/oratab加入实例自动启动配置
+if [ -e /etc/oratab ]; then
+    DO_CMD sed -i -e "\|${SID}:${ORACLE_HOME}:N|d" /etc/oratab
+fi
+DO_CMD "echo '${SID}:${ORACLE_HOME}:Y' >> /etc/oratab"

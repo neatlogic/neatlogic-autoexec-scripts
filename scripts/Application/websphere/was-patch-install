@@ -1,0 +1,126 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --ims_home <ims install path> --was_filepath <was download file path>  --was_installpath <was install path> --was_pathchpath <patch path> --run_user <run user>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            ims_home)
+                ims_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            was_filepath)
+                was_filepath="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            was_installpath)
+                was_installpath="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            was_pathchpath)
+                was_pathchpath="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$ims_home" ]] ; then
+    echo "ERROR:: Must defined ims_home."
+    usage
+fi 
+
+if [ ! -d $ims_home ]; then
+    echo "ERROR:: $ims_home dir not found."
+    exit 1
+fi
+
+if [[  ! -n "$was_filepath" ]] ; then
+    echo "ERROR:: Must defined was_filepath."
+    usage
+fi 
+
+if [ ! -d $was_filepath ]; then
+    echo "ERROR:: $was_filepath dir not found."
+    exit 1
+fi
+
+if [[  ! -n "$was_installpath" ]] ; then
+    echo "ERROR:: Must defined was_installpath."
+    usage
+fi 
+
+if [[ ! -d "$was_installpath" ]] ; then 
+    echo "ERROR:: $was_installpath dir not found."
+    exit 1
+fi  
+
+if [[  ! -n "$was_pathchpath" ]] ; then
+    echo "ERROR:: Must defined was_pathchpath."
+    usage
+fi 
+
+if [[ ! -d "$was_pathchpath" ]] ; then 
+    echo "ERROR:: $was_pathchpath dir not found."
+    exit 1
+fi 
+
+if [[  ! -n "$run_user"  && ! -n "$run_group"  ]] ; then
+    echo "ERROR:: Must defined run user  and group."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+cd $was_pathchpath
+unzip -o *.zip
+chown -R $run_user:$run_group  $was_pathchpath
+
+#安装补丁包
+su - "$run_user" -c "$ims_home/tools/imcl  updateAll -repositories $was_filepath/repository.config -installationDirectory $was_installpath -acceptLicense -showProgress -silent"
+is_success=0
+if [ $? != 0 ]
+then
+    echo "ERROR:: WebSphere Patch install failed."
+    is_success=1
+else
+    echo "FINE:: WebSphere Patch install success."
+fi

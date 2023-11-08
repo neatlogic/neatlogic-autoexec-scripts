@@ -1,0 +1,74 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "MEDIUM",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "把当前Oracle实例加入集群",
+    "option": [
+        {
+            "opt": "CV_ASSUME_DISTID",
+            "name": "对应OS版本",
+            "help": "与OracleLinux对应的Linux版本, RedHat8及以上才需要设置",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "自动",
+                        "value": "AUTO"
+                    },
+                    {
+                        "text": "OL7",
+                        "value": "OL7"
+                    },
+                    {
+                        "text": "OEL7.8",
+                        "value": "OEL7.8"
+                    },
+                    {
+                        "text": "OL8",
+                        "value": "OL8"
+                    },
+                    {
+                        "text": "OL9",
+                        "value": "OL9"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "AUTO",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_USER",
+            "name": "Oracle用户",
+            "help": "Oracle 软件安装用户, 默认是oracle",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB唯一名",
+            "help": "DB唯一名称, 在DG同步和切换中确定主备库, 为空保持跟DB_NAME一致, 支持多个，逗号相隔",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "NODE_NAMES",
+            "name": "新增节点名",
+            "help": "新增加的节点名称, 多个节点逗号相隔, 例如: myrac4,myrac5",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

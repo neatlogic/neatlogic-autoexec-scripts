@@ -1,0 +1,32 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+ Copyright © 2017 NeatLogic
+"""
+
+import sys
+import json
+
+
+def main():
+    argsCount = len(sys.argv)
+    if argsCount < 2:
+        print("ERROR: usage jsonformat file1...file2")
+
+    for i in range(1, argsCount):
+        jsonFile = sys.argv[i]
+        try:
+            data = None
+            with open(jsonFile, 'r', encoding="utf-8") as f:
+                data = json.load(f)
+                f.close()
+
+            with open(jsonFile, 'w', encoding="utf-8") as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+                f.close()
+                print("INFO: Beautify format ", jsonFile, "success.")
+        except Exception as ex:
+            print("ERROR: open file:{} failed, {}\n".format(jsonFile, ex))
+
+
+main()

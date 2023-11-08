@@ -1,0 +1,221 @@
+#!/bin/bash
+#卸载某个节点上的Oracle Grid软件
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All operations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function removeUserAndGroups() {
+    if [ -z "$GRID_UID" ]; then
+        return
+    fi
+
+    #delete GRID_USER
+    usermod -g10 $GRID_USER
+
+    #delete group id bigger than 1000
+    groups=$(id -G $GRID_USER)
+    for oraGid in $(id -G $GRID_USER); do
+        if [ $oraGid -gt 1000 ]; then
+            groupName=$(getent group GID | cut -d: -f1)
+            groupdel $groupName
+        fi
+    done
+
+    #delete GRID_USER
+    userdel $GRID_USER
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DEL_USER)
+                DEL_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$GRID_USER" ]; then
+    GRID_USER=grid
+fi
+
+GRID_UID=$(id -u $GRID_USER 2>/dev/null)
+if [ -z "$GRID_UID" ]; then
+    echo "WARN: User $GRID_USER not exists, maybe already uninstalled."
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+oraEnv=$(SUDO_ORA_CMD $GRID_USER env | grep ORACLE_)
+echo "$oraEnv"
+eval "$oraEnv"
+
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Can not determine enviroment ORACLE_HOME.\n"
+    exit -1
+fi
+
+MY_NODE=$(su - $GRID_USER -c 'olsnodes -l')
+#========开始执行删除操作==============================
+
+if [ -e "$ORACLE_HOME/bin/olsnodes" ]; then
+    #Unpined not if pinned
+    for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+        IS_PINNED=$(su - grid -c "'$ORACLE_HOME/bin/olsnodes' -s -t" | grep "$NODE" | grep -v -i Unpinned)
+        if [ -n "$IS_PINNED" ]; then
+            SUDO_ORA_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" unpin css -n "$NODE"
+        fi
+    done
+fi
+
+if [ -e "$ORACLE_HOME/crs/install" ]; then
+    DO_CMD "$ORACLE_HOME/perl/bin/perl" "$ORACLE_HOME/crs/install/rootcrs.pl" -deconfig -force
+fi
+
+if [ ! -f "$ORACLE_HOME/oui/bin/runInstaller" ]; then
+    echo "WARN: Deinstall script $ORACLE_HOME/oui/bin/runInstaller not exists, maybe already uninstalled."
+    exit -1
+fi
+
+echo "Try to update inventory..."
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID $ORACLE_HOME/oui/bin/runInstaller -silent \
+    -force \
+    -noconfig \
+    -ignorePrereq \
+    -ignoreSysPrereqs \
+    -updateNodeList \
+    -local \
+    CRS=TRUE \
+    "ORACLE_HOME=$ORACLE_HOME" \
+    "CLUSTER_NODES={$MY_NODE}"
+
+if [ ! -f "$ORACLE_HOME/deinstall/deinstall" ]; then
+    echo "WARN: Deinstall script $ORACLE_HOME/deinstall/deinstall not exists, maybe already uninstalled."
+    exit 0
+fi
+
+echo "Try to deinstall grid..."
+SUDO_ORA_CMD $GRID_USER $ENV_DISTID LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall -silent -checkonly -o /tmp | tee oragridunins_check.out
+rspFile=$(grep "Location of response file generated:" oragridunins_check.out | cut -d: -f 2)
+
+if [ -n "$rspFile" ]; then
+    SUDO_ORA_CMD $GRID_USER $ENV_DISTID 'LANG=en_US.UTF-8 $ORACLE_HOME/deinstall/deinstall' -silent --paramfile $rspFile | tee oragridunins.out
+    #获取pipe管道前命令的exit code
+    exitStatus=${PIPESTATUS[0]}
+    if [ $exitStatus -ge 128 ]; then
+        exit $exitStatus
+    fi
+
+    #从日志中获取root命令行
+    rootCmd=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep rootcrs.sh | head -1 | cut -d'"' -f2)
+    rspFile=$(grep 'rootcrs.sh -force  -deconfig -paramfile' oragridunins.out | sed s'/ /\n/g' | grep /tmp/deinstall | head -1 | cut -d '"' -f2)
+    uninsDir=$(echo $rspFile | cut -d/ -f3)
+
+    if [ -n "$rootCmd" ]; then
+        rootCmd="$rootCmd -force -deconfig -paramfile $rspFile"
+
+        echo "Try to execute root command..."
+        DO_CMD $rootCmd
+    fi
+
+    if [ -z "$rootCmd" ]; then
+        deinstallRootCmd=$(grep 'As the privileged user, execute' oragridunins.out | head -1 | sed s'/ /\n/g' | grep tmp | cut -d '"' -f2)
+        if [ -n "$deinstallRootCmd"]; then
+            echo $deinstallRootCmd
+            DO_CMD $deinstallRootCmd
+        fi
+    fi
+
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+
+    echo "Try to clean the .ssh rsa auhroized config..."
+    SUDO_CMD_CONT $GRID_USER rm -rf "~/.ssh/*"
+else
+    echo "ERROR: Can not find respose file directory from deinstall prepare log."
+    HAS_ERROR=1
+fi
+
+exit $HAS_ERROR

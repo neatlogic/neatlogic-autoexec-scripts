@@ -1,0 +1,67 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "卸载WebSphere安装",
+    "option": [
+        {
+            "opt": "was_home",
+            "name": "WAS软件安装路径",
+            "help": "Websphere软件安装路径，如：/opt/IBM/WebSphere/AppServer/",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ims_home",
+            "name": "IMS软件安装路径",
+            "help": "Installation Manager安装路径，如：/opt/websphere/eclipse",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "was_filepath",
+            "name": "was安装文件路径",
+            "help": "was安装文件路径，主要获取WAS明细版本，如：/mnt/nas/was8.5/4",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_userName",
+            "name": "管理账号",
+            "help": "DMGR登录账号，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "admin_password",
+            "name": "管理密码",
+            "help": "DMGR登录账号的密码，如：wasadmin",
+            "type": "password",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

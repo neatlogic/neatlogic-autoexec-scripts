@@ -1,0 +1,102 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use JSON;
+
+use PostgresqlExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --OS_USER <OS_USER> --DB_NAME <DB_NAME>\n");
+    exit(1);
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            node=s
+            dbversion=s
+            sslmode=s
+            SQL=s
+            verbose=s
+        }
+    );
+
+    my $hasOptErr = 0;
+
+    my $node   = $opts->{node};
+    my $sqlTxt = $opts->{SQL};
+
+    my $nodeObj;
+    if ( defined($node) and $node ne '' ) {
+        $nodeObj = from_json($node);
+    }
+    else {
+        my $nodeJson = $ENV{AUTOEXEC_NODE};
+        if ( defined($nodeJson) and $nodeJson ne '' ) {
+            $nodeObj = from_json($nodeJson);
+        }
+    }
+    if ( not defined($nodeObj) ) {
+        print("ERROR: Must defined remote node by option --node or environment AUTOEXEC_NODE\n");
+        $hasOptErr = 1;
+    }
+
+    if ( not defined($sqlTxt) ) {
+        print("ERROR: Must defined sql text by option --sql.\n");
+        $hasOptErr = 1;
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $HOST      = $nodeObj->{host};
+    my $PORT      = $nodeObj->{protocolPort};
+    my $USER_NAME = $nodeObj->{username};
+    my $PASSWORD  = $nodeObj->{password};
+    my $DB_NAME   = $nodeObj->{nodeName};
+    my $dbVersion = $opts->{dbversion};
+    my $sslMode   = $opts->{sslmode};
+    my $verbose   = $opts->{verbose};
+
+    my $autoexecHome = $ENV{AUTOEXEC_HOME};
+    my $toolsDir     = "$autoexecHome/tools";
+
+    my $pgHome = "$toolsDir/postgresql-client";
+    if ( defined($dbVersion) and -e "$pgHome-$dbVersion" ) {
+        $pgHome = "$pgHome-$dbVersion";
+    }
+
+    $sqlTxt =~ s/^\s*|\s*$//sg;
+    $sqlTxt =~ s/\\n/\n/sg;
+    $sqlTxt = $sqlTxt . "\n";
+
+    my $psql = PostgresqlExec->new( psqlHome => $pgHome, sslmode => $sslMode, host => $HOST, port => $PORT, username => $USER_NAME, password => $PASSWORD, dbname => $DB_NAME );
+
+    my $exitCode = $psql->do(
+        sql     => $sqlTxt,
+        verbose => $verbose
+    );
+
+    my $hasError = 0;
+    if ( $exitCode != 0 ) {
+        $hasError = 1;
+        print("ERROR: Errors occur while executing sql.\n");
+    }
+    else {
+        print("FINE: Execute sql scripts success.\n");
+    }
+
+    return $hasError;
+}
+
+exit( main() );

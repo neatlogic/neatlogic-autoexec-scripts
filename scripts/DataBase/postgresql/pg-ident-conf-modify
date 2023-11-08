@@ -1,0 +1,264 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+use lib "$FindBin::Bin/lib";
+
+package IdentConfParser;
+
+use strict;
+use POSIX qw(uname strftime);
+use IO::File;
+use JSON;
+use Getopt::Long;
+
+use AutoExecUtils;
+
+sub new {
+    my ( $pkg, $filePath, $needBackup ) = @_;
+
+    my $self = {
+        filePath    => $filePath,
+        needBackup  => $needBackup,
+        confItems   => [],
+        confItemMap => {},
+        headComment => '',
+        tailComment => ''
+    };
+
+    bless( $self, $pkg );
+
+    if ( defined($filePath) ) {
+        if ( not -e $filePath ) {
+            $self->{hasError} = 1;
+            print("ERROR: $filePath not exists.\n");
+        }
+        if ( not -f $filePath ) {
+            $self->{hasError} = 1;
+            print("ERROR: $filePath is not a file.\n");
+        }
+    }
+
+    if ( defined($filePath) ) {
+        my ( $confItems, $confItemMap ) = $self->__read_config( $filePath, 'file' );
+        $self->{confItems}   = $confItems;
+        $self->{confItemMap} = $confItemMap;
+    }
+
+    return $self;
+}
+
+sub backup {
+    my ( $self, $filePath ) = @_;
+    my $dateTimeStr = strftime( "%Y%m%d-%H%M%S", localtime() );
+    my $exitCode    = system(qq{cp "$filePath" "$filePath.$dateTimeStr"});
+    return $exitCode;
+}
+
+sub getFileContent {
+    my ( $self, $filePath ) = @_;
+    my $content;
+
+    if ( -f $filePath ) {
+        my $size = -s $filePath;
+        my $fh   = IO::File->new("<$filePath");
+
+        if ( defined($fh) ) {
+            $fh->read( $content, $size );
+            $fh->close();
+        }
+        else {
+            die("ERROR: File:$filePath open failed, $!.\n");
+        }
+    }
+
+    return $content;
+}
+
+sub __read_config {
+    my ( $self, $filePath ) = @_;
+    my $content = $self->getFileContent($filePath);
+    my ( $confItems, $confItemMap ) = $self->__parseConf($content);
+    return ( $confItems, $confItemMap );
+}
+
+sub __parseConf {
+    my ( $self, $content ) = @_;
+
+    my @confItems   = ();
+    my $confItemMap = {};
+
+    my $comment = '';
+    $content =~ s/^\s*|\s*$//g;
+    foreach my $line ( split( /\n/, $content ) ) {
+        $line =~ s/^\s*|\s*$//g;
+
+        # handle comments
+        if ( $line =~ /^[;#]/ ) {
+            $comment = $comment . $line . "\n";
+            next;
+        }
+        elsif ( $line eq '' ) {
+            $comment = $comment . "\n";
+            next;
+        }
+
+        my @fields = split( /\s+/, $line, 3 );
+        my ( $mapName, $sysUserName, $pgUserName );
+        if ( scalar(@fields) == 3 ) {
+            $mapName     = $fields[0];
+            $sysUserName = $fields[1];
+            $pgUserName  = $fields[2];
+
+            my $item = {
+                'MAPNAME'         => $mapName,
+                'SYSTEM-USERNAME' => $sysUserName,
+                'PG-USERNAME'     => $pgUserName,
+                'COMMENT'         => $comment
+            };
+            my $key = $mapName;
+            push( @confItems, $item );
+            $confItemMap->{$key} = $item;
+            $comment = '';
+        }
+    }
+
+    if ( $comment ne '' ) {
+        if ( scalar(@confItems) > 0 ) {
+            foreach my $line ( split( /\n/, $comment ) ) {
+                if ( index( $self->{tailComment}, $line ) < 0 ) {
+                    $self->{tailComment} = $self->{tailComment} . $line . "\n";
+                }
+            }
+        }
+        else {
+            foreach my $line ( split( /\n/, $comment ) ) {
+                if ( index( $self->{headComment}, $line ) < 0 ) {
+                    $self->{headComment} = $self->{headComment} . $line . "\n";
+                }
+            }
+        }
+    }
+    return ( \@confItems, $confItemMap );
+}
+
+sub modifyConf {
+    my ( $self, $content ) = @_;
+
+    my $confItems   = $self->{confItems};
+    my $confItemMap = $self->{confItemMap};
+    my ( $newItems, $newConfItemMap ) = $self->__parseConf($content);
+
+    my $modified = 0;
+    if ( defined($newItems) ) {
+        foreach my $item (@$newItems) {
+            my $key     = $item->{MAPNAME};
+            my $oldItem = $confItemMap->{$key};
+            if ( defined($oldItem) ) {
+                if ( $oldItem->{'SYSTEM-USERNAME'} ne $item->{'SYSTEM-USERNAME'} or $oldItem->{'PG-USERNAME'} ne $item->{'PG-USERNAME'} ) {
+                    $modified                     = 1;
+                    $oldItem->{'SYSTEM-USERNAME'} = $item->{'SYSTEM-USERNAME'};
+                    $oldItem->{'PG-USERNAME'}     = $item->{'PG-USERNAME'};
+                    print( "INFO: Change " . $item->{MAPNAME} . "\t" . $item->{'SYSTEM-USERNAME'} . "\t" . $item->{'PG-USERNAME'} . "\n" );
+                }
+                my $oldComment = $oldItem->{COMMENT};
+                my $newComment = $item->{COMMENT};
+                foreach my $commentLine ( split( /\n/, $newComment ) ) {
+                    if ( index( $oldComment, $commentLine ) < 0 ) {
+                        $modified = 1;
+                        $oldItem->{COMMENT} = $oldComment . "\n" . $commentLine;
+                    }
+                }
+            }
+            else {
+                $modified = 1;
+                push( @$confItems, $item );
+                $confItemMap->{$key} = $item;
+                print( "INFO: Append " . $item->{MAPNAME} . "\t" . $item->{'SYSTEM-USERNAME'} . "\t" . $item->{'PG-USERNAME'} . "\n" );
+            }
+        }
+    }
+
+    my $newContent = '';
+    foreach my $item (@$confItems) {
+        $newContent = $newContent . $item->{COMMENT};
+        my $mapName     = $item->{MAPNAME};
+        my $sysUserName = $item->{'SYSTEM-USERNAME'};
+        my $pgUserName  = $item->{'PG-USERNAME'};
+
+        $mapName     = $mapName . ' ' x ( 15 - length($mapName) );
+        $sysUserName = $sysUserName . ' ' x ( 23 - length($sysUserName) );
+
+        $newContent = $newContent . "$mapName $sysUserName $pgUserName\n";
+    }
+
+    if ( $modified == 1 ) {
+        my $filePath = $self->{filePath};
+        if ( $self->{needBackup} == 1 ) {
+            $self->backup($filePath);
+        }
+
+        my $confFile = IO::File->new(">$filePath");
+        if ( defined($confFile) ) {
+            print $confFile ( $self->{headComment} );
+            print $confFile ($newContent);
+            print $confFile ( $self->{tailComment} );
+            $confFile->close();
+        }
+        else {
+            print("ERROR: Can not write to file $filePath, $!\n");
+            $self->{hasError} = 1;
+        }
+    }
+    else {
+        print("INFO: Config not changed.\n");
+    }
+
+    return $newContent;
+}
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --backup 0|1 --filepath <pg_ident.conf directory> --content <hosts content>\n");
+    exit(1);
+}
+
+sub main {
+    $| = 1;    #不对输出进行buffer，便于实时看到输出日志
+    my $filePath;
+    my $needBackup = 0;
+    my $content;
+
+    GetOptions(
+        'backup=i'   => \$needBackup,
+        'filepath=s' => \$filePath,
+        'content=s'  => \$content
+    );
+
+    if ( not defined($filePath) or $filePath eq '' ) {
+        print("ERROR: Must defined pg_ident.conf path by option --filepath\n");
+        usage();
+    }
+
+    if ( not defined($content) or $content eq '' ) {
+        print("ERROR: Must defined config content by option --content\n");
+        usage();
+    }
+
+    $content =~ s/\\n/\n/g;
+    my $confParser = IdentConfParser->new( $filePath, $needBackup );
+    my $hasError   = $confParser->{hasError};
+    if ( $hasError == 0 ) {
+        my $confContent = $confParser->modifyConf($content);
+
+        my $out = { identConf => $confContent };
+        AutoExecUtils::saveOutput($out);
+        $hasError = $confParser->{hasError};
+    }
+
+    return $hasError;
+}
+
+exit main();
+
+1;

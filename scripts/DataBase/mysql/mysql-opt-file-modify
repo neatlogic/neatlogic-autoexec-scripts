@@ -1,0 +1,99 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin";
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+package MysqlConfModifier;
+use strict;
+use Getopt::Long;
+use IO::File;
+
+use AutoExecUtils;
+use MysqlConfParser;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --backup 0|1 --filepath <file path of ini> --content <sysctl.conf content>\n");
+    exit(1);
+}
+
+sub main {
+    my $filePath;
+    my $createIfNotExist = 0;
+    my $needBackup       = 0;
+    my $content;
+    my $noSection = 0;
+
+    GetOptions(
+        'backup=i'   => \$needBackup,
+        'create=i'   => \$createIfNotExist,
+        'filepath=s' => \$filePath,
+        'content=s'  => \$content
+    );
+
+    my $exitCode = 0;
+
+    if ( not defined($content) and $content eq '' ) {
+        $exitCode = 1;
+        print("WARN: New configuration content not defined.\n");
+    }
+
+    if ( not -e $filePath ) {
+        if ( $createIfNotExist == 0 ) {
+            $exitCode = 2;
+            print("ERROR: $filePath is not exists.\n");
+        }
+        else {
+            my $fh = IO::File->new(">$filePath");
+            if ( defined($fh) ) {
+                $fh->close();
+            }
+            else {
+                $exitCode = 2;
+                print("ERROR: Can not create file $filePath, $!\n");
+            }
+        }
+    }
+    elsif ( not -f $filePath ) {
+        $exitCode = 3;
+        print("ERROR: $filePath is not a file.\n");
+    }
+
+    $content =~ s/\\n/\n/g;
+
+    if ( $exitCode == 0 ) {
+        eval {
+            my $oldConf = MysqlConfParser->new( $filePath, $needBackup );
+            my $newConf = MysqlConfParser->new();
+            if ( $oldConf->{hasError} or $newConf->{hasError} ) {
+                $exitCode = 4;
+            }
+
+            if ( $exitCode == 0 ) {
+                my $updateINI = $newConf->getConfig($content);
+                $oldConf->modifyConf( $filePath, $updateINI, $needBackup );
+                if ( $oldConf->{modified} == 0 ) {
+                    print("No new configuration provided, config already changed.\n");
+                }
+
+                my $out = { mysqlConf => $oldConf->getConfig() };
+                AutoExecUtils::saveOutput($out);
+            }
+        };
+        if ($@) {
+            $exitCode = 5;
+            my $errMsg = $@;
+            $errMsg =~ s/ at\s*.*$//;
+            print($errMsg );
+        }
+
+    }
+
+    return $exitCode;
+}
+
+exit main();
+
+1;

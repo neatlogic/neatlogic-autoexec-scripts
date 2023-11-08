@@ -1,0 +1,272 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin";
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+package Main;
+use strict;
+use POSIX;
+use Cwd;
+use Socket;
+use Getopt::Long;
+use File::Basename;
+use File::Spec::Functions qw(catfile rel2abs);
+
+use AutoExecUtils;
+use MysqlConfParser;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --OS_USER <OS_USER> --PORT <LISTEN PORT>\n");
+    exit(1);
+}
+
+sub getExecutablePath {
+    my ($pid)  = @_;
+    my @uname  = uname();
+    my $ostype = $uname[0];
+    $ostype =~ s/\s.*$//;
+
+    my $executablePath;
+    if ( $ostype eq 'Windows' ) {
+        my $procTxt = `wmic process where "ProcessID=$pid" get ExecutablePath}`;
+        my @lines   = split( /\n/, $procTxt );
+        if ( scalar(@lines) >= 2 ) {
+            $executablePath = $lines[1];
+            $executablePath =~ s/^\s*|\s*$//g;
+        }
+    }
+    else {
+        if ( -e "/proc/$pid/exe" ) {
+            $executablePath = readlink("/proc/$pid/exe");
+        }
+    }
+
+    return $executablePath;
+}
+
+sub parseCommandOpts {
+    my ( $pid, $command ) = @_;
+
+    my $opts       = {};
+    my @items      = split( /[\s"]+--/, $command );
+    my $mysqldPath = $items[0];
+    $mysqldPath =~ s/^\s*|\s*$//g;
+    $mysqldPath =~ s/^"|"$//g;
+
+    #$mysqldPath =~ s/\\/\//g;
+
+    if ( not -e $mysqldPath and not -e "$mysqldPath.exe" ) {
+        $mysqldPath = getExecutablePath($pid);
+    }
+
+    $mysqldPath =~ s/\\/\//g;
+    $opts->{mysqldPath} = $mysqldPath;
+    if ( $mysqldPath =~ /^(.*?)[\/\\]bin[\/\\]mysqld/ or $mysqldPath =~ /^(.*?)[\/\\]sbin[\/\\]mysqld/ ) {
+        $opts->{mysqlHome} = $1;
+    }
+
+    for ( my $i = 1 ; $i < scalar(@items) ; $i++ ) {
+        my $item = $items[$i];
+        my ( $key, $val ) = split( '=', $item );
+        $opts->{$key} = $val;
+    }
+
+    if ( not defined( $opts->{mysqlHome} ) ) {
+        $opts->{mysqlHome} = $opts->{basedir};
+    }
+    if ( not defined( $opts->{'defaults-file'} ) ) {
+        $opts->{configFile} = '/etc/my.cnf';
+    }
+    else {
+        $opts->{configFile} = $opts->{'defaults-file'};
+    }
+
+    return $opts;
+}
+
+sub getMysqldConf {
+    my ( $port, $osUser ) = @_;
+
+    my $mysqldConf = {};
+    my $isRunning  = 0;
+    my $realOsUser;
+    my $pid;
+    my $listenLine = `netstat -nlp |grep :${port} `;
+    print("netstat -nlp |grep :${port}\n");
+    print( $listenLine, "\n" );
+    $listenLine =~ s/^\s*|\s*$//g;
+
+    if ( $listenLine eq '' ) {
+        print("WARN: Mysql not listen on port $port.\n");
+    }
+    elsif ( $listenLine =~ /LISTEN\s+(\d+)/ ) {
+        $pid       = $1;
+        $isRunning = 1;
+    }
+
+    if ( defined($pid) ) {
+        my $procInfoLine = `ps -p $pid -o user,args | tail -1 `;
+        $procInfoLine =~ s/^\s*|\s*$//g;
+        my $command = $procInfoLine;
+        if ( $command =~ /^(\S+)/ ) {
+            $realOsUser = $1;
+        }
+
+        if ( defined($osUser) and $osUser ne '' and $command !~ s/^$osUser\s+// ) {
+            print("ERROR: Mysql listen on port:$port not running on os user:$osUser.\n");
+        }
+        else {
+            my $cmdOpts = parseCommandOpts( $pid, $command );
+
+            my $confFile  = $cmdOpts->{configFile};
+            my $mysqlConf = MysqlConfParser->new($confFile);
+            my $ini       = $mysqlConf->getConfig();
+
+            $mysqldConf = $ini->{mysqld};
+            while ( my ( $k, $v ) = each(%$cmdOpts) ) {
+
+                #为了变量名命名规范，把减号统一换成下划线
+                $k =~ s/-/_/g;
+                $mysqldConf->{$k} = $v;
+            }
+
+            my $autoCnfFile = $mysqldConf->{datadir} . '/auto.cnf';
+            if ( -f $autoCnfFile ) {
+                my $dataConf   = MysqlConfParser->new($autoCnfFile);
+                my $autoIni    = $dataConf->getConfig();
+                my $autoConfig = $autoIni->{auto};
+                if ( defined($autoConfig) ) {
+                    $mysqldConf->{server_uuid} = $autoConfig->{'server-uuid'};
+                }
+            }
+        }
+    }
+
+    $mysqldConf->{OS_USER}   = $realOsUser;
+    $mysqldConf->{isRunning} = $isRunning;
+
+    return $mysqldConf;
+}
+
+sub getDataDirConf {
+    my ($dataDir) = @_;
+
+    my $dataDirInfo = {};
+
+    my $mountsMap  = {};
+    my $dfTxt      = `mount`;
+    my @mountLines = split( /\n/, $dfTxt );
+    my $linesCount = scalar(@mountLines);
+    for ( my $i = 0 ; $i < $linesCount ; $i++ ) {
+        my $line = $mountLines[$i];
+        $line =~ s/^\s*|\s*$//g;
+        if ( $line =~ /^(.*?)\s+on\s+(.*?)\s+type\s/ ) {
+            my $fileSystem = $1;
+            my $mountPoint = $2;
+            $mountsMap->{$mountPoint} = $fileSystem;
+        }
+    }
+
+    my $matchedFileSys;
+    my $matchedMountPoint;
+    my $rel2MountPointPath;
+    my $matchLen = 0;
+
+    while ( my ( $mountPoint, $fileSys ) = each(%$mountsMap) ) {
+        if ( $dataDir =~ /^$mountPoint/ ) {
+            my $mountPointLen = length($mountPoint);
+            if ( $mountPointLen > $matchLen ) {
+                $matchLen           = $mountPointLen;
+                $matchedMountPoint  = $mountPoint;
+                $rel2MountPointPath = substr( $dataDir, length($matchedMountPoint) );
+                $matchedFileSys     = $fileSys;
+            }
+        }
+    }
+
+    if ( defined($matchedFileSys) ) {
+        my $lvPath;
+        my $lvName;
+        my $vgName;
+        print("lvdisplay '$matchedFileSys'\n");
+        my $lvTxt = `lvdisplay '$matchedFileSys'`;
+        if ( $? == 0 ) {
+            print( $lvTxt, "\n" );
+            foreach my $line ( split( /\n/, $lvTxt ) ) {
+                if ( $line =~ /^\s*LV Path\s+(.*?)$/ ) {
+                    $lvPath = $1;
+                }
+                elsif ( $line =~ /^\s*LV Name\s+(.*?)$/ ) {
+                    $lvName = $1;
+                }
+                elsif ( $line =~ /^\s*VG Name\s+(.*?)$/ ) {
+                    $vgName = $1;
+                }
+            }
+
+            $dataDirInfo->{lvName}         = $lvName;
+            $dataDirInfo->{lvMountPoint}   = $matchedMountPoint;
+            $dataDirInfo->{rel2MountPoint} = $rel2MountPointPath;
+            $dataDirInfo->{vgName}         = $vgName;
+            $dataDirInfo->{lvPath}         = $lvPath;
+        }
+        else {
+            print("INFO: Directory:$dataDir is not on a lvm volume.\n");
+        }
+    }
+
+    return $dataDirInfo;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            OS_USER=s
+            PORT=s
+        }
+    );
+
+    my $hasOptErr = 0;
+
+    my $osUser = $opts->{OS_USER};
+    my $port   = $opts->{PORT};
+
+    if ( not defined($port) or $port eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined mysql listen port by option --port.\n");
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError    = 0;
+    my $mysqldConf  = getMysqldConf( $port, $osUser );
+    my $dataDir     = $mysqldConf->{datadir};
+    my $dataDirInfo = getDataDirConf($dataDir);
+    while ( my ( $k, $v ) = each(%$dataDirInfo) ) {
+
+        #为了变量名命名规范，把减号统一换成下划线
+        $k =~ s/-/_/g;
+        $mysqldConf->{$k} = $v;
+    }
+
+    if ( not defined( $mysqldConf->{server_id} ) ) {
+        $mysqldConf->{server_id} = '';
+    }
+
+    if ( not defined( $mysqldConf->{log_bin} ) ) {
+        $mysqldConf->{log_bin} = '';
+    }
+
+    AutoExecUtils::saveOutput($mysqldConf);
+    return $hasError;
+}
+
+exit main();
+
+1;

@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --disk_name <disk name> --vg_name <vg name>  --lv_name <lv name> --mount_name <mount name> --fs_type <fs type> --size <size>"
+    exit -1
+}
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            disk_name)
+                disk_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            vg_name)
+                vg_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            lv_name)
+                lv_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            mount_name)
+                mount_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            fs_type)
+                fs_type="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            size)
+                size="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[ ! -n "$disk_name"  && ! -n "$vg_name" && ! -n "$lv_name" && ! -n "$fs_type" && ! -n "$mount_name" && ! -n "$size" ]] ; then
+    usage
+fi 
+
+#与文件格式有关不能100%挂载，此处减去400MB空间
+size_mb=$(((size*1024)-400))
+pvcreate $disk_name
+vgcreate $vg_name $disk_name
+lvcreate -L ${size_mb}M -n $lv_name $vg_name
+
+mkfs -t $fs_type /dev/${vg_name}/${lv_name}
+mkdir -p $mount_name
+mount /dev/${vg_name}/${lv_name} $mount_name
+echo "/dev/mapper/${vg_name}-${lv_name}   $mount_name     $fs_type        defaults        0 0" >> /etc/fstab
+
+file="/etc/udev/rules.d/70-persistent-net.rules"
+if [ -e $file ]
+then
+    rm -f $file
+fi
+
+#重置克隆后的网卡名和网卡信息
+file="/etc/sysconfig/network-scripts/ifcfg-eth1"
+if [ -e $file ]
+then
+    perl -i -pe "s/eth1/eth0/g" /etc/sysconfig/network-scripts/ifcfg-eth1
+    perl -i -pe "s/HWADDR\S+\n//g" /etc/sysconfig/network-scripts/ifcfg-eth1
+    cd /etc/sysconfig/network-scripts
+    mv ifcfg-eth1 ifcfg-eth0
+fi
+
+#关闭防火墙
+ps -p1 | grep systemd >/dev/null && initType="systemd" || initType="sysvinit"
+if [ "$initType" = "sysvinit" ]; then
+    service iptables stop
+    chkconfig iptables off
+else
+    systemctl stop firewalld
+    systemctl disable firewalld
+fi
+
+#关闭selinux
+if [ -d "/etc/selinux/config" ]; then
+    getenforce 
+    setenforce 0
+    sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config
+fi
+
+#延迟1分钟关机重启
+shutdown -r 1

@@ -1,0 +1,130 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+use lib "$FindBin::Bin/lib";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+
+use AutoExecUtils;
+
+sub main {
+    $| = 1;    #不对输出进行buffer，便于实时看到输出日志
+    my $host;
+    my $port = 5432;
+    my $user;
+    my $password;
+    my $dataDir;
+    my $cleanDir = 0;
+
+    GetOptions(
+        'host=s'     => \$host,
+        'port=i'     => \$port,
+        'user=s'     => \$user,
+        'password=s' => \$password,
+        'datadir=s'  => \$dataDir,
+        'cleandir=i' => \$cleanDir
+    );
+
+    my $hasOptErr = 0;
+    if ( not defined($host) or $host eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined host by option --host\n");
+    }
+
+    if ( not defined($port) or $port eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined port by option --port\n");
+    }
+
+    if ( not defined($user) or $user eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined user by option --user\n");
+    }
+
+    if ( not defined($dataDir) or $dataDir eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined data directory by option --datadir\n");
+    }
+
+    if ( $hasOptErr == 1 ) {
+        exit(1);
+    }
+
+    my $hasError = 0;
+
+    if ( $cleanDir == 1 and -d $dataDir ) {
+        $hasError = system(qq{rm -rf "$dataDir/.*"});
+        if ( $hasError != 0 ) {
+            print("ERROR: Remove $dataDir content failed.\n");
+        }
+    }
+
+    if ( $hasError == 0 ) {
+        if ( defined($password) and $password ne '' ) {
+            my $osUser   = getpwuid($<);
+            my @userInfo = getpwnam($osUser);
+            my $homePath = $userInfo[7];
+            my $passFile = "$homePath/.pgpass";
+
+            if ( not -e $passFile ) {
+                my $fh = IO::File->new(">$passFile");
+                if ( defined($fh) ) {
+                    $fh->close();
+                }
+                else {
+                    print("ERROR: Create file $passFile failed, $!\n");
+                    $hasError = 1;
+                }
+            }
+            chmod( 0600, $passFile );
+
+            if ( $hasError == 0 ) {
+                my $content = AutoExecUtils::getFileContent($passFile);
+
+                #hostname:port:database:username:password
+                my $modified   = 0;
+                my $newContent = '';
+                my $newConf    = "$host:$port:$user";
+                foreach my $line ( split( /\n/, $content ) ) {
+                    $line =~ s/^\s*|\s*$//g;
+                    if ( $line =~ /^$newConf/ ) {
+                        $modified   = 1;
+                        $newContent = $newContent . "$newConf:$password\n";
+                    }
+                    else {
+                        $newContent = $newContent . $line . "\n";
+                    }
+                }
+                if ( $modified == 0 ) {
+                    $newContent = $newContent . "$newConf:$password\n";
+                }
+
+                my $fh = IO::File->new(">$passFile");
+                if ( defined($fh) ) {
+                    print $fh ($newContent);
+                    $fh->close();
+                }
+                else {
+                    $hasError = 1;
+                    print("ERROR: Can not write to file $passFile, $!\n");
+                }
+            }
+        }
+    }
+
+    if ( $hasError == 0 ) {
+        my $cmd = qq{pg_basebackup -D "$dataDir" -h $host -p $port -U $user -X stream -P};
+        print("INFO: Execute->$cmd\n");
+        $hasError = system($cmd);
+    }
+
+    if ( $hasError > 255 ) {
+        $hasError = $hasError >> 8;
+    }
+    return $hasError;
+}
+
+exit main();
+

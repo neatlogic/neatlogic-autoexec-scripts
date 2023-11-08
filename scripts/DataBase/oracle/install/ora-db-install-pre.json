@@ -1,0 +1,58 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "非Grid的Oracle安装OS其他前置工作(root用户执行服务配置)",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "grid",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_BASE",
+            "name": "ORACLE_BASE",
+            "help": "ORACLE_BASE目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "GRID安装的目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INVENTORY_LOCATION",
+            "name": "Inventory目录",
+            "help": "Oracle Inventory目录",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "UNIX_GROUP_NAME",
+            "name": "安装用户组",
+            "help": "GRID安装用户组",
+            "type": "text",
+            "defaultValue": "oinstall",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

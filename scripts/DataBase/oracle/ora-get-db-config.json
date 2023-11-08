@@ -1,0 +1,319 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "在某个Oracle节点执行, 获取当前节点和集群相关的节点等信息",
+    "option": [
+        {
+            "opt": "GRID_USER",
+            "name": "GRID_USER",
+            "help": "Oracle Grid软件的OS用户",
+            "type": "text",
+            "defaultValue": "grid",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_USER",
+            "name": "Oralce用户",
+            "help": "Oracle Database软件的OS用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB_UNIQUE_NAME",
+            "help": "DB的唯一名, 如当前ORACLE_HOME只安装了一个实例, 则可以留空",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "ONLY_NODES",
+            "name": "只获取节点信息",
+            "help": "只获取节点信息用于确定执行目标, 不获取其他参数",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "crsName",
+            "name": "集群名",
+            "help": "不带数字序号的集群节点名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "majorVersion",
+            "name": "Oracle主版本号",
+            "help": "Oracle软件的主版本号",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "crsHome",
+            "name": "集群Home目录",
+            "help": "通过$ORACLE_HOME/srvm/admin/getcrshome获取的CRS Home目录",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "nodeName",
+            "name": "Grid节点名",
+            "help": "集群节点名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "instanceName",
+            "name": "实例名",
+            "help": "实例名, SID",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbName",
+            "name": "DB库名",
+            "help": "库名，主备是一致的",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbUniqueName",
+            "name": "DB唯一名",
+            "help": "实例名，RAC集群内一致，主备不一样",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "GRID_BASE",
+            "name": "GRID_BASE",
+            "help": "GRID_BASE",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "GRID_HOME",
+            "name": "GRID_HOME",
+            "help": "GRID_HOME",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "INVENTORY_DIR",
+            "name": "INVENTORY_DIR",
+            "help": "INVENTORY_DIR",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "ORACLE_BASE",
+            "name": "ORACLE_BASE",
+            "help": "ORACLE_BASE",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "ORACLE_HOME",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "gridNodeIpInfo",
+            "name": "集群节点IP信息",
+            "help": "集群节点IP对应关系",
+            "type": "json",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "gridNodeIpTxt",
+            "name": "集群节点IP列表",
+            "help": "集群节点IP对应关系",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbInstancesIpInfo",
+            "name": "DB节点IP信息",
+            "help": "DB节点名和IP、主机名对应关系",
+            "type": "json",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbInstancesIpTxt",
+            "name": "DB节点IP信息",
+            "help": "DB节点名和IP、主机名对应关系",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "hostsConfTxt",
+            "name": "hosts配置内容",
+            "help": "/etc/hosts配置内容",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "allGridNodesInfo",
+            "name": "集群所有节点",
+            "help": "所有集群成员的执行节点信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "otherGridNodesInfo",
+            "name": "当前节点以外节点",
+            "help": "除当前节点以外的其他集群成员节点信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "otherNodeNames",
+            "name": "当前节点以外节点名称",
+            "help": "除当前节点以外的其他集群成员节点名称",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "thisNodesInfo",
+            "name": "当前节点信息",
+            "help": "当前节点信息",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "operNodeInfo",
+            "name": "其他第一个操作节点",
+            "help": "除当前节点外可以执行集群操作的第一个节点",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "uniqDbTnsConf",
+            "name": "使用DB_UNIQUE_NAME的tns配置",
+            "help": "用于ADG的数据同步使用的tnsnames.ora的配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "lsnrOraConfPath",
+            "name": "listener.ora路径",
+            "help": "文件listener.ora的路径, RAC使用的是GRID_HOME下的, 非RAC是ORACLE_HOME下的",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "tnsOraConfPath",
+            "name": "tnsnames.ora路径",
+            "help": "tnsnames.ora的路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbTnsConf",
+            "name": "使用DB_NAME的tns配置",
+            "help": "基于实例VIP的tnsnames.ora的配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "racScanTnsConf",
+            "name": "基于SCAN_IP的tns配置",
+            "help": "基于多个SCAN_IP的tnsnames.ora的配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "rmanDbTnsConf",
+            "name": "用于Rman远程复制的tns配置",
+            "help": "用于Ramn进行远程库复制的tns配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "spfilePath",
+            "name": "spfile路径",
+            "help": "spfile文件的路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "pwdFilePath",
+            "name": "pwdFile路径",
+            "help": "RAC环境密码文件在服务器上的路径, 非RAC环境为空",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "pwdFile",
+            "name": "pwdFile文件",
+            "help": "下载到作业目录的RAC环境密码文件路径",
+            "type": "filepath",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "dbParameters",
+            "name": "全部DB参数",
+            "help": "show parameter的所有参数",
+            "type": "json",
+            "defaultValue": {},
+            "required": "false"
+        }
+    ]
+}

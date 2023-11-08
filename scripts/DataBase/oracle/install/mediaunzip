@@ -1,0 +1,111 @@
+#!/bin/bash
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            ZIP_FILE)
+                ZIP_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            UNZIP_DEST_PATH)
+                UNZIP_DEST_PATH="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            OVER_WRITE)
+                OVER_WRITE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            USER)
+                USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GROUP)
+                GROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$ZIP_FILE" ]; then
+    echo "ERROR: Must defined zip file by option --ZIP_FILE."
+    exit 2
+fi
+
+if [ -z "$UNZIP_DEST_PATH" ]; then
+    echo "ERROR: Must defined unzip destion directory by option --UNZIP_DEST_PATH."
+    exit 2
+fi
+
+if [ ! -d "$UNZIP_DEST_PATH" ]; then
+    DO_CMD mkdir -p "$UNZIP_DEST_PATH"
+fi
+
+DO_CMD cd $UNZIP_DEST_PATH
+
+if [ "$OVER_WRITE" == "1" ]; then
+    DO_CMD unzip -qo $ZIP_FILE
+else
+    DO_CMD unzip -qn $ZIP_FILE
+fi
+
+if [ -n "$USER" ]; then
+    if [ -z "$GROUP" ]; then
+        GROUP=$USER
+    fi
+    DO_CMD chown -R $USER:$GROUP $UNZIP_DEST_PATH
+fi
+
+exit $HAS_ERROR

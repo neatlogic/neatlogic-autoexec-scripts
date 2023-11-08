@@ -1,0 +1,160 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --file_path <file path> --java_home <java home> --run_user <run user> --run_group <run user group> --install_path <install path>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            file_path)
+                file_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            java_home)
+                java_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            install_path)
+                install_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$java_home" ]] ; then
+    java_home=`echo $JAVA_HOME`
+fi 
+
+if [ ! -d $java_home ]; then
+    echo "ERROR:: JAVA_HOME dir not found."
+    exit 1
+fi
+
+if [[  ! -n "$file_path" ]] ; then
+    echo "ERROR:: Must defined file_path."
+    usage
+fi 
+
+if [[  ! -n "$install_path" ]] ; then
+    echo "ERROR:: Must defined install_path."
+    usage
+else 
+    install_path="$install_path/weblogic/"
+fi 
+
+if [[  ! -n "$run_user"  && ! -n "$run_group"  ]] ; then
+    echo "ERROR:: Must defined run user  and group."
+    usage
+fi 
+
+groupadd $run_user 
+useradd $run_user -g $run_group
+
+current_path=`pwd`
+if [[  ! -d "$install_path" ]] ; then
+    mkdir -p $install_path
+fi 
+
+export JAVA_HOME=$java_home
+export PATH=$java_home/bin/:$PATH
+
+cd $install_path
+inventory_loc="$install_path/oraInventory"
+mkdir -p $inventory_loc
+rm -f oraInst.loc
+touch oraInst.loc
+cat <<EOF >> "oraInst.loc"
+inventory_loc=$inventory_loc
+inst_group=$run_group
+EOF
+
+rm -f wls.rsp
+touch wls.rsp
+#ORACLE_HOME必须是空目录
+ORACLE_HOME=$install_path/Oracle/Middleware
+cat <<EOF >> "wls.rsp"
+[ENGINE]
+Response File Version=1.0.0.0.0
+
+[GENERIC]
+ORACLE_HOME=$ORACLE_HOME
+INSTALL_TYPE=WebLogic Server
+DECLINE_SECURITY_UPDATES=true
+SECURITY_UPDATES_VIA_MYORACLESUPPORT=false
+EOF
+
+chown -R $run_user:$run_group  $install_path
+
+#静默安装
+is_success=0
+su - "$run_user" -c "$JAVA_HOME/bin/java -jar $file_path -silent -responseFile $install_path/wls.rsp -invPtrLoc $install_path/oraInst.loc"
+if [ $? != 0 ]
+then
+    echo "ERROR:: Weblogic silent install failed."
+    is_success=1
+else
+    echo "INFO:: Weblogic silent install success."
+    rm -f wls.rsp
+    rm -f oraInst.loc
+fi
+
+if [ $is_success != 0 ]; then 
+    exit $is_success
+fi
+
+#设置环境变量
+su - "$run_user" -c "sh $ORACLE_HOME/wlserver/server/bin/setWLSEnv.sh"
+if [ $? != 0 ]
+then
+    echo "ERROR:: Set weblogic envionment variables failed."
+    is_success=1
+else
+    echo "INFO:: Set weblogic envionment variables succeed."
+fi
+
+#jdk创建随机数Bug
+perl -i -pe "s{securerandom.source=.*$}{securerandom.source=file:/dev/./urandom}"  $java_home/jre/lib/security/java.security
+
+if [ $is_success != 0 ]; then 
+    exit $is_success
+fi
+
+#输出安装路径
+cat <<EOF > "$current_path/output.json"
+{ 
+    "weblogic_home":"$ORACLE_HOME" 
+}
+EOF

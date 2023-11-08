@@ -1,0 +1,199 @@
+#!/usr/bin/perl
+#创建Oracle ASM磁盘组，只支持redundancy=external模式
+#冗余级别为external时，ASM不保证数据的冗余，完全依赖于存储的冗余，
+#不能指定failgroup，但是默认会为每一个disk分配一个failgroup，
+#同一份数据只能存在一个failgroup中
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use Getopt::Long;
+
+use AutoExecUtils;
+use SqlplusExec;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --griduser <Grid os user name> --name <FRA disk group name> --disks <disk path 1>,<disk path 2>\n");
+    exit(1);
+}
+
+sub cleanDisk {
+    my ($diskPath) = @_;
+    if ( -e $diskPath ) {
+        my $ddCmd    = "dd bs=64k count=1 if=/dev/zero of=$diskPath";
+        my $exitCode = system($ddCmd);
+        if ( $exitCode != 0 ) {
+            print("WARN: Clean disk $diskPath by command:$ddCmd failed.\n");
+        }
+        else {
+            print("Clean disk $diskPath success.\n");
+        }
+    }
+    else {
+        print("WARN: Disk dev:$diskPath not exists.\n");
+    }
+}
+
+sub createDiskGroup {
+    my ( $gridUser, $dgName, $compatible, $reCreate, $dgDisks ) = @_;
+
+    my $sqlplus = SqlplusExec->new( osUser => $gridUser, sysasm => 1 );
+
+    my $crtDgDisksMap  = {};
+    my @disksDev       = ();
+    my @disksWithQuote = ();
+    foreach my $diskPath ( split( /\s*,\s*/, $dgDisks ) ) {
+        $diskPath =~ s/^\s*|\s*$//g;
+        if ( $diskPath ne '' ) {
+            push( @disksDev,       $diskPath );
+            push( @disksWithQuote, "'$diskPath'" );
+            $crtDgDisksMap->{$diskPath} = 1;
+        }
+    }
+    my $disksStr = join( ',', @disksWithQuote );
+
+    my $dgExists = 0;
+    my $dgState  = 'DISMOUNTED';
+    my $dgRows;
+    my $exitCode = 0;
+    ( $exitCode, $dgRows ) = $sqlplus->query(
+        sql     => qq{select name,state from v\$asm_diskgroup where name='$dgName';},
+        verbose => 1
+    );
+
+    if ( defined($dgRows) ) {
+        $dgExists = 1;
+        $dgState  = $$dgRows[0]->{STATE};
+    }
+
+    if ( $reCreate == 0 ) {
+        if ( $dgExists == 1 ) {
+            print("WARN: Disk group:$dgName already exists.\n");
+            $sqlplus->query(
+                sql     => qq{SELECT dg.name, d.path FROM V\$ASM_DISK d, V\$ASM_DISKGROUP dg WHERE dg.group_number = d.group_number and dg.name='$dgName';},
+                verbose => 1
+            );
+
+            if ( $dgState ne 'MOUNTED' ) {
+                my $startDgCmd = qq{su - $gridUser -c '"\$ORACLE_HOME/bin/srvctl" start diskgroup -diskgroup $dgName'};
+                print("Start diskgroup by command: $startDgCmd\n");
+                $exitCode = system($startDgCmd);
+            }
+
+            return $exitCode;
+        }
+        else {
+            print("Try to create disk group:$dgName.\n");
+            $exitCode = $sqlplus->do(
+                sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '$compatible', 'compatible.asm' = '$compatible'},
+                verbose => 1
+            );
+
+            if ( $exitCode == 0 ) {
+                my $startDgCmd = qq{su - $gridUser -c '"\$ORACLE_HOME/bin/srvctl" start diskgroup -diskgroup $dgName'};
+                print("Start diskgroup by command: $startDgCmd\n");
+                $exitCode = system($startDgCmd);
+            }
+        }
+    }
+    else {
+        if ( $dgExists == 1 ) {
+            print("Disk group:$dgName is $dgState, Try to stop it.\n");
+            my $stopDgCmd = qq{su - $gridUser -c '"\$ORACLE_HOME/bin/srvctl" stop diskgroup -diskgroup $dgName'};
+            print("Stop diskgroup by command: $stopDgCmd\n");
+            $exitCode = system($stopDgCmd);
+
+            print("Try to drop diskgroup:$dgName\n");
+            $exitCode = $sqlplus->do(
+                sql     => qq{alter diskgroup $dgName mount;\ndrop diskgroup $dgName;\n},
+                verbose => 1
+            );
+
+            if ( $exitCode != 0 ) {
+                my $code = $sqlplus->do(
+                    sql     => qq{alter diskgroup $dgName dismount;},
+                    verbose => 1
+                );
+
+                if ( $code == 0 ) {
+                    foreach my $diskPath (@disksDev) {
+                        cleanDisk($diskPath);
+                    }
+                }
+            }
+        }
+
+        print("Try to create disk group:$dgName.\n");
+        $exitCode = $sqlplus->do(
+            sql     => qq{create diskgroup $dgName external redundancy disk $disksStr ATTRIBUTE 'compatible.rdbms' = '$compatible', 'compatible.asm' = '$compatible'},
+            verbose => 1
+        );
+
+        if ( $exitCode == 0 ) {
+            my $startDgCmd = qq{su - $gridUser -c '"\$ORACLE_HOME/bin/srvctl" start diskgroup -diskgroup $dgName'};
+            print("Start diskgroup by command: $startDgCmd\n");
+            $exitCode = system($startDgCmd);
+        }
+    }
+
+    return $exitCode;
+}
+
+sub main {
+    my ( $isHelp, $dgName, $dgDisks );
+    my $gridUser   = 'grid';
+    my $compatible = '12.0';
+    my $reCreate   = 0;
+    GetOptions(
+        'h|help'       => \$isHelp,
+        'griduser=s'   => \$gridUser,
+        'name=s'       => \$dgName,
+        'compatible=s' => \$compatible,
+        'recreate=i'   => \$reCreate,
+        'disks=s'      => \$dgDisks
+    );
+
+    if ($isHelp) {
+        usage();
+    }
+    my $hasOptErr = 0;
+    if ( not defined($dgName) or $dgName eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined disk group name by option --name.\n");
+    }
+    if ( not defined($dgDisks) or $dgDisks eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined disk paths by option --disks.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    #create diskgroup archdg external redundancy disk '/dev/oracleasm/arch-disk1','/dev/oracleasm/arch-disk2' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+    #create diskgroup datadg external redundancy disk '/dev/oracleasm/data-disk1','/dev/oracleasm/data-disk2' ATTRIBUTE 'compatible.rdbms' = '19.0', 'compatible.asm' = '19.0'
+
+    my $out = {};
+    $dgDisks =~ s/\\n/,/g;
+    my $exitCode = createDiskGroup( $gridUser, $dgName, $compatible, $reCreate, $dgDisks );
+    if ( $exitCode != 0 ) {
+        $hasError = 1;
+        print("ERROR: Create disk group:$dgName:$dgDisks failed.\n");
+    }
+    else {
+        $out->{diskGroupName} = $dgName;
+        print("------All disk groups------------------\n");
+        system(qq{su - $gridUser -c '"\$ORACLE_HOME/bin/asmcmd" lsdg'});
+    }
+
+    AutoExecUtils::saveOutput($out);
+
+    return $hasError;
+}
+
+exit( main() );

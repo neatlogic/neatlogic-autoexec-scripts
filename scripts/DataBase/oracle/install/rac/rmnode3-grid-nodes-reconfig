@@ -1,0 +1,129 @@
+#!/bin/bash
+#使用集群工具crsctl从集群配置中彻底清除被删除节点, 保证所有相关内容都被删除
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All operations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            REMOVE_NODES)
+                REMOVE_NODES="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$GRID_USER" ]; then
+    GRID_USER=grid
+fi
+
+GRID_UID=$(id -u $GRID_USER 2>/dev/null)
+if [ -z "$GRID_UID" ]; then
+    echo "WARN: User $GRID_USER not exists, maybe already uninstalled."
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+oraEnv=$(SUDO_ORA_CMD $GRID_USER env | grep ORACLE_)
+echo "$oraEnv"
+eval "$oraEnv"
+
+#========开始执行删除操作==============================
+#需要计算需要删除的多个节点
+echo "Try to delete nodes:$REMOVE_NODES..."
+for NODE in $(echo $REMOVE_NODES | sed 's/,/ /'); do
+    echo "Try to delete $NODE from cluster config..."
+    $ORACLE_HOME/bin/crsctl delete node -n $NODE
+
+    #输出验证信息
+    echo "Try to verify grid delete..."
+    su - $GRID_USER -c "$ORACLE_HOME/bin/olsnodes -s -t"
+    su - $GRID_USER -c "$ENV_DISTID $ORACLE_HOME/bin/cluvfy stage -post nodedel -n node_list -verbose"
+
+    echo "Try to ensure node vip deleted..."
+    #补充执行清除vip，报错关系也不大
+    su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl status vip -n $NODE"
+    su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl stop vip -i $NODE"
+    su - $GRID_USER -c "$ORACLE_HOME/bin/srvctl remove vip -i $NODE -f"
+    su - $GRID_USER -c "$ORACLE_HOME/bin/crsctl stat res -t"
+done
+
+exit $HAS_ERROR

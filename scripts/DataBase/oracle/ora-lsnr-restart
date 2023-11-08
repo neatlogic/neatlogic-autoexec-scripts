@@ -1,0 +1,101 @@
+#!/usr/bin/perl
+use FindBin;
+use strict;
+use Getopt::Long;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --GRID_USER <GRID_USER> --ORACLE_USER <ORACLE_USER>\n");
+    exit(1);
+}
+
+sub getCrsHome {
+    my ($osUser) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $gridHome = '';
+    my $cmdFile  = "\$ORACLE_HOME/srvm/admin/getcrshome";
+
+    #print("su - '$osUser' -c '$cmdFile'\n");
+    $gridHome = `su - '$osUser' -c '$cmdFile'`;
+    if ( $? == 0 ) {
+        $gridHome =~ s/^\s*|\s*$//g;
+    }
+
+    print("Oracle crs home:$gridHome\n");
+    return $gridHome;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            GRID_USER=s
+            ORACLE_USER=s
+        }
+    );
+
+    my $hasOptErr   = 0;
+    my $ORACLE_USER = $opts->{ORACLE_USER};
+    my $GRID_USER   = $opts->{GRID_USER};
+
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( not defined($GRID_USER) or $GRID_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined GRID_USER by option --GRID_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $hasError = 0;
+
+    my $osUser;
+    my $crsHome = getCrsHome($ORACLE_USER);
+    if ( defined($crsHome) and $crsHome ne '' ) {
+        $osUser = $GRID_USER;
+    }
+    else {
+        $osUser = $ORACLE_USER;
+    }
+
+    my $statusCmd = qq{su - $osUser -c '"\$ORACLE_HOME/bin/lsnrctl" status'};
+    my $stopCmd   = qq{su - $osUser -c '"\$ORACLE_HOME/bin/lsnrctl" stop'};
+    my $startCmd  = qq{su - $osUser -c '"\$ORACLE_HOME/bin/lsnrctl" start'};
+
+    my $exitCode = 0;
+    $exitCode = system($statusCmd);
+
+    if ( $exitCode == 0 ) {
+        print("Listener is up, Try to stop it...\n");
+        $exitCode = system($stopCmd);
+    }
+    else {
+        print("Listener is already down.\n");
+    }
+
+    if ( $exitCode == 0 ) {
+        print("Try to start listener...\n");
+        $exitCode = system($startCmd);
+    }
+
+    if ( $exitCode == 0 ) {
+        print("Listener started.\n");
+    }
+    else {
+        print("ERROR: Start listener failed.\n");
+    }
+
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
+
+    return $exitCode;
+}
+
+exit( main() );

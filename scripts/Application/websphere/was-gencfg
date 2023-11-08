@@ -1,0 +1,115 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use JSON;
+
+use AutoExecUtils;
+Getopt::Long::Configure("pass_through");
+
+sub usage {
+    my $pname = $FindBin::Script;
+    print("$pname --master_node <master node json> --slave_node <slave node json> --server_prefix < server name prefix> --hostname_prefix <hostname perfix> \n");
+    exit(1);
+}
+
+sub main {
+    $| = 1;    #不对输出进行buffer，便于实时看到输出日志
+    AutoExecUtils::setEnv();
+
+    my ( $ishelp, $master_node, $slave_node, $hostname_prefix, $server_prefix );
+
+    GetOptions(
+        'help'              => \$ishelp,
+        'slave_node=s'      => \$slave_node,
+        'master_node=s'     => \$master_node,
+        'server_prefix=s'   => \$server_prefix,
+        'hostname_prefix=s' => \$hostname_prefix
+    );
+
+    my $hasOptErr = 0;
+    my ( $masterNode, $slaveNode );
+    if ( not defined($master_node) or $master_node eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Option --master_node not defined.\n");
+    }
+    else {
+        $masterNode = from_json($master_node);
+    }
+
+    if ( defined($slave_node) and $slave_node ne '' ) {
+        $slaveNode = from_json($slave_node);
+    }
+
+    if ( not defined($hostname_prefix) or ( $hostname_prefix eq '' ) ) {
+        $hostname_prefix = 'was';
+    }
+
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    my $count = 1;
+    ####根据前缀自动生成内容#######
+    ####hostname|nodename|cellname|servername
+    ####192.168.0.90-was01|node01|cell01|server1,192.168.0.91-was02|node02|cell02|server2
+    my $result  = '';
+    my $num_str = '';
+    my $cell_str = '';
+    my $hosts = {};
+    my $hostnames = {};
+    my $content = ''; 
+    ####cell name说明
+    ##DMGR的cell name 默认是主机名 + cell + 01，所以应用profiles分配的不能与dmgr一致
+    foreach my $node (@$masterNode) {
+        $num_str = sprintf( "%02d", $count );
+        $cell_str = sprintf( "%02d", ($count+1) );
+        my $hostname   = $hostname_prefix . $num_str;
+        my $profilename = "AppSvr" . $num_str;
+        my $nodename   = "wasNode" . $num_str;
+        my $cellname   = $nodename . "Cell" . $cell_str;
+        my $servername = $server_prefix . $count;
+        my $nodeIp = $node->{'ip'};
+        $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        #hosts
+        $hosts->{$nodeIp} = $nodename;
+        $hostnames->{$nodeIp} = $hostname;
+        #hostscontent
+        $content = $content . "$nodeIp $nodename\n";
+        $content = $content . "$nodeIp $hostname\n";
+        $count++;
+    }
+
+    foreach my $node (@$slaveNode) {
+        $num_str = sprintf( "%02d", $count );
+        $cell_str = sprintf( "%02d", ($count+1) );
+        my $hostname   = $hostname_prefix . $num_str;
+        my $profilename = "AppSvr" . $num_str;
+        my $nodename   = "wasNode" . $num_str;
+        my $cellname   = $nodename . "Cell" . $cell_str;
+        my $servername = $server_prefix . $count;
+        my $nodeIp = $node->{'ip'};
+        $result = $result . $nodeIp . '-' . $hostname . '|'. $profilename . '|' . $nodename . '|' . $cellname . '|' . $servername . ',';
+        #hosts
+        $hosts->{$nodeIp} = $nodename;
+        $hostnames->{$nodeIp} = $hostname;
+        #hostscontent
+        $content = $content ."$nodeIp $nodename\n";
+        $content = $content ."$nodeIp $hostname\n";
+        $count++;
+    }
+
+    my $out = {};
+    $out->{app_cfgs} = $result;
+    $out->{ip2Hostname} = to_json($hosts);
+    $out->{hostnames} = to_json($hostnames);
+    $out->{hostContent} = $content;
+    AutoExecUtils::saveOutput($out);
+
+    return 0;
+}
+
+exit main();

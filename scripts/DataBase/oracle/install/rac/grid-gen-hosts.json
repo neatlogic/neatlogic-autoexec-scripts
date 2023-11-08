@@ -1,0 +1,117 @@
+{
+    "opType": "runner",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "python",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "根据getallnicip工具输出的IP信息, 生成RAC节点需要的/etc/hosts文件相关配置信息",
+    "option": [
+        {
+            "opt": "crsname",
+            "name": "集群名",
+            "help": "作为节点命名的前缀, 节点名称: 集群名+序号",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "scanname",
+            "name": "SCAN名",
+            "help": "集群访问VIP, 集群名-SCAN",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "pubnet",
+            "name": "Public网段",
+            "help": "Public网段定义, 例如: 10.10.10.0/24",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "privnet",
+            "name": "Private网段",
+            "help": "Private网段定义, 例如: 192.168.10.0/24",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "viplist",
+            "name": "VIP列表",
+            "help": "VIP列表, 一个IP一行, 数量跟节点数要一致",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "scaniplist",
+            "name": "ScanIP列表",
+            "help": "SCAN IP列表, 一个IP一行, 一到三个IP",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "nodesipinfo",
+            "name": "节点IP信息",
+            "help": "getallnicip工具输出的IP信息",
+            "type": "json",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "ip2HostName",
+            "name": "IP到主机名映射",
+            "help": "public网卡IP到主机名的映射",
+            "type": "json",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "hostsConfTxt",
+            "name": "hosts配置内容",
+            "help": "/etc/hosts配置内容",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "dbClusterNodes",
+            "name": "DB集群节点名配置",
+            "help": "DB集群节点名配置, 用于Oracle DB的静默安装配置",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "gridClusterNodes",
+            "name": "Grid集群节点名配置",
+            "help": "Grid集群节点名配置, 用于Orcle grid的静默安装配置",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        },
+        {
+            "opt": "networkInterfaceList",
+            "name": "节点网卡配置",
+            "help": "节点网卡配置, 用于Grid的静默安装配置",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false"
+        }
+    ]
+}

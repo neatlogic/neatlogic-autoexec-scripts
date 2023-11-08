@@ -1,0 +1,98 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "weblogic启停nodeManager",
+    "option": [
+        {
+            "opt": "operat",
+            "name": "操作类型",
+            "help": "操作类型",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "启动",
+                        "value": "start"
+                    },
+                    {
+                        "text": "停止",
+                        "value": "stop"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "start",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "进程用户",
+            "help": "weblogic安装进程用户,如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "进程用户组",
+            "help": "weblogic进程用户组，如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "t3_url",
+            "name": "t3管理地址",
+            "help": "t3管理地址，如：t3:192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "weblogic_home",
+            "name": "weblogic安装路径",
+            "help": "weblogic安装路径，如：/home/weblogic/Oracle/Middleware/",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "domain_path",
+            "name": "domain路径",
+            "help": "domain路径，如：/home/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_username",
+            "name": "admin管理用户",
+            "help": "admin管理用户",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "admin_password",
+            "name": "admin管理密码",
+            "help": "admin管理密码",
+            "type": "password",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

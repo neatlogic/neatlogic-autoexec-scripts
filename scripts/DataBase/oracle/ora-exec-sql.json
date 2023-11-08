@@ -1,0 +1,62 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "连接到远程Oracle主机本地执行SQL",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "GRID安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_SID",
+            "name": "ORACLE_SID",
+            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SQL",
+            "name": "SQL内容",
+            "help": "SQL脚本，支持一或多条SQL语句",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "verbose",
+            "name": "输出详细",
+            "help": "输出明细信息, 如信息中有密码则需要主动关闭详细输出",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "1",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

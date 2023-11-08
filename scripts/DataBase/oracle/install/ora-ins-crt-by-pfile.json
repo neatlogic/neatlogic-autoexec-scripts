@@ -1,0 +1,98 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "MEDIUM",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "通过Pfile内容启动DB到noumount状态",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "Oracle库安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_HOME",
+            "help": "Oracle库软件安装目录, 留空代表使用用户环境变量ORACLE_HOME",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_SID",
+            "name": "ORACLE_SID",
+            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "DB_UNIQUE_NAME",
+            "name": "DB唯一名",
+            "help": "DB的唯一名, 如当前ORACLE_HOME只安装了一个实例, 则可以留空",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "IS_LEADER_NODE",
+            "name": "是否首节点",
+            "help": "部分操作只会在首节点执行, 譬如:创建集群DB、spfile、passwordfile",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "是",
+                        "value": "1"
+                    },
+                    {
+                        "text": "否",
+                        "value": "0"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "1",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SYS_PASSWORD",
+            "name": "SYS用户密码",
+            "help": "创建非DG库才需要, DG库采用复制密码文件的方式设置SYS用户密码",
+            "type": "password",
+            "defaultValue": "{RC4}be56e2fc9aaac7d5908032",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "PWD_FILEPATH",
+            "name": "密码文件路径",
+            "help": "从源库获取的密码文件(使用ora-get-db-config工具可以获取到),构建DG库必须提供",
+            "type": "filepath",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "PFILE_CONTENT",
+            "name": "PFILE内容",
+            "help": "可用于目标生成库的pfile配置内容",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

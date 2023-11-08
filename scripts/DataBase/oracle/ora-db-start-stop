@@ -1,0 +1,242 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_HOME <ORACLE_HOME> \n");
+    print("--stopoption <Stop option>\n");
+    print("--startoption <Startup option>\n");
+    exit(1);
+}
+
+sub getUserEnv {
+    my ($ORACLE_USER) = @_;
+
+    my $env       = {};
+    my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+            $env->{$name} = $val;
+        }
+    }
+    return $env;
+}
+
+sub getCrsHome {
+    my ( $osUser, $ORACLE_HOME ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $gridHome = '';
+    my $cmdFile  = "$ORACLE_HOME/srvm/admin/getcrshome";
+    if ( -e $cmdFile ) {
+        $gridHome = `su - '$osUser' -c '$cmdFile'`;
+        if ( $? == 0 ) {
+            $gridHome =~ s/^\s*|\s*$//g;
+        }
+    }
+
+    return $gridHome;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            ORACLE_HOME=s
+            DB_UNIQUE_NAME=s
+            action=s
+            stopoption=s
+            startoption=s
+        }
+    );
+
+    my $ORACLE_USER  = $opts->{ORACLE_USER};
+    my $ORACLE_HOME  = $opts->{ORACLE_HOME};
+    my $dbUniqueName = $opts->{DB_UNIQUE_NAME};
+    my $action       = $opts->{action};
+    my $ORACLE_SID   = $opts->{ORACLE_SID};
+    my $stopOption   = $opts->{stopoption};
+    my $startOption  = $opts->{startoption};
+
+    my $hasOptErr = 0;
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    if ( not defined($ORACLE_HOME) or $ORACLE_HOME eq '' or not defined($ORACLE_SID) or $ORACLE_SID eq '' ) {
+        my $userEnv = getUserEnv($ORACLE_USER);
+        $ORACLE_HOME = $userEnv->{ORACLE_HOME};
+        $ORACLE_SID  = $userEnv->{ORACLE_SID};
+    }
+
+    my $exitCode = 0;
+
+    my $crsHome = getCrsHome( $ORACLE_USER, $ORACLE_HOME );
+    if ( defined($crsHome) and $crsHome ne '' ) {
+        my $envLine = 'LANG=en_US.UTF-8';
+        if ( not defined($dbUniqueName) ) {
+            print("Try to get db unique name...\n");
+            $dbUniqueName = `su - '$ORACLE_USER' -c "$envLine srvctl config database"`;
+            if ( $? != 0 ) {
+                print("ERROR: Can not determine the db unique name by command:srvctl config database.\n");
+                $exitCode = 1;
+                return $exitCode;
+            }
+            $dbUniqueName =~ s/^\s*|\s*$//g;
+            print("Get db unique name:$dbUniqueName.\n");
+        }
+
+        if ( $action eq 'stop' or $action eq 'restart' ) {
+            my $stopCmd;
+            if ( defined($stopOption) and $stopOption ne '' and $stopOption ne 'NONE' ) {
+                $stopCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl stop database -d $dbUniqueName -stopoption $stopOption"};
+            }
+            else {
+                $stopCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl stop database -d $dbUniqueName"};
+            }
+
+            print("Try to stop database: $stopCmd.\n");
+            $exitCode = system($stopCmd);
+
+            if ( $exitCode == 0 ) {
+                print("FINE: Database $dbUniqueName stoped.\n");
+            }
+            else {
+                print("ERROR: Stop database $dbUniqueName failed.\n");
+                return $exitCode;
+            }
+
+        }
+
+        if ( $action eq 'start' or $action eq 'restart' ) {
+            my $startCmd;
+            if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
+                $startCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl start database -d $dbUniqueName -startoption $startOption"};
+            }
+            else {
+                $startCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl start database -d $dbUniqueName"};
+            }
+
+            print("Try to start database: $startCmd.\n");
+            $exitCode = system($startCmd);
+
+            if ( $exitCode == 0 ) {
+                print("FINE: Database $dbUniqueName started.\n");
+            }
+            else {
+                print("ERROR: Start database:$dbUniqueName failed.\n");
+                return $exitCode;
+            }
+        }
+        elsif ( $action eq 'modify' ) {
+            if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
+                my $modifyCmd = qq{su - '$ORACLE_USER' -c "$envLine srvctl modify database -d $dbUniqueName -startoption $startOption"};
+
+                print("Try to modify database: $modifyCmd.\n");
+                $exitCode = system($modifyCmd);
+
+                if ( $exitCode == 0 ) {
+                    print("FINE: Alter Database to $startOption success.\n");
+                }
+                else {
+                    print("ERROR: Alter Database to $startOption failed.\n");
+                    return $exitCode;
+                }
+            }
+            else {
+                $exitCode = 1;
+                print("ERROR: No start optiont defined.\n");
+            }
+        }
+    }
+    else {
+        my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, oraHome => $ORACLE_HOME, sid => $ORACLE_SID );
+        if ( $action eq 'stop' or $action eq 'restart' ) {
+            print("Try to shudown database.\n");
+
+            if ( not defined($stopOption) or $stopOption eq 'NONE' ) {
+                $stopOption = '';
+            }
+            $exitCode = $sqlplus->do(
+                sql     => "SHUTDOWN $stopOption;",
+                verbose => 1
+            );
+
+            if ( $exitCode == 0 ) {
+                print("FINE: Database stoped.\n");
+            }
+            else {
+                print("ERROR: Can not stop database.\n");
+                return $exitCode;
+            }
+        }
+
+        if ( $action eq 'start' or $action eq 'restart' ) {
+            print("Try to start database.\n");
+
+            if ( not defined($startOption) or $startOption eq 'NONE' ) {
+                $startOption = '';
+            }
+            $exitCode = $sqlplus->do(
+                sql     => "STARTUP $startOption;",
+                verbose => 1
+            );
+
+            if ( $exitCode == 0 ) {
+                print("FINE: Database started.\n");
+            }
+            else {
+                print("ERROR: Start up database failed.\n");
+                return $exitCode;
+            }
+        }
+        elsif ( $action eq 'modify' ) {
+            if ( defined($startOption) and $startOption ne '' and $startOption ne 'NONE' ) {
+                print("Try to modify database.\n");
+
+                $exitCode = $sqlplus->do(
+                    sql     => "ALTER DATABASE $startOption;",
+                    verbose => 1
+                );
+
+                if ( $exitCode == 0 ) {
+                    print("FINE: Alter Database to $startOption success.\n");
+                }
+                else {
+                    print("ERROR: Alter Database to $startOption failed.\n");
+                    return $exitCode;
+                }
+            }
+            else {
+                $exitCode = 1;
+                print("ERROR: No start optiont defined.\n");
+            }
+        }
+    }
+
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
+
+    return $exitCode;
+}
+
+exit( main() );

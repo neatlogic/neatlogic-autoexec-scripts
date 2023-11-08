@@ -1,0 +1,193 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --java_home <java home> --run_user <run user> --run_group <run user group> --weblogic_path <install path> --domain_path <domain_path> --domain_name <domain_name> --listen_port <admin server port>"
+    + "listen_ssl_port <ssl port> --xms <min heap size> --Xmx <max heap size> --weblogic_user <console user> --weblogic_password <console user password>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            java_home)
+                java_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            weblogic_path)
+                weblogic_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_name)
+                domain_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            listen_port)
+                listen_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            listen_ssl_port)
+                listen_ssl_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            xms)
+                xms="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;                
+            xmx)
+                xmx="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;    
+            weblogic_user)
+                weblogic_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;    
+            weblogic_password)
+                weblogic_password="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;        
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$weblogic_path" ]] ; then
+    echo "ERROR:: Must defined weblogic_path."
+    usage
+fi 
+
+if [[  ! -n "$java_home" ]] ; then
+    java_home=`echo $JAVA_HOME`
+fi 
+
+if [ ! -d $java_home ]; then
+    echo "ERROR:: JAVA_HOME dir not found."
+    exit 1
+fi
+
+if [[  ! -n "$run_user"  && ! -n "$run_group"  ]] ; then
+    echo "ERROR:: Must defined run user  and group."
+    usage
+fi 
+
+if [[  ! -n "$domain_path" ]] ; then
+    domain_path="$weblogic_path"
+fi 
+
+if [[  ! -n "$xms"  && ! -n "$xmx"  ]] ; then
+    xms=1024m
+    xmx=2048m
+fi 
+
+if [[  ! -n "$listen_port"  && ! -n "$listen_ssl_port"  ]] ; then
+    listen_port="7001"
+    listen_ssl_port="7002"
+fi
+
+if [[  ! -n "$weblogic_user"  && ! -n "$weblogic_password"  ]] ; then
+    weblogic_user="weblogic"
+    weblogic_password="weblogic"
+fi
+
+if [[  ! -n "$domain_name"  ]] ; then
+    domain_name="base_domain"
+fi
+
+current_path=`pwd`
+
+cd $weblogic_path
+rm -f create_domain.rsp
+cat <<EOF >> "create_domain.rsp"
+read template from "$weblogic_path/wlserver/common/templates/wls/wls.jar";
+set JavaHome "$java_home";
+set ServerStartMode "dev";
+find Server "AdminServer" as AdminServer;
+set AdminServer.ListenAddress "";
+set AdminServer.ListenPort "$listen_port";
+set AdminServer.SSL.Enabled "true";
+set AdminServer.SSL.ListenPort "$listen_ssl_port";
+find User "$weblogic_user" as u1;
+set u1.password "$weblogic_password";
+assign User "$weblogic_user" to Group "Monitors";
+write domain to "$domain_path/user_projects/domains/$domain_name";
+close template;
+EOF
+#set AdminServer.SSL.ListenPort "$listen_ssl_port";
+#create Server "ms1" as MS1;
+#set MS1.ListenPort "8003"; 
+#create Machine "qfmyy.com" as QFMYY;
+
+chown -R $run_user:$run_group $domain_path
+
+is_success=0
+#创建domain
+cd $weblogic_path/wlserver/common/bin/
+su - "$run_user" -c "sh $weblogic_path/wlserver/common/bin//config.sh -mode=silent -silent_script=$weblogic_path/create_domain.rsp -log=$weblogic_path/create_domain.log -Djava.security.egd=file:/dev/./urandom"
+if [ $? != 0 ]
+then
+    echo "ERROR:: create domain failed."
+    cat $weblogic_path/create_domain.log
+    is_success=1
+else
+    echo "INFO:: create domain success."
+    rm -f $weblogic_path/create_domain.rsp
+    rm -f $weblogic_path/create_domain.log
+fi
+
+base_domain=$domain_path/user_projects/domains/base_domain/
+cd $base_domain/bin/
+
+#修改JVM size
+sed -i "s/WLS_MEM_ARGS_64BIT=\"-Xms512m -Xmx512m\"/WLS_MEM_ARGS_64BIT=\"-Xms$xms -Xmx$xmx\"/g" $base_domain/bin/setDomainEnv.sh
+if [ $? != 0 ]
+then
+    echo "ERROR:: change JVM heap size failed."
+else
+    echo "INFO:: change JVM heap size success."
+fi
+
+su - "$run_user" -c "sh $base_domain/bin/setDomainEnv.sh"
+if [ $is_success != 0 ]; then 
+    exit $is_success
+fi
+
+#输出安装路径
+cat <<EOF > "$current_path/output.json"
+{ 
+    "base_domain":"$base_domain" ,
+    "admin_t3_url" : "t3://$NODE_HOST:$listen_port",
+    "admin_http_url" : "http://$NODE_HOST:$listen_port"
+}
+EOF

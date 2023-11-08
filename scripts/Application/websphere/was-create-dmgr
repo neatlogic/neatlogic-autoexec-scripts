@@ -1,0 +1,118 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --was_home <was install path> --dmgr_name <dmgr name> --run_user <run user> --admin_userName <admin userName> --admin_password <admin password>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            was_home)
+                was_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            dmgr_name)
+                dmgr_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_userName)
+                admin_userName="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_password)
+                admin_password="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$was_home" ]] ; then
+    echo "ERROR:: Must defined was_home."
+    usage
+fi 
+
+if [[ ! -d "$was_home" ]] ; then 
+    echo "ERROR:: Not found websphere install home : $was_home."
+    exit 1
+fi 
+
+if [[  ! -n "$dmgr_name" ]] ; then
+    echo "ERROR:: Must defined dmgr_name."
+    usage
+fi
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user ."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+if [[ -d "$was_home/profiles/$dmgr_name" ]] ; then 
+    echo "FINE:: WebSphere Dmgr $dmgr_name directory already exists."
+    exit 0
+fi
+
+if [[ ! -n "$admin_userName" ]] ; then 
+    $admin_userName='wasadmin'
+fi 
+
+if [[ ! -n "$admin_password" ]] ; then 
+    $admin_password='wasadmin'
+fi 
+
+#创建管理概要文件
+#-nodeName
+#-cellName 
+su - "$run_user" -c "sh $was_home/bin/manageprofiles.sh -create -profileName $dmgr_name -profilePath $was_home/profiles/$dmgr_name -templatePath $was_home/profileTemplates/dmgr/ -enableAdminSecurity true -adminUserName $admin_userName -adminPassword $admin_password  -s -V"
+is_success=0
+if [ $? != 0 ]
+then
+    echo "ERROR:: Create WebSphere Dmgr $dmgr_name failed."
+    is_success=1
+else
+    echo "FINE:: Create WebSphere Dmgr $dmgr_name success."
+fi
+
+#输出安装路径
+cat <<EOF > "output.json"
+{ 
+    "dmgr_home":"$was_home/profiles/$dmgr_name",
+    "dmgr_ip" : "$NODE_HOST"
+}
+EOF
+
+exit $is_success

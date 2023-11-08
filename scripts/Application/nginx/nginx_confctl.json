@@ -1,0 +1,58 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "替换或生成Nginx配置文件",
+    "option": [
+        {
+            "opt": "file",
+            "name": "配置文件",
+            "help": "本地上传配置文件",
+            "type": "file",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "content",
+            "name": "配置内容",
+            "help": "完整的ngixn配置内容",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "nginx_home",
+            "name": "Nginx安装目录",
+            "help": "Nginx安装目录，如：/opt/nginx",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "软件安装用户组",
+            "help": "为软件安装指定特定的用户组，如：www",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

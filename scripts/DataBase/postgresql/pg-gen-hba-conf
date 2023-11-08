@@ -1,0 +1,59 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# 生成Oracle集群需要的/etc/hosts，主机名配置，静默安装需要的节点和VIP名称文本，网卡等配置。
+import os
+import sys
+import argparse
+import json
+
+import AutoExecUtils
+
+
+def usage():
+    # 帮助信息
+    pname = os.path.basename(__file__)
+    print(pname + "--nodesipinfo <all nodes ip json obj> --user <user name> --method <trust|md5> --database <databases>")
+
+
+if __name__ == "__main__":
+    # 参数处理
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--user', default='replica', help='Replica user name')
+    parser.add_argument('--method', default='trust', help='Authenticate method')
+    parser.add_argument('--database', default='all', help='Grant databases')
+    parser.add_argument('--nodes', default='{}', help='All nodes ip information')
+
+    hasError = 0
+
+    args = parser.parse_args()
+
+    userName = args.user
+    method = args.method
+    databasesTxt = args.database
+    databases = databasesTxt.split("\\n")
+    # 传入的集群节点的管理IP获取和排序，基础工具osbasic/getallnicip输出的参数：allIpInfo（操作系统配置的IP和网卡信息列表）
+    nodesList = json.loads(args.nodes)
+    nodes = list(nodesList)
+
+    hbaContent = ''
+    for node in nodes:
+        for database in databases:
+            hostAddr = node.get('ip')
+            if(hostAddr is None):
+                hostAddr = node.get('host')
+
+            if hostAddr is None:
+                hasError = 1
+                print("ERROR: malform node info json format:%s" % (json.dumps(node)))
+            else:
+                confLine = 'host  %s  %s  %s/24  %s' % (database, userName, hostAddr, method)
+                print(confLine)
+                hbaContent = hbaContent + confLine + "\n"
+
+    out = {}
+    out['hbaContent'] = hbaContent
+
+    AutoExecUtils.saveOutput(out)
+
+    sys.exit(hasError)

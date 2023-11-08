@@ -1,0 +1,139 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use File::Temp;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub getPfileContent {
+    my ( $osUser, $sid ) = @_;
+    my $sqlplus = SqlplusExec->new( osUser => $osUser, sid => $sid );
+
+    my $pfileFH   = File::Temp->new( UNLINK => 1, SUFFIX => '.pfile.txt' );
+    my $pfilePath = $pfileFH->filename;
+    chmod( 0666, $pfilePath );
+    $pfileFH->close();
+
+    #create pfile='/home/oracle/pfile_20190818' from spfile;
+    unlink($pfilePath);
+    my $exitCode = $sqlplus->do(
+        sql     => qq{create pfile='$pfilePath' from spfile},
+        verbose => 1
+    );
+    if ( $exitCode != 0 ) {
+        print("WARN: Create pfile from spfile failed, Try create with pfile.\n");
+        my $spfileFH   = File::Temp->new( UNLINK => 1, SUFFIX => '.spfile.txt' );
+        my $spfilePath = $spfileFH->filename;
+        chmod( 0666, $spfilePath );
+        $spfileFH->close();
+
+        unlink($spfilePath);
+        $exitCode = $sqlplus->do(
+            sql     => qq{create spfile='$spfilePath' from pfile;},
+            verbose => 1
+        );
+        unlink($pfilePath);
+        $exitCode = $sqlplus->do(
+            sql     => qq{create pfile='$pfilePath' from spfile='$spfilePath';},
+            verbose => 1
+        );
+    }
+
+    my $pfileContent;
+    if ( $exitCode == 0 ) {
+        $pfileContent = AutoExecUtils::getFileContent($pfilePath);
+    }
+
+    return $pfileContent;
+}
+
+sub getDBMajorVersion {
+    my ( $osUser, $sid ) = @_;
+    print("INFO: Try to get oracle database version by command:oraversion -majorVersion\n");
+    my $majorVersion = `su - '$osUser' -c 'oraversion -majorVersion'`;
+    if ( $? == 0 ) {
+        $majorVersion =~ s/^\s*|\s*$//g;
+    }
+    else {
+        undef($majorVersion);
+    }
+    print("INFO: DB major version:$majorVersion.\n");
+    return $majorVersion;
+}
+
+sub main {
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            ORACLE_HOME=s
+            MY_UNIQUE_NAME=s
+            OTHER_SITE_UNIQUE_NAME=s
+            LOG_ARCHIVE_DEST=s
+        }
+    );
+
+    my $ORACLE_USER            = $opts->{ORACLE_USER};
+    my $MY_UNIQUE_NAME         = $opts->{MY_UNIQUE_NAME};
+    my $OTHER_SITE_UNIQUE_NAME = $opts->{OTHER_SITE_UNIQUE_NAME};
+    my $LOG_ARCHIVE_DEST       = $opts->{LOG_ARCHIVE_DEST};
+
+    my $dbMajorVer = getDBMajorVersion($ORACLE_USER);
+    if ( not defined($dbMajorVer) ) {
+        print("ERROR: Can not get oracle db version by command oraversion.\n");
+        return 3;
+    }
+    $dbMajorVer = int($dbMajorVer);
+
+    #*.control_files='+DATA/MYDB_PRIMARY/CONTROLFILE/current.261.1119292377','+ARCH/MYDB_PRIMARY/CONTROLFILE/current.256.1119292377'
+    # *.control_files='/db/oracle/app/oracle/oradata/MYDB_PRIMARY/control01.ctl','/db/oracle/app/oracle/oradata/MYDB_PRIMARY/control02.ct
+    # l'
+    # *.db_block_size=8192
+    # *.db_name='mydb'
+    # *.db_unique_name='mydb_primary'
+
+    my $cmds = '';
+    $cmds = $cmds . "alter system set db_unique_name = '$MY_UNIQUE_NAME'  scope=spfile;\n";
+    $cmds = $cmds . "alter system set log_archive_config='DG_CONFIG=($MY_UNIQUE_NAME,$OTHER_SITE_UNIQUE_NAME)';\n";
+
+    if ( $dbMajorVer > 9 ) {
+
+        #9i以上log_archive_dest的配置
+        $cmds = $cmds . "alter system set log_archive_dest_$LOG_ARCHIVE_DEST='SERVICE=$OTHER_SITE_UNIQUE_NAME LGWR SYNC NOAFFIRM REOPEN=60 VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=$OTHER_SITE_UNIQUE_NAME';\n";
+    }
+    else {
+        #Oracle 9i及以下的log_archive_dest配置
+        $cmds = $cmds . "alter system set log_archive_dest_$LOG_ARCHIVE_DEST='SERVICE=$OTHER_SITE_UNIQUE_NAME';\n";
+    }
+
+    $cmds = $cmds . "alter system set log_archive_dest_state_1 = 'enable';\n";
+    $cmds = $cmds . "alter system set log_archive_dest_state_$LOG_ARCHIVE_DEST = 'enable';\n";
+
+    $cmds = $cmds . "alter system set db_file_name_convert='$OTHER_SITE_UNIQUE_NAME','$MY_UNIQUE_NAME'  scope=spfile;\n";
+    $cmds = $cmds . "alter system set log_file_name_convert='$OTHER_SITE_UNIQUE_NAME','$MY_UNIQUE_NAME'  scope=spfile;\n";
+    $cmds = $cmds . "alter system set standby_file_management=auto;\n";
+    $cmds = $cmds . "alter system set fal_client='$MY_UNIQUE_NAME';\n";
+    $cmds = $cmds . "alter system set fal_server='$OTHER_SITE_UNIQUE_NAME';\n";
+
+    my $pfileContent = getPfileContent($ORACLE_USER);
+
+    if ( not defined($pfileContent) ) {
+        print("ERROR: Can not get pfile content.\n");
+        return 2;
+    }
+
+    my $out = {};
+    $out->{pFileContent}  = $pfileContent;
+    $out->{pfileAlterSql} = $cmds;
+
+    AutoExecUtils::saveOutput($out);
+
+    return 0;
+}
+
+exit( main() );

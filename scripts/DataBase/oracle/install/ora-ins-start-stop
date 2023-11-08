@@ -1,0 +1,121 @@
+#!/usr/bin/perl
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/lib/perl-lib/lib/perl5";
+
+use strict;
+use IO::File;
+use Getopt::Long;
+use SqlplusExec;
+use AutoExecUtils;
+
+sub usage {
+    my $pname = $FindBin::Script;
+
+    print("$pname --ORACLE_USER <ORACLE_USER> --ORACLE_HOME <ORACLE_HOME> \n");
+    print("--ORACLE_SID <ORACLE_SID>\n");
+    print("--stopoption <Stop option>\n");
+    print("--startoption <Startup option>\n");
+    exit(1);
+}
+
+sub getUserEnv {
+    my ($ORACLE_USER) = @_;
+
+    my $env       = {};
+    my $oraEnvTxt = `su - '$ORACLE_USER' -c "env | grep ORACLE_"`;
+    foreach my $envLine ( split( "\n", $oraEnvTxt ) ) {
+        if ( $envLine =~ /(\w+)=(.*)$/ ) {
+            my $name = $1;
+            my $val  = $2;
+            $env->{$name} = $val;
+        }
+    }
+    return $env;
+}
+
+sub getCrsHome {
+    my ( $osUser, $ORACLE_HOME ) = @_;
+
+    my $envLine = 'LANG=en_US.UTF-8';
+
+    my $gridHome = '';
+    my $cmdFile  = "$ORACLE_HOME/srvm/admin/getcrshome";
+    if ( -e $cmdFile ) {
+        $gridHome = `su - '$osUser' -c '$cmdFile'`;
+        if ( $? == 0 ) {
+            $gridHome =~ s/^\s*|\s*$//g;
+        }
+    }
+
+    return $gridHome;
+}
+
+sub main {
+    AutoExecUtils::setEnv();
+    my $opts = {};
+    GetOptions(
+        $opts, qw{
+            ORACLE_USER=s
+            ORACLE_HOME=s
+            ORACLE_SID=s
+            stopoption=s
+            startoption=s
+        }
+    );
+
+    my $ORACLE_USER = $opts->{ORACLE_USER};
+    my $ORACLE_HOME = $opts->{ORACLE_HOME};
+    my $ORACLE_SID  = $opts->{ORACLE_SID};
+    my $stopOption  = $opts->{stopoption};
+    my $startOption = $opts->{startoption};
+
+    my $hasOptErr = 0;
+    if ( not defined($ORACLE_USER) or $ORACLE_USER eq '' ) {
+        $hasOptErr = 1;
+        print("ERROR: Must defined ORACLE_USER by option --ORACLE_USER.\n");
+    }
+    if ( $hasOptErr == 1 ) {
+        usage();
+    }
+
+    if ( not defined($ORACLE_HOME) or $ORACLE_HOME eq '' or not defined($ORACLE_SID) or $ORACLE_SID eq '' ) {
+        my $userEnv = getUserEnv($ORACLE_USER);
+        $ORACLE_HOME = $userEnv->{ORACLE_HOME};
+        $ORACLE_SID  = $userEnv->{ORACLE_SID};
+    }
+
+    my $exitCode = 0;
+
+    my $sqlplus = SqlplusExec->new( osUser => $ORACLE_USER, oraHome => $ORACLE_HOME, sid => $ORACLE_SID );
+
+    if ( defined($stopOption) and $stopOption ne '' and $stopOption ne 'NONE' ) {
+        $exitCode = $sqlplus->do(
+            sql     => "SHUTDOWN $stopOption;",
+            verbose => 1
+        );
+
+        if ( $exitCode != 0 ) {
+            print("ERROR: Can not stop db instance $ORACLE_SID\n");
+        }
+    }
+
+    if ( $exitCode == 0 ) {
+        $exitCode = $sqlplus->do(
+            sql     => "STARTUP $startOption;",
+            verbose => 1
+        );
+
+        if ( $exitCode != 0 ) {
+            print("ERROR: Start up db instance:$ORACLE_SID to $startOption failed.\n");
+        }
+    }
+
+    if ( $exitCode > 128 ) {
+        $exitCode = $exitCode >> 8;
+    }
+
+    return $exitCode;
+}
+
+exit( main() );

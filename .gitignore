@@ -1,0 +1,13 @@
+*.pyc
+logs/*
+test/*
+tmp/*
+conf/config.ini
+plib/*
+.idea
+.vscode/*
+.DS_Store
+**/.DS_Store
+tools/*
+**/__pycache__
+*.iml

@@ -1,0 +1,45 @@
+#!/bin/bash
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+GRID_USER=$1
+
+if [ -z "$GRID_USER" ]; then
+    echo "ERROR: Must defined grid user by argument."
+    echo "Usage: gridcheck <Grid user name>"
+    exit 2
+fi
+
+#检查集群状态
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" check crs
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" check cluster
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" stat res -t
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/olsnodes" -n -i -s
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/crsctl" query css votedisk
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/srvctl" config scan
+SUDO_CMD $GRID_USER "$ORACLE_HOME/bin/srvctl" config scan_listener

@@ -1,0 +1,251 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --run_user <run user> --run_group <run group> --weblogic_home <weblogic home> --domain_path <domain path> --t3_url <admin t3 url> --server_name <manager server name> --server_port <manager server port> --server_ssl_port <manager server ssl port>" + 
+    "--server_cluser_name <server cluser name> --admin_username <admin server username> --admin_password <admin server password>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            weblogic_home)
+                weblogic_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            t3_url)
+                t3_url="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_cluser_name)
+                server_cluser_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_name)
+                server_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_port)
+                server_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_ssl_port)
+                server_ssl_port="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_username)
+                admin_username="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_password)
+                admin_password="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined weblogic_home."
+    usage
+fi 
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi 
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user."
+    usage
+fi 
+
+if [[  ! -n "$run_group" ]] ; then
+    echo "ERROR:: Must defined run_group."
+    usage
+fi 
+
+
+if [[  ! -n "$t3_url" ]] ; then
+    echo "ERROR:: Must defined t3_url."
+    usage
+fi 
+
+if [[  ! -n "$server_name" ]] ; then
+    echo "ERROR:: Must defined server_name."
+    usage
+fi  
+
+if [[ $server_name == *","* && $server_name == *"-"* ]]; then
+    ####根据前缀自动生成内容#######
+    ####192.168.0.90-server1,192.168.0.91-server2
+    IFS=', ' read -r -a array <<< "$server_name"
+    for line in "${array[@]}"
+    do
+        echo "$line"
+        host=`echo "$line"|cut -d"-" -f1`
+        sname=`echo "$line"|cut -d"-" -f2`
+        if [ "$host" == "$NODE_HOST" ]; then
+            servername=$sname
+            break
+        fi
+    done
+else 
+    echo "WARN:: Server name : $server_name not generate format."
+    servername=$server_name
+fi
+
+if [[  ! -n "$server_port" ]] ; then
+    echo "ERROR:: Must defined server_port."
+    usage
+fi 
+
+if [[  ! -n "$server_ssl_port" ]] ; then
+    echo "ERROR:: Must defined server_ssl_port."
+    usage
+fi 
+
+if [[  ! -n "$admin_username" ]] ; then
+    echo "ERROR:: Must defined admin_username."
+    usage
+fi 
+
+if [[  ! -n "$admin_password" ]] ; then
+    echo "ERROR:: Must defined admin_password."
+    usage
+fi
+
+is_success=0
+echo "INFO:: Creating ManagerServer $serverName start."
+temp_file="/tmp/add_manager_server.py"
+cat <<EOF > $temp_file
+adminUsername="$admin_username"
+adminPassword="$admin_password"
+adminURL="$t3_url"
+msName="$servername"
+msAddress="$NODE_HOST"
+msPort="$server_port"
+msCluster="$server_cluser_name"
+msSSLPort="$server_ssl_port"
+msMachine="$NODE_HOST"
+
+# Connect to the AdminServer.
+connect(adminUsername, adminPassword, adminURL)
+
+edit()
+startEdit()
+
+# Create the managed Server.
+cd('/')
+cmo.createServer(msName)
+cd('/Servers/' + msName)
+cmo.setListenAddress(msAddress)
+cmo.setListenPort(int(msPort))
+cmo.getWebServer().setMaxRequestParamterCount(25000)
+
+# Direct stdout and stderr.
+cd('/Servers/' + msName + '/Log/' + msName)
+cmo.setRedirectStderrToServerLogEnabled(true)
+cmo.setRedirectStdoutToServerLogEnabled(true)
+cmo.setMemoryBufferSeverity('Debug')
+
+# Associate with a cluster.
+if msCluster:
+  cd('/Servers/' + msName)
+  cmo.setCluster(getMBean('/Clusters/' + msCluster))
+
+# Enable SSL. Attach the keystore later.
+cd('/Servers/' + msName + '/SSL/' + msName)
+cmo.setEnabled(true)
+cmo.setListenPort(int(msSSLPort))
+
+# Associated with a node manager.
+cd('/Servers/' + msName)
+cmo.setMachine(getMBean('/Machines/' + msMachine))
+
+# Build any data sources later.
+cd('/Servers/' + msName + '/DataSource/' + msName)
+cmo.setRmiJDBCSecurity(None)
+
+# Manage logging.
+cd('/Servers/' + msName + '/Log/' + msName)
+cmo.setRotationType('byTime')
+cmo.setFileCount(30)
+cmo.setRedirectStderrToServerLogEnabled(true)
+cmo.setRedirectStdoutToServerLogEnabled(true)
+cmo.setMemoryBufferSeverity('Debug')
+cmo.setLogFileSeverity('Notice')
+
+save()
+activate()
+
+disconnect()
+exit()
+EOF
+
+chown -R $run_user:$run_group $temp_file
+wlst_bin="$weblogic_home/wlserver/common/bin/"
+su - "$run_user" -c "sh $wlst_bin/wlst.sh $temp_file"
+if [ $? != 0 ]; then 
+    echo "ERROR:: Creating ManagerServer $servername failed.$@"
+    exit 1
+else 
+    echo "INFO:: Creating ManagerServer $servername success."
+    rm -f $temp_file
+fi
+
+#创建server账号密码配置
+echo "INFO:: Creating ManagerServer security start."
+server_path="$domain_path/servers/$servername/security"
+if [[ ! -d "$server_path" ]] ; then 
+    mkdir -p $server_path
+fi
+
+cat <<EOF > $server_path/boot.properties
+username=$admin_username
+password=$admin_password
+EOF
+
+chown -R $run_user:$run_group $weblogic_home
+echo "INFO:: Creating ManagerServer security end."
+
+#输出安装路径
+cat <<EOF > "output.json"
+{ 
+    "server_name":"$servername" 
+}
+EOF

@@ -1,0 +1,179 @@
+{
+    "opType": "runner",
+    "typeName": "BASIC",
+    "riskName": "LOW",
+    "interpreter": "python",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "在runner执行工具的Demo",
+    "option": [
+        {
+            "opt": "tinput",
+            "name": "普通输入",
+            "help": "普通输入测试",
+            "type": "text",
+            "defaultValue": "测试-Local",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "tjson",
+            "name": "json输入",
+            "help": "json输入测试",
+            "type": "json",
+            "defaultValue": {
+                "name": "测试-Local"
+            },
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "tselect",
+            "name": "单选输入",
+            "help": "单选输入测试",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "选择1",
+                        "value": "sel1"
+                    },
+                    {
+                        "text": "选择2",
+                        "value": "sel2"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "sel1",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "tmultiselect",
+            "name": "多选输入",
+            "help": "多选输入测试",
+            "type": "multiselect",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "选择1",
+                        "value": "sel1"
+                    },
+                    {
+                        "text": "选择2",
+                        "value": "sel2"
+                    },
+                    {
+                        "text": "选择3",
+                        "value": "sel3"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": [
+                "sel1",
+                "sel2"
+            ],
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "tpassword",
+            "name": "密码输入",
+            "help": "密码输入测试",
+            "type": "password",
+            "defaultValue": "RC4:65bc23024fc41d5449aaa60419d4",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "tfile",
+            "name": "文件输入",
+            "help": "文件输入测试",
+            "type": "file",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "tnode",
+            "name": "节点参数",
+            "help": "节点输入测试",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "tdate",
+            "name": "日期输入",
+            "help": "日期输入测试",
+            "type": "date",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "ttime",
+            "name": "时间输入",
+            "help": "时间输入测试",
+            "type": "time",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "tdatetime",
+            "name": "日期时间输入",
+            "help": "日期时间输入测试",
+            "type": "datetime",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "outtext",
+            "name": "普通输出1",
+            "help": "普通输出测试",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "outfile",
+            "name": "文件输出",
+            "help": "文件输出测试",
+            "type": "filepath",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "outjson",
+            "name": "json输出",
+            "help": "json输出测试",
+            "type": "json",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "outcsv",
+            "name": "csv输出",
+            "help": "csv输出测试",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "outpassword",
+            "name": "password输出",
+            "help": "password输出测试",
+            "type": "password",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

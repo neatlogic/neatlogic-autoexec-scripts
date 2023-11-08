@@ -1,0 +1,102 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "description": "Oracle实例启停",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE_USER",
+            "help": "Oracle库安装用户",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_HOME",
+            "name": "ORACLE_USER",
+            "help": "Oracle库软件安装目录, 留空代表使用用户环境变量ORACLE_HOME",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "ORACLE_SID",
+            "name": "ORACLE_SID",
+            "help": "数据库实例SID, 留空代表使用用户的环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "startoption",
+            "name": "启动参数",
+            "help": "OracleDB启动目标",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "NOMOUNT",
+                        "value": "NOMOUNT"
+                    },
+                    {
+                        "text": "MOUNT",
+                        "value": "MOUNT"
+                    },
+                    {
+                        "text": "OPEN",
+                        "value": "OPEN"
+                    },
+                    {
+                        "text": "RESTRICT",
+                        "value": "RESTRICT"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "OPEN",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "stopoption",
+            "name": "停止参数",
+            "help": "OracleDB停止参数, 留空, 代表启动前不需要执行停止操作",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "NORMAL",
+                        "value": "NORMAL"
+                    },
+                    {
+                        "text": "IMMEDIATE",
+                        "value": "IMMEDIATE"
+                    },
+                    {
+                        "text": "TRANSACTIONAL",
+                        "value": "TRANSACTIONAL"
+                    },
+                    {
+                        "text": "ABORT",
+                        "value": "ABORT"
+                    },
+                    {
+                        "text": "不执行停止",
+                        "value": "NONE"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "IMMEDIATE",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

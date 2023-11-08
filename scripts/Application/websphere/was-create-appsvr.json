@@ -1,0 +1,126 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "websphere创建AppSvr应用概要文件",
+    "option": [
+        {
+            "opt": "was_home",
+            "name": "websphere安装目录",
+            "help": "websphere安装目录路径，如：/opt/IBM/WebSphere/AppServer",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "appsvr_name",
+            "name": "AppSvr名称",
+            "help": "AppSvr名称,如：AppSvr01",
+            "type": "text",
+            "defaultValue": "AppSvr01",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "server_name",
+            "name": "服务器名称",
+            "help": "服务器名称,如：server1",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "node_name",
+            "name": "node名称",
+            "help": "node名称,如：wasNode01",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "cell_name",
+            "name": "cell名称",
+            "help": "cell名称,如：wasCell01",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "host_name",
+            "name": "host名称",
+            "help": "host名称,如：wasNode01",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "app_cfg",
+            "name": "应用profile配置",
+            "help": "应用profile配置,适用于集群参数传递",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "软件安装用户",
+            "help": "为软件安装指定特定的用户，如：wasadmin",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "appsvr_home",
+            "name": "appsvr安装路径",
+            "help": "appsvr安装路径",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "out_appsvrname",
+            "name": "appsvr名称",
+            "help": "appsvr名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "out_servername",
+            "name": "服务器名称",
+            "help": "服务器名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "out_hostname",
+            "name": "主机名称",
+            "help": "主机名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        },
+        {
+            "opt": "out_nodename",
+            "name": "节点名称",
+            "help": "节点名称",
+            "type": "text",
+            "defaultValue": null,
+            "required": "false"
+        }
+    ]
+}

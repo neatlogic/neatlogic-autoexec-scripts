@@ -1,0 +1,31 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "MEDIUM",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "配置Oracle实例跟随OS启停",
+    "option": [
+        {
+            "opt": "ORACLE_USER",
+            "name": "ORACLE用户",
+            "help": "Oracle DB软件安装用户, 默认是oracle",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SID",
+            "name": "实例SID",
+            "help": "Oracle实例SID, 留空代表直接使用环境变量ORACLE_SID",
+            "type": "text",
+            "defaultValue": "oracle",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

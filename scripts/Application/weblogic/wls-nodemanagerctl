@@ -1,0 +1,174 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --operat <operat type> --run_user <run user> --domain_path <domain path>" 
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            operat)
+                operat="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_group)
+                run_group="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;; 
+            weblogic_home)
+                weblogic_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            domain_path)
+                domain_path="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            t3_url)
+                t3_url="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_username)
+                admin_username="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            admin_password)
+                admin_password="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [[  ! -n "$domain_path" ]] ; then
+    echo "ERROR:: Must defined domain_path."
+    usage
+fi 
+
+if [[  ! -n "$weblogic_home" ]] ; then
+    echo "ERROR:: Must defined weblogic_home."
+    usage
+fi 
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user."
+    usage
+fi 
+
+if [[  ! -n "$run_group" ]] ; then
+    echo "ERROR:: Must defined run_group."
+    usage
+fi 
+
+if [[  ! -n "$operat" ]] ; then
+    operat="start"
+fi 
+
+if [[ ! -n "$t3_url" ]] ; then 
+    echo "ERROR:: Must defined t3_url."
+    usage
+fi 
+
+if [[ ! -n "$admin_username" ]] ; then 
+    echo "ERROR:: Must defined admin_username."
+    usage
+fi 
+
+if [[ ! -n "$admin_password" ]] ; then 
+    echo "ERROR:: Must defined admin_password."
+    usage
+fi 
+
+start_tempfile="/tmp/start_nodemanager.py"
+stop_tempfile="/tmp/stop_nodemanager.py"
+nodePort='5556'
+cat <<EOF > $start_tempfile
+adminUsername="$admin_username"
+adminPassword="$admin_password"
+adminURL="$t3_url"
+address="$NODE_HOST"
+nodemanagerHome="$domain_path/nodemanager/"
+connect(adminUsername, adminPassword, adminURL)
+startNodeManager(verbose='true',NodeManagerHome=nodemanagerHome,ListenPort='5556',ListenAddress=address,jvmArgs='-Xms24m,-Xmx64m')
+disconnect()
+exit()
+EOF
+
+cat <<EOF > $stop_tempfile
+adminUsername="$admin_username"
+adminPassword="$admin_password"
+adminURL="$t3_url"
+address="$NODE_HOST"
+nmConnect(adminUsername,adminPassword,address,'5556','base_domain',$domain_path,'SSL')
+stopNodeManager()
+disconnect()
+exit()
+EOF
+
+chown $run_user:$run_group $stop_tempfile
+chown $run_user:$run_group $start_tempfile
+
+wlst_bin="$weblogic_home/wlserver/common/bin"
+port=`netstat -anp|grep $nodePort`
+pinfo=`ps -ef | grep weblogic | grep 'NodeManager' | grep -v grep | awk '{print $2}'`
+if [[ "$operat" == "start" ]] ; then 
+    if [[ -n "$port" && -n "$pinfo" ]]; then
+        echo "FINE:: Weblogic NodeManager already start."
+        exit 0
+    else
+        echo "INFO:: Start NodeManager start."
+        su - "$run_user" -c  "sh $wlst_bin/wlst.sh $start_tempfile" 
+        if [ $? != 0 ]; then 
+            echo "ERROR:: Start NodeManager failed.$@"
+            exit 1
+        else 
+            echo "FINE:: Start NodeManager success."
+            rm -f $stop_tempfile
+            rm -f $start_tempfile
+            exit 0
+        fi 
+    fi 
+else
+    if [[ ! -n "$port" && ! -n "$pinfo"  ]]; then
+        echo "FINE:: Weblogic NodeManager already stop."
+        exit 0
+    else 
+        echo "INFO:: Stop NodeManager start."
+        su - "$run_user" -c "sh $wlst_bin/wlst.sh $stop_tempfile"
+        if [ $? != 0 ]; then 
+            echo "ERROR:: Stop NodeManager failed.$@"
+            exit 1
+        else 
+            echo "FINE:: Stop NodeManager success."
+            rm -f $stop_tempfile
+            rm -f $start_tempfile
+            exit 0
+        fi 
+    fi 
+fi

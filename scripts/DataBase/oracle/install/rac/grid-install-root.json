@@ -1,0 +1,31 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "OracleGRID安装执行root脚本(root用户执行)",
+    "option": [
+        {
+            "opt": "GRID_HOME",
+            "name": "GRID_HOME",
+            "help": "GRID_HOME目录",
+            "type": "text",
+            "defaultValue": "${GRID_HOME}",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "INVENTORY_LOCATION",
+            "name": "INVENTORY目录",
+            "help": "INVENTORY目录",
+            "type": "text",
+            "defaultValue": "${INVENTORY_LOCATION}",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

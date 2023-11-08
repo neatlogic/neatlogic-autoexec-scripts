@@ -1,0 +1,139 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "HIGH",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "连接Postgresql主机执行SQL并检查和输出数据",
+    "option": [{
+            "opt": "OS_USER",
+            "name": "OS用户",
+            "help": "Postgres运行OS用户",
+            "type": "text",
+            "defaultValue": "postgres",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "HOST",
+            "name": "地址",
+            "help": "Mysql监听的IP地址",
+            "type": "text",
+            "defaultValue": "127.0.0.1",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "PORT",
+            "name": "端口",
+            "help": "Postgesql监听的TCP端口",
+            "type": "text",
+            "defaultValue": "5432",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "SOCK_DIR",
+            "name": "Socket目录",
+            "help": "用于连接Postgersql的Unix Domain Socket目录",
+            "type": "text",
+            "defaultValue": "/var/run/postgresql",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "DB_NAME",
+            "name": "DB名",
+            "help": "数据库名, 留空代表使用用户postgres",
+            "type": "text",
+            "defaultValue": "postgres",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "SQL",
+            "name": "SQL内容",
+            "help": "SQL脚本,只支持一条SQL语句",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "emptyisgood",
+            "name": "查询为空报错",
+            "help": "是否允许SQL查询返回空集合",
+            "type": "select",
+            "dataSource": {
+                "dataList": [{
+                        "text": "是",
+                        "value": "0"
+                    },
+                    {
+                        "text": "否",
+                        "value": "1"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "0",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "filter",
+            "name": "过滤条件",
+            "help": "对象过滤，例如：[applicationModels.applicationName] eq 'ATMP_ Subscriber' and [managePath] eq 'ATMP'\n字符串比较操作符:eq、ne、=~/pattern/、!~/pattern/\n数值比较符: ==、!=、>、>=、<、<=",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "chkdsl",
+            "name": "检查DSL",
+            "help": "检查DSL，例如：[applicationModels.applicationStatus] eq '1'\n字符串比较操作符:eq、ne、=~/pattern/、!~/pattern/\n数值比较符: ==、!=、>、>=、<、<=",
+            "type": "textarea",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "message",
+            "name": "检查描述",
+            "help": "此检查描述",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "retrycount",
+            "name": "重试次数",
+            "help": "检查失败, 最大重试次数",
+            "type": "text",
+            "defaultValue": "0",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "retryinterval",
+            "name": "重试间隔",
+            "help": "检查失败重试间隔，单位秒",
+            "type": "text",
+            "defaultValue": "5",
+            "required": "false",
+            "validate": ""
+        }
+    ],
+    "output": [{
+        "opt": "queryResult",
+        "name": "查询结果数据",
+        "help": "结果json数组, 一个数组元素代表一行",
+        "type": "json",
+        "defaultValue": "",
+        "required": "false"
+    }]
+}

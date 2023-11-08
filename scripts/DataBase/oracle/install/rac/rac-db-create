@@ -1,0 +1,353 @@
+#!/bin/bash
+#####################################
+# init params用于设置参数
+# db_name={DB_NAME}
+# db_unique_name={DB_UNIQUE_NAME}
+# #tsorcl1.undo_tablespace=UNDOTBS1
+# #tsorcl2.undo_tablespace=UNDOTBS2
+# sga_target=768MB
+# db_block_size=8192BYTES
+# cluster_database=true
+# family:dw_helper.instance_mode=read-only
+# nls_language=AMERICAN
+# #dispatchers=(PROTOCOL=TCP) (SERVICE=tsorclXDB)
+# diagnostic_dest={ORACLE_BASE}
+# remote_login_passwordfile=exclusive
+# db_create_file_dest=+DATA/{DB_UNIQUE_NAME}/
+# audit_file_dest={ORACLE_BASE}/admin/{DB_UNIQUE_NAME}/adump
+# processes=300
+# pga_aggregate_target=256MB
+# #tsorcl1.thread=1
+# #tsorcl2.thread=2
+# nls_territory=AMERICA
+# local_listener=-oraagent-dummy-
+# db_recovery_file_dest_size=10GB
+# open_cursors=300
+# log_archive_format=%t_%s_%r.dbf
+# compatible=19.0.0
+# #tsorcl1.instance_number=1
+# #tsorcl2.instance_number=2
+# db_recovery_file_dest=+ARCH
+# audit_trail=db
+##########################################
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Installation failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Installation has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All installations were successful."
+    fi
+}
+
+function SUDO_CMD_CONT() {
+    USER=$1
+    shift
+    CMD_SECTXT=$(echo "$@" | perl -pe 's/Password=\S*/Password=******/g' | perl -pe 's/Password\s+\S*/Password ******/g')
+    echo "Exec command: su - '$USER' -c '$CMD_SECTXT'"
+    eval "su - '$USER' -c 'AUTOEXEC_JOBID=$AUTOEXEC_JOBID $@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_WARN=1
+        echo WARN: Execute $@ failed.
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function setInstallEnv() {
+    EXEC_ENV_TXT=$(echo "$EXEC_ENV" | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ -n "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
+function parseInitParams() {
+    #输入的INIT_PARAMS是textarea格式，把符号'\n'替换为真正的换行符号
+    if [ -z "$INIT_PARAMS" ]; then
+        INIT_PARAMS="db_name=$DB_NAME"
+        return
+    fi
+    INIT_PARAMS=$(echo "$INIT_PARAMS" | perl -pe 's/\\n/\n/g' | perl -ne 'if(not /^\s*#/ and not /^\s*$/){$_ =~ s/\s*=\s*/=/g; $_ =~ s/^\s*//g; $_=~s/\s+$/,/g; print;}')
+    INIT_PARAMS=$(echo "$INIT_PARAMS" | perl -pe 's/,$//')
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            CV_ASSUME_DISTID)
+                CV_ASSUME_DISTID="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            RESPONSE_FILE)
+                RESPONSE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            TEMPLATE_FILE)
+                TEMPLATE_FILE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            NODE_LIST)
+                NODE_LIST="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATA_DISKGROUP)
+                DATA_DISKGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ARCH_DISKGROUP)
+                ARCH_DISKGROUP="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            STORAGE_TYPE)
+                STORAGE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DATABASE_TYPE)
+                DATABASE_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CONFIG_TYPE)
+                CONFIG_TYPE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CHARSET)
+                CHARSET="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            CDB_PWD)
+                CDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_PWD)
+                PDB_PWD="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            IS_CDB)
+                IS_CDB="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_NAME)
+                DB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DB_UNIQUE_NAME)
+                DB_UNIQUE_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            PDB_NAME)
+                PDB_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            AUTO_MEMORY)
+                AUTO_MEMORY="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            MEM_PERCENTAGE)
+                MEM_PERCENTAGE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            INIT_PARAMS)
+                INIT_PARAMS="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+setInstallEnv
+parseInitParams
+
+PDB_COUNT="0"
+if [ "$IS_CDB" == "true" ] && [ -n "$PDB_NAME" ]; then
+    PDB_COUNT="1"
+fi
+
+if [ -z "$ORACLE_USER" ]; then
+    echo "ERROR: Must defined ORACLE_USER with option --ORACLE_USER."
+    exit 2
+fi
+
+if [ -z "$ORACLE_BASE" ]; then
+    echo "ERROR: Must defined ORACLE_BASE with option --ORACLE_BASE."
+    exit 2
+fi
+
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Must defined ORACLE_HOME with option --ORACLE_HOME."
+    exit 2
+fi
+
+ENV_DISTID=""
+if [ "$CV_ASSUME_DISTID" != "AUTO" ]; then
+    ENV_DISTID="CV_ASSUME_DISTID=$CV_ASSUME_DISTID"
+fi
+
+if [ -n "$RESPONSE_FILE" ]; then
+    if [ ! -e "$RESPONSE_FILE" ]; then
+        echo "ERROR: Response file:$RESPONSE_FILE not exists."
+        exit 3
+    else
+        REAL_RESPONSE_FILE=$ORACLE_HOME/assistants/dbca/dbca_auto.rsp
+        echo "Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE."
+        cp $RESPONSE_FILE "$REAL_RESPONSE_FILE" && chown $ORACLE_USER:$UNIX_GROUP_NAME "$REAL_RESPONSE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $RESPONSE_FILE to $REAL_RESPONSE_FILE failed."
+            exit 4
+        fi
+    fi
+fi
+
+if [ -n "$TEMPLATE_FILE" ]; then
+    if [ ! -e "$TEMPLATE_FILE" ]; then
+        echo "ERROR: Template file:$TEMPLATE_FILE not exists."
+        exit 3
+    else
+        REAL_TEMPLATE_FILE=$ORACLE_HOME/assistants/dbca/templates/template_auto.dbc
+        echo "Copy $TEMPLATE_FILE to $REAL_TEMPLATE_FILE."
+        cp $TEMPLATE_FILE "$REAL_TEMPLATE_FILE" && chown $ORACLE_USER:$UNIX_GROUP_NAME "$REAL_TEMPLATE_FILE"
+        if [ $? != 0 ]; then
+            echo "ERROR: Copy $TEMPLATE_FILE to $REAL_TEMPLATE_FILE failed."
+            exit 4
+        fi
+        TEMPLATE_FILE=template_auto.dbc
+    fi
+else
+    TEMPLATE_FILE=General_Purpose.dbc
+fi
+
+if [ -z "$DB_UNIQUE_NAME" ]; then
+    DB_UNIQUE_NAME=$DB_NAME
+fi
+
+#创建数据库
+#su - oracle
+SUDO_ORA_CMD $ORACLE_USER $ENV_DISTID $ORACLE_HOME/bin/dbca -silent \
+    -createDatabase \
+    -responseFile $REAL_RESPONSE_FILE \
+    -variables "ORACLE_BASE_HOME=$ORACLE_HOME,DB_UNIQUE_NAME=$DB_UNIQUE_NAME,ORACLE_BASE=$ORACLE_BASE,PDB_NAME=$PDB_NAME,DB_NAME=$DB_NAME,ORACLE_HOME=$ORACLE_HOME,SID=$DB_NAME" \
+    -initParams "$INIT_PARAMS" \
+    -templateName "$TEMPLATE_FILE" \
+    -gdbname $DB_NAME \
+    -sid $DB_NAME \
+    -nodelist $NODE_LIST \
+    -databaseConfigType $CONFIG_TYPE \
+    -databaseType $DATABASE_TYPE \
+    -createAsContainerDatabase $IS_CDB \
+    -numberOfPDBs $PDB_COUNT \
+    -pdbName "$PDB_NAME" \
+    -characterSet $CHARSET \
+    -nationalCharacterSet AL16UTF16 \
+    -sysPassword "$CDB_PWD" \
+    -systemPassword "$CDB_PWD" \
+    -pdbAdminPassword "$PDB_PWD" \
+    -dbsnmpPassword "$CDB_PWD" \
+    -asmsnmpPassword "$CDB_PWD" \
+    -automaticMemoryManagement $AUTO_MEMORY \
+    -memoryPercentage $MEM_PERCENTAGE \
+    -emConfiguration NONE \
+    -ignorePreReqs \
+    -storageType $STORAGE_TYPE \
+    -diskGroupName "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -datafileDestination "+$DATA_DISKGROUP/{DB_UNIQUE_NAME}/" \
+    -recoveryAreaDestination "+$ARCH_DISKGROUP" \
+    -recoveryGroupName "+$ARCH_DISKGROUP" \
+    -enableArchive true \
+    -archiveLogMode AUTO \
+    -archiveLogDest "+$ARCH_DISKGROUP"
+
+echo "******************************************************************************"
+echo "Save state of PDB to enable auto-start." $(date)
+echo "******************************************************************************"
+su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
+ALTER PLUGGABLE DATABASE ${PDB_NAME} SAVE STATE;
+EXIT;
+EOF
+
+if [ "$DB_NAME" != "$DB_UNIQUE_NAME" ]; then
+    echo "******************************************************************************"
+    echo "Set service names to :$DB_NAME,$DB_UNIQUE_NAME"
+    echo "srvctl add service -db ${DB_UNIQUE_NAME} -service ${DB_NAME}"
+    echo "******************************************************************************"
+    SUDO_CMD $ORACLE_USER srvctl add service -db ${DB_UNIQUE_NAME} -service ${DB_NAME}
+fi
+
+echo "******************************************************************************"
+echo "Check cluster configuration." $(date)
+echo "******************************************************************************"
+
+echo "******************************************************************************"
+echo "Output from crsctl stat res -t" $(date)
+echo "******************************************************************************"
+SUDO_CMD_CONT $ORACLE_USER ${GRID_HOME}/bin/crsctl stat res -t
+
+echo "******************************************************************************"
+echo "Output from srvctl config database -d ${DB_UNIQUE_NAME}"
+echo "******************************************************************************"
+SUDO_CMD $ORACLE_USER srvctl config database -d ${DB_UNIQUE_NAME}
+
+echo "******************************************************************************"
+echo "Output from srvctl status database -d ${DB_UNIQUE_NAME}"
+echo "******************************************************************************"
+SUDO_CMD_CONT $ORACLE_USER srvctl status database -d ${DB_UNIQUE_NAME}
+
+echo "******************************************************************************"
+echo "Output from v\$active_instances"
+echo "******************************************************************************"
+su - $ORACLE_USER -c 'sqlplus / as sysdba' <<EOF
+SELECT inst_name FROM v\$active_instances;
+EXIT;
+EOF
+
+exit $HAS_ERROR

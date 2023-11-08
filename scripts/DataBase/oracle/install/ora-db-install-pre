@@ -1,0 +1,295 @@
+#!/bin/bash
+#不包括/etc/sysctl.conf、/etc/security/limit.conf、/etc/hosts、 $HOME/.bash_profile
+#不包括Oracle、grid用户和组的配置、配置yum源
+#上述的处理需要使用自动化的基础工具来完成
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function disableNetworkManager() {
+    if [ "$INIT_TYPE" = 'systemd' ]; then
+        systemctl stop NetworkManager
+        systemctl disable NetworkManager
+    else
+        service NetworkManager stop
+        chkconfig NetworkManager off
+    fi
+}
+
+function disableIptables() {
+    if [ "$INIT_TYPE" = 'systemd' ]; then
+        systemctl stop firewalld
+        systemctl disable firewalld
+    else
+        service iptables stop
+        chkconfig iptables off
+    fi
+}
+
+function disableAvahi() {
+    if [[ -f "/etc/systemd/system/dbus-org.freedesktop.Avahi.service" ]]; then
+        if [ "$INIT_TYPE" = 'systemd' ]; then
+            systemctl stop avahi-dnsconfd
+            systemctl stop avahi-daemon
+            systemctl disable avahi-dnsconfd
+            systemctl disable avahi-daemon
+        else
+            service avahi-dnsconfd stop
+            service avahi-daemon stop
+            chkconfig avahi-dnsconfd off
+            chkconfig avahi-daemon off
+        fi
+    fi
+}
+
+function dependRpmInstall() {
+    DO_CMD yum install -y \
+        binutils gcc gcc-c++ glibc glibc-devel ksh libaio \
+        libaio-devel libgcc libgcc.i686 libstdc++ libstdc++-devel libXi libXtst libnsl make sysstat
+}
+
+function configNTP() {
+    sed -i '/^\s*OPTIONS/'d /etc/sysconfig/ntpd
+    sed -i '/^\s*SYNC_HWCLOCK/'d /etc/sysconfig/ntpd
+
+    echo 'OPTIONS="-x -u ntp:ntp -p /var/run/ntpd.pid -g"' >>/etc/sysconfig/ntpd
+    echo 'SYNC_HWCLOCK=yes' >>/etc/sysconfig/ntpd
+
+    if [ "$INIT_TYPE" = 'systemd' ]; then
+        systemctl enable chronyd
+        chronydStatus=$?
+
+        systemctl restart chronyd
+        chronyc -a 'burst 4/4'
+        chronyc -a makestep
+
+        if [ chronydStatus != 0 ]; then
+            systemctl enable ntpd
+            systemctl restart ntpd
+        fi
+    else
+        chkconfig ntpd on
+        service ntpd restart
+    fi
+}
+
+function configI18nLANG() {
+    sed -i '/^LANG/'d /etc/sysconfig/i18n
+    echo 'LANG=en_US.UTF-8' >>/etc/sysconfig/i18n
+}
+
+function configSshd() {
+    sed -i '/^\s*LoginGraceTime/'d /etc/ssh/sshd_config
+    echo 'LoginGraceTime 0' >>/etc/ssh/sshd_config
+}
+
+function configNetworking() {
+    sed -i '/^\s*NETWORKING/'d /etc/sysconfig/network
+    sed -i '/^\s*NOZEROCONF/'d /etc/sysconfig/network
+    echo 'NETWORKING=yes' >>/etc/sysconfig/network
+    echo 'NOZEROCONF=yes' >>/etc/sysconfig/network
+}
+
+function disableTransHugepage() {
+    sed -i '/GRUB_CMDLINE_LINUX/'s'/quiet/quiet transparent_hugepage=never numa=off/' /etc/default/grub
+
+    if [ -f /sys/kernel/mm/redhat_transparent_hugepage/enabled ]; then
+        echo never >/sys/kernel/mm/redhat_transparent_hugepage/enabled
+    fi
+    if [ -f /sys/kernel/mm/redhat_transparent_hugepage/defrag ]; then
+        echo never >/sys/kernel/mm/redhat_transparent_hugepage/defrag
+    fi
+}
+
+function configShmDev() {
+    sed -i '/^\s*\/dev\/shm\s/'s'/defaults/rw,exec/' /etc/fstab
+    mount -o remount /dev/shm
+}
+
+function enableNscd() {
+    chkconfig --level 35 nscd on
+    if [ "$INIT_TYPE" = 'systemd' ]; then
+        systemctl enabled nscd
+        systemctl restart nscd
+    else
+        service nscd restart
+    fi
+}
+
+function disableSELinux() {
+    sed -i '/^SELINUX/'d /etc/selinux/config
+    echo "SELINUX=disabled" >>/etc/selinux/config
+    setenforce 0
+}
+
+function installCvuqdisk() {
+    #安装ASM的磁盘工具
+    export CVUQDISK_GRP=$UNIX_GROUP_NAME
+    rpm -ivh $GRID_HOME/cv/rpm/cvuqdisk-*.rpm
+}
+
+function createOraDir() {
+    if [ -z "$INVENTORY_LOCATION" ] || [ "$INVENTORY_LOCATION" == "/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Inventory directory:$INVENTORY_LOCATION is invalid."
+    fi
+
+    if [ -z "$ORACLE_BASE" ] || [ "$ORACLE_BASE" == "/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Oracle base directory:$ORACLE_BASE is invalid."
+    fi
+
+    if [ -z "$ORACLE_HOME" ] || [ "$ORACLE_HOME" == "/" ]; then
+        HAS_ERROR=1
+        echo "ERROR: Oracle home directory:$ORACLE_HOME is invalid."
+    fi
+
+    if [ "$HAS_ERROR" != "0" ]; then
+        exit 1
+    fi
+
+    mkdir -p $INVENTORY_LOCATION
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME $INVENTORY_LOCATION
+    DO_CMD chmod -R 775 $INVENTORY_LOCATION
+
+    mkdir -p $ORACLE_BASE
+    mkdir -p $ORACLE_BASE/cfgtoollogs
+    mkdir -p $ORACLE_HOME
+    DO_CMD chown -R $ORACLE_USER:$UNIX_GROUP_NAME "$ORACLE_BASE" "$ORACLE_HOME"
+    DO_CMD chmod -R 775 "$ORACLE_BASE" "$ORACLE_HOME"
+
+    P_ORACLE_BASE=$(dirname "$ORACLE_BASE")
+    P_ORACLE_HOME=$(dirname "$ORACLE_HOME")
+    P_INVENTORY_LOCATION=$(dirname "$INVENTORY_LOCATION")
+    if [ -n "$P_ORACLE_BASE" ] && [ "$P_ORACLE_BASE" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_ORACLE_BASE"
+        chmod g+rwx "$P_ORACLE_BASE"
+    fi
+    if [ -n "$P_ORACLE_HOME" ] && [ "$P_ORACLE_HOME" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_ORACLE_HOME"
+        chmod g+rwx "$P_ORACLE_HOME"
+    fi
+    if [ -n "$P_INVENTORY_LOCATION" ] && [ "$P_INVENTORY_LOCATION" != '/' ]; then
+        chgrp $UNIX_GROUP_NAME "$P_INVENTORY_LOCATION"
+        chmod g+rwx "$P_INVENTORY_LOCATION"
+    fi
+}
+
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            INVENTORY_LOCATION)
+                INVENTORY_LOCATION="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_USER)
+                ORACLE_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_BASE)
+                ORACLE_BASE="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            ORACLE_HOME)
+                ORACLE_HOME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            UNIX_GROUP_NAME)
+                UNIX_GROUP_NAME="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+ps -p1 | grep systemd >/dev/null && INIT_TYPE="systemd" || INIT_TYPE="sysvinit"
+
+#echo "--Turning NetworkManager off-------------"
+#disableNetworkManager
+
+echo "--Stop iptables--------------------------"
+disableIptables
+
+echo "--Disable selinux------------------------"
+disableSELinux
+
+echo "--Config yum local repo------------------"
+configYumLocalRepo
+
+echo "--Depenndency package install------------"
+dependRpmInstall
+
+echo "--Config Lang----------------------------"
+configI18nLANG
+
+echo "--Config sshd----------------------------"
+configSshd
+
+echo "--Config ntp-----------------------------"
+configNTP
+
+echo "--Config networking----------------------"
+configNetworking
+
+echo "--disableTransHugepage-------------------"
+disableTransHugepage
+
+echo "--config fstab---------------------------"
+configShmDev
+
+echo "--Config nscd----------------------------"
+enableNscd
+
+echo "--Install cvuqdisk rpm-------------------"
+installCvuqdisk
+
+echo "--Create directory-----------------------"
+createOraDir
+
+exit $HAS_ERROR

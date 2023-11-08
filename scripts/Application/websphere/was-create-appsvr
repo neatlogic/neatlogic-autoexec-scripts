@@ -1,0 +1,166 @@
+#!/bin/bash
+#!/usr/bin/env bash
+usage() {
+    pname=$(basename $0)
+    echo "$pname --was_home <was install path> --appsvr_name <dmgr name> --server_name <server name> --node_name <node name> --cell_name <cell name> --run_user <run user>"
+    exit -1
+}
+
+parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            was_home)
+                was_home="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            appsvr_name)
+                appsvr_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            server_name)
+                server_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            node_name)
+                node_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            cell_name)
+                cell_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            host_name)
+                host_name="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            app_cfg)
+                app_cfg="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            run_user)
+                run_user="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+
+if [[  ! -n "$was_home" ]] ; then
+    echo "ERROR:: Must defined was_home."
+    usage
+fi 
+
+if [[ ! -d "$was_home" ]] ; then 
+    echo "ERROR:: Not found websphere install home : $was_home."
+    exit 1
+fi 
+
+if [[  ! -n "$appsvr_name"  && ! -n "$app_cfg" ]] ; then
+    echo "ERROR:: Must defined appsvr_name or  app_cfg."
+    usage
+fi
+
+if [[  ! -n "$run_user" ]] ; then
+    echo "ERROR:: Must defined run_user ."
+    usage
+fi 
+
+user_ret=`id $run_user`
+if [ $? != 0 ] ; then
+    echo "ERROR:: Os user $run_user not found."
+    exit 1
+fi
+
+#echo "app_cfg:$app_cfg"
+if [[ $app_cfg == *","* && $app_cfg == *"-"* ]]; then
+    ####根据前缀自动生成内容#######
+    ####192.168.0.90-was01|AppSvr01|node01|cell01|server1,192.168.0.91-was02|AppSvr02|node02|cell02|server2
+    IFS=', ' read -r -a array <<< "$app_cfg"
+    for line in "${array[@]}"
+    do
+        echo "$line"
+        host=`echo "$line"|cut -d"-" -f1`
+        info=`echo "$line"|cut -d"-" -f2`
+        if [ "$host" == "$NODE_HOST" ]; then
+            info_arr=(${info//\|/ })
+#            host_name=${info_arr[0]}
+            appsvr_name=${info_arr[1]}
+            node_name=${info_arr[2]}
+            cell_name=${info_arr[3]}
+            server_name=${info_arr[4]}
+            break
+        fi
+    done
+fi
+
+if [[ -d "$was_home/profiles/$appsvr_name" ]] ; then 
+    echo "FINE:: WebSphere Dmgr $appsvr_name directory already exists."
+    exit 0
+fi
+
+#创建应用概要文件
+cmd="sh $was_home/bin/manageprofiles.sh -create -profileName $appsvr_name  -profilePath $was_home/profiles/$appsvr_name -templatePath $was_home/profileTemplates/default "
+if [[ -n "$server_name" ]] ; then 
+    cmd="$cmd -serverName $server_name"  
+fi 
+
+if [[ -n "$host_name" ]] ; then 
+    cmd="$cmd -hostName $host_name" 
+else
+    cmd="$cmd -hostName $NODE_HOST" 
+fi 
+
+if [[ -n "$cell_name" ]] ; then 
+    cmd="$cmd -cellName $cell_name"  
+fi 
+
+if [[ -n "$node_name" ]] ; then 
+    cmd="$cmd -nodeName $node_name"  
+fi 
+cmd="$cmd -s -V"
+
+su - "$run_user" -c "$cmd"
+is_success=0
+if [ $? != 0 ]
+then
+    echo "ERROR:: Create WebSphere AppSvr $appsvr_name failed."
+    is_success=1
+else
+    echo "FINE:: Create WebSphere AppSvr $appsvr_name success."
+fi
+
+#输出安装路径
+cat <<EOF > "output.json"
+{ 
+    "appsvr_home":"$was_home/profiles/$appsvr_name" ,
+    "out_appsvrname" : "$appsvr_name",
+    "out_servername" : "$server_name",
+    "out_hostname" : "$host_name",
+    "out_cellname" : "$cell_name",
+    "out_nodename" : "$node_name"
+}
+EOF
+
+exit $is_success

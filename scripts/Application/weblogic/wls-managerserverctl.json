@@ -1,0 +1,89 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "weblogic启停manager server",
+    "option": [
+        {
+            "opt": "operat",
+            "name": "操作类型",
+            "help": "操作类型",
+            "type": "select",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "启动",
+                        "value": "start"
+                    },
+                    {
+                        "text": "停止",
+                        "value": "stop"
+                    }
+                ],
+                "dataType": "static"
+            },
+            "defaultValue": "start",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_user",
+            "name": "进程用户",
+            "help": "weblogic安装进程用户,如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "domain_path",
+            "name": "domain路径",
+            "help": "domain路径，如：/home/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "http_url",
+            "name": "http管理地址",
+            "help": "adminserver的管理地址，如：http://192.168.0.90:7001",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "server_name",
+            "name": "服务器名称",
+            "help": "服务器名称，如：server1",
+            "type": "text",
+            "defaultValue": "",
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "server_port",
+            "name": "服务器端口",
+            "help": "服务器端口",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "timeout",
+            "name": "超时时间",
+            "help": "检测ManagerServer启停的timeout时间",
+            "type": "text",
+            "defaultValue": "60",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

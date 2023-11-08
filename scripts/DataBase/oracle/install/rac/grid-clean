@@ -1,0 +1,255 @@
+#!/bin/bash
+
+HAS_ERROR=0
+function DO_CMD() {
+    echo Exec command: $@
+    $@
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE != 0 ]; then
+        HAS_ERROR=1
+        echo ERROR: Execute $@ failed.
+        exit $EXIT_CODE
+    else
+        echo FINE: Execute success.
+    fi
+}
+
+function SUDO_ORA_CMD() {
+    USER=$1
+    shift
+    echo "Exec command: su - '$USER' -c '$@'"
+    eval "su - '$USER' -c '$@'"
+    exitCode=$?
+    if [ $exitCode -ge 128 ]; then
+        #负数返回码，大于127就是负数的补码
+        echo "ERROR: Execute command failed, exitCode:$exitCode."
+        exit $exitCode
+    elif [ $exitCode -gt 0 ]; then
+        echo "WARN: Execute command  has some warning, exitCode:$exitCode."
+    else
+        echo "FINE: All operations were successful."
+    fi
+}
+
+function setInstallEnv() {
+    #输入的EXEC_ENV是textarea格式，把符号'\n'替换为真正的换行符号
+    #然后eval为shell的变量
+    EXEC_ENV_TXT=$(echo "$EXEC_ENV" | perl -pe 's/\\n/\n/g' | perl -pe 's/\s*=\s*/=/g')
+    if [ -n "$EXEC_ENV_TXT" ]; then
+        eval "$EXEC_ENV_TXT"
+    else
+        echo "ERROR: Execute env is empty, must defined by option --EXEC_ENV."
+        exit 2
+    fi
+}
+
+function removeUserAndGroups() {
+    if [ -z "$GRID_UID" ]; then
+        return
+    fi
+
+    #delete group id bigger than 1000
+    groups=$(id -G $GRID_USER)
+    #usermod -g10 $GRID_USER
+    #delete GRID_USER
+    userdel $GRID_USER
+
+    for oraGid in $groups; do
+        if [ $oraGid -gt 1000 ]; then
+            groupName=$(getent group $oraGid | cut -d: -f1)
+            groupdel $groupName
+        fi
+    done
+}
+
+function manualUnInstall() {
+    if [ -n "$GRID_UID" ]; then
+        LOCAL_NODE_NAME=$($ORACLE_HOME/bin/olsnodes -l)
+        if [ $? != 0 ]; then
+            LOCAL_NODE_NAME=''
+        fi
+
+        SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/bin/lsnrctl stop
+
+        if [ $?=0 ] && [ -n "$LOCAL_NODE_NAME" ]; then
+            echo "crsctl stop vip"
+            $ORACLE_HOME/bin/srvctl stop vip -n $LOCAL_NODE_NAME
+
+            echo "srvctl stop local node asm"
+            SUDO_ORA_CMD $GRID_USER $ORACLE_HOME/bin/srvctl stop asm -node $LOCAL_NODE_NAME -stopoption IMMEDIATE
+
+            echo "crsctl delete node -n $LOCAL_NODE_NAME"
+            $ORACLE_HOME/bin/crsctl delete node -n $LOCAL_NODE_NAME
+        fi
+
+        echo "Try to ensure local node stoped..."
+        echo "crsctl stop has"
+        $ORACLE_HOME/bin/crsctl stop has -f
+
+        echo "crsctl stop crs"
+        $ORACLE_HOME/bin/crsctl stop crs -f
+    fi
+
+    #stop and disable service
+    ps -p1 | grep systemd >/dev/null && initType="systemd" || initType="sysvinit"
+    if [ "$initType" == "systemd" ]; then
+        systemctl stop ohasd
+        systemctl disable ohasd
+        systemctl daemon-reload
+        systemctl stop cssd
+        systemctl disable cssd
+        systemctl daemon-reload
+        systemctl stop crs
+        systemctl disable crs
+        systemctl daemon-reload
+    else
+        service ohasd stop
+        chkconfig ohasd off
+        service cssd stop
+        chkconfig cssd off
+        service crs stop
+        chkconfig crs off
+    fi
+
+    if [ -n "$ORACLE_HOME" ]; then
+        sed -i "\|$ORACLE_HOME|"d /etc/rc.local
+    fi
+
+    rm -f /etc/init.d/init.ohasd
+
+    if [ -n "$GRID_UID" ]; then
+        for pid in $(ps -u root -fww | grep "$ORACLE_HOME" | grep -v grid-clean | grep -v grep | awk '{print $2}'); do
+            kill $pid
+        done
+
+        #kill oracle process
+        pkill -u $GRID_USER
+        sleep 5
+        if [ $exitCode == 0 ]; then
+            sleep 5
+            pkill -9 -u $GRID_USER
+        fi
+
+        for pid in $(ps -u root -fww | grep "$ORACLE_HOME" | grep -v grid-clean | grep -v grep | awk '{print $2}'); do
+            kill -9 $pid
+        done
+        pkill -9 -u $GRID_USER
+    fi
+
+    unalias rm 2>/dev/null
+
+    #remove script in /usr/local/bin
+    rm -f /usr/local/bin/dbhome
+    rm -f /usr/local/bin/oraenv
+    rm -f /usr/local/bin/coraenv
+
+    #remove config in /etc
+    rm -f /etc/inittab.crs
+    rm -f /etc/ohasd
+    rm -f /etc/oraInst.loc
+    rm -f /etc/oratab
+    rm -rf /etc/oracle/*
+
+    #remove /opt/ORCLfmap
+    rm -rf /opt/ORCLfmap
+    rm -rf /var/tmp/.oracle
+
+    INVENTORY_LOCATION=$(cat $ORACLE_HOME/oraInst.loc | grep inventory_loc | sed s'/inventory_loc\s*=\s*//' | sed s'/\s*$//')
+    if [ -n "$INVENTORY_LOCATION" ] && [ -e "$INVENTORY_LOCATION" ]; then
+        rm -rf "$INVENTORY_LOCATION"
+    fi
+
+    #remove ORACLE_HOME
+    if [ -n "$ORACLE_HOME" ] && [ -e "$ORACLE_HOME" ]; then
+        rm -rf "$ORACLE_HOME"
+    fi
+
+    if [ -n "$ORACLE_BASE" ] && [ -e "$ORACLE_BASE" ]; then
+        rm -rf "$ORACLE_BASE"
+    fi
+
+    if [ "$DEL_USER" == "1" ]; then
+        removeUserAndGroups
+    fi
+}
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+    OPT_SPEC=":h-:"
+    while getopts "$OPT_SPEC" optchar; do
+        case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+            GRID_USER)
+                GRID_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            EXEC_ENV)
+                EXEC_ENV="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            DEL_USER)
+                DEL_USER="${!OPTIND}"
+                OPTIND=$(($OPTIND + 1))
+                ;;
+            *)
+                if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+                    echo "Unknown option --${OPTARG}" >&2
+                fi
+                ;;
+            esac
+            ;;
+        h)
+            usage
+            exit 2
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            ;;
+        esac
+    done
+}
+
+parseOpts "$@"
+
+if [ -z "$GRID_USER" ]; then
+    GRID_USER=grid
+fi
+
+GRID_UID=$(id -u $GRID_USER 2>/dev/null)
+if [ -z "$GRID_UID" ]; then
+    echo "WARN: User $GRID_USER not exists, maybe already uninstalled."
+fi
+
+#如果没有给出环境变量，则可能是直接执行强制删除Oracle，直接获取用户环境变狼
+if [ -z "$EXEC_ENV" ] && [ -n "$GRID_UID" ]; then
+    EXEC_ENV=$(SUDO_ORA_CMD $GRID_USER env | grep ORACLE_)
+fi
+if [ -n "$EXEC_ENV" ]; then
+    setInstallEnv
+fi
+
+if [ -z "$ORACLE_HOME" ]; then
+    echo "ERROR: Environment ORACLE_HOME not set by option --EXEC_ENV, can not perform uninstall oracle."
+    exit -1
+else
+    manualUnInstall
+fi

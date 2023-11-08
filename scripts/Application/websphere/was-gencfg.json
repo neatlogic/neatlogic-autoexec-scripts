@@ -1,0 +1,82 @@
+{
+    "opType": "runner",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "根据节点自动和服务名前缀生成websphere配置信息",
+    "option": [
+        {
+            "opt": "master_node",
+            "name": "主节点",
+            "help": "websphere集群master节点",
+            "type": "node",
+            "defaultValue": null,
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "slave_node",
+            "name": "受管节点",
+            "help": "websphere集群slave节点",
+            "type": "node",
+            "defaultValue": null,
+            "required": "false",
+            "validate": ""
+        },
+        {
+            "opt": "hostname_prefix",
+            "name": "操作系统名称前缀",
+            "help": "操作系统名称前缀,如：codedriver",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "server_prefix",
+            "name": "服务名前缀",
+            "help": "服务名前缀,如：server",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": [
+        {
+            "opt": "app_cfgs",
+            "name": "应用profile配置",
+            "help": "应用profile配置",
+            "type": "text",
+            "defaultValue": null,
+            "required": "true"
+        },
+        {
+            "opt": "ip2Hostname",
+            "name": "IP到主机名映射",
+            "help": "IP到主机名映射",
+            "type": "json",
+            "defaultValue": null,
+            "required": "true"
+        },
+        {
+            "opt": "hostnames",
+            "name": "主机hostnames",
+            "help": "主机hostnames",
+            "type": "json",
+            "defaultValue": null,
+            "required": "true"
+        },
+        {
+            "opt": "hostContent",
+            "name": "host配置",
+            "help": "host配置",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}

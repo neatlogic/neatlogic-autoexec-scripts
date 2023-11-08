@@ -1,0 +1,75 @@
+#!/bin/bash
+
+#参数处理,全部用长参数
+######################################
+function parseOpts() {
+  OPT_SPEC=":h-:"
+  while getopts "$OPT_SPEC" optchar; do
+    case "${optchar}" in
+    -)
+      case "${OPTARG}" in
+      ORACLE_USER)
+        ORACLE_USER="${!OPTIND}"
+        OPTIND=$(($OPTIND + 1))
+        ;;
+      SRC_DB_UNIQUE_NAME)
+        SRC_DB_UNIQUE_NAME="${!OPTIND}"
+        OPTIND=$(($OPTIND + 1))
+        ;;
+      DEST_DB_UNIQUE_NAME)
+        DEST_DB_UNIQUE_NAME="${!OPTIND}"
+        OPTIND=$(($OPTIND + 1))
+        ;;
+      DEST_DB_TYPE)
+        DEST_DB_TYPE="${!OPTIND}"
+        OPTIND=$(($OPTIND + 1))
+        ;;
+      SYS_PASSWORD)
+        SYS_PASSWORD="${!OPTIND}"
+        OPTIND=$(($OPTIND + 1))
+        ;;
+      *)
+        if [ "$OPTERR" = 1 ] && [ "${OPT_SPEC:0:1}" != ":" ]; then
+          echo "Unknown option --${OPTARG}" >&2
+        fi
+        ;;
+      esac
+      ;;
+    h)
+      usage
+      exit 2
+      ;;
+    *)
+      if [ "$OPTERR" != 1 ] || [ "${OPT_SPEC:0:1}" = ":" ]; then
+        echo "Non-option argument: '-${OPTARG}'" >&2
+      fi
+      ;;
+    esac
+  done
+}
+
+parseOpts "$@"
+
+echo "******************************************************************************"
+echo "Create standby database using RMAN duplicate."
+echo "******************************************************************************"
+
+if [ "$DEST_DB_TYPE" = "STANDBY" ]; then
+  rman TARGET sys/${SYS_PASSWORD}@${SRC_DB_UNIQUE_NAME} AUXILIARY sys/${SYS_PASSWORD}@${DEST_DB_UNIQUE_NAME} <<EOF
+DUPLICATE TARGET DATABASE
+  FOR STANDBY
+  FROM ACTIVE DATABASE
+  DORECOVER
+  NOFILENAMECHECK;
+exit;
+EOF
+else
+  rman TARGET sys/${SYS_PASSWORD}@${SRC_DB_UNIQUE_NAME} AUXILIARY sys/${SYS_PASSWORD}@${DEST_DB_UNIQUE_NAME} <<EOF
+DUPLICATE TARGET DATABASE 
+  TO ${DEST_DB_UNIQUE_NAME} 
+  FROM ACTIVE DATABASE
+  DORECOVER
+  NOFILENAMECHECK;
+exit;
+EOF
+fi

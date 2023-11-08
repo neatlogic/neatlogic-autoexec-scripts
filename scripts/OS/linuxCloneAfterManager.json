@@ -1,0 +1,67 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "Linux克隆机器后硬盘挂载、网卡配置、关闭防火墙",
+    "option": [
+        {
+            "opt": "disk_name",
+            "name": "硬盘名称",
+            "help": "硬盘名称,如：/dev/sdb",
+            "type": "text",
+            "defaultValue": "/dev/sdb",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "vg_name",
+            "name": "卷组名称",
+            "help": "卷组名称,如：appvg",
+            "type": "text",
+            "defaultValue": "appvg",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "lv_name",
+            "name": "逻辑卷名称",
+            "help": "逻辑卷名称,如：applv",
+            "type": "text",
+            "defaultValue": "applv",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "mount_name",
+            "name": "挂载盘名称",
+            "help": "挂载盘名称,如：app",
+            "type": "text",
+            "defaultValue": "app",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "fs_type",
+            "name": "文件系统格式",
+            "help": "文件系统格式,如：ext4",
+            "type": "text",
+            "defaultValue": "ext4",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "size",
+            "name": "分区大小",
+            "help": "分区大小,如：20",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

@@ -1,0 +1,67 @@
+{
+    "opType": "target",
+    "typeName": "INSTALL",
+    "riskName": "LOW",
+    "interpreter": "bash",
+    "defaultProfile": null,
+    "isLib": 0,
+    "useLibName": null,
+    "description": "weblogic解压打包domain文件",
+    "option": [
+        {
+            "opt": "run_user",
+            "name": "进程用户",
+            "help": "进程用户,如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "run_group",
+            "name": "进程用户组",
+            "help": "进程用户组,如：weblogic",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "weblogic_home",
+            "name": "软件安装路径",
+            "help": "软件安装路径，如：/home/weblogic/Oracle/Middleware",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "domain_path",
+            "name": "domain路径",
+            "help": "软件安装路径，如：/home/weblogic/Oracle/Middleware/user_projects/domains/base_domain",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "domain_file",
+            "name": "domain文件路径",
+            "help": "domain文件路径",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        },
+        {
+            "opt": "dat_file",
+            "name": "dat文件路径",
+            "help": "adminserver机器domain产生的security dat",
+            "type": "text",
+            "defaultValue": "",
+            "required": "true",
+            "validate": ""
+        }
+    ],
+    "output": []
+}

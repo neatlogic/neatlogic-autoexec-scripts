@@ -1,0 +1,118 @@
+{
+    "opDesc": "生成客户的license",
+    "opType": "runner",
+    "typeName": "BASIC",
+    "riskName": "LOW",
+    "interpreter": "perl",
+    "defaultProfile": null,
+    "enabled": 0,
+    "description": "生成客户的license",
+    "option": [
+        {
+            "opt": "jarpath",
+            "name": "license Jar包路径",
+            "help": "license Jar包路径",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": "/workspace/license/codedriver-license-1.0.0.jar"
+        },
+        {
+            "opt": "customer_name",
+            "name": "客户名称",
+            "help": "客户名称，如:深圳市赞悦科技有限公司",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "tenant_name",
+            "name": "租户名称",
+            "help": "租户名称，如：demo",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "db_info",
+            "name": "DB连接信息",
+            "help": "DB连接信息，如：127.0.0.1:3306",
+            "type": "text",
+            "required": "true",
+            "validate": "",
+            "defaultValue": "127.0.0.1:3306"
+        },
+        {
+            "opt": "license_date",
+            "name": "license到期日期",
+            "help": "license到期日期，如：2030-12-30",
+            "type": "text",
+            "required": "false",
+            "validate": "",
+            "defaultValue": ""
+        },
+        {
+            "opt": "temp_licenseDay",
+            "name": "临时license有效期限",
+            "help": "临时license有效期限，默认为3周",
+            "type": "select",
+            "required": "false",
+            "validate": "",
+            "dataSource": {
+                "dataList": [
+                    {
+                        "text": "1周",
+                        "value": "7"
+                    },
+                    {
+                        "text": "2周",
+                        "value": "14"
+                    },
+                    {
+                        "text": "3周",
+                        "value": "21"
+                    },
+                    {
+                        "text": "4周",
+                        "value": "28"
+                    }
+                ]
+            },
+            "defaultValue": "21"
+        },
+        {
+            "opt": "expire_useDay",
+            "name": "过期后仍可以使用天数",
+            "help": "license到期后还能使用天数",
+            "type": "text",
+            "required": "false",
+            "validate": [
+                "integer_p"
+            ],
+            "defaultValue": "30"
+        },
+        {
+            "opt": "expire_beforeDay",
+            "name": "即将到截止日期前提醒天数",
+            "help": "license即将到截止日期前提醒天数",
+            "type": "text",
+            "required": "false",
+            "validate": [
+                "integer_p"
+            ],
+            "defaultValue": "30"
+        }
+    ],
+    "output": [
+        {
+            "opt": "license",
+            "name": "license",
+            "help": "license密文",
+            "type": "textarea",
+            "defaultValue": null,
+            "required": "true"
+        }
+    ]
+}
